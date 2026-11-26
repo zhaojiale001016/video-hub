@@ -7,12 +7,13 @@
 <meta name="description" content="外网视频自动搬运中台：yt-dlp 下载 → whisper 字幕翻译烧录 → LLM 中文标题 → Web 管理台 → 一键发布 B站/快手/视频号">
 <style>
 :root{
-  --bg:#f6f7fb; --bg2:#eef1f7; --card:#ffffff; --line:#e3e8f0;
-  --tx:#1c2333; --tx2:#5d6b85; --tx3:#94a1b8;
+  --bg:#f7f8fc; --bg2:#eff2f8; --card:#ffffff; --line:#e4e9f2;
+  --tx:#1a2130; --tx2:#5b6880; --tx3:#93a0b6;
   --ac:#fb7299; --ac2:#00a1d6; --gr:#10b981; --yl:#d97706;
   --grad:linear-gradient(135deg,#fb7299,#00a1d6);
-  --sh:0 4px 24px rgba(28,35,51,.07);
-  --sh-lg:0 20px 60px rgba(28,35,51,.12);
+  --sh:0 4px 24px rgba(26,33,48,.07);
+  --sh-lg:0 20px 60px rgba(26,33,48,.13);
+  --r:14px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -20,45 +21,63 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans 
 a{color:inherit;text-decoration:none}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 
+/* ── 滚动显现 ── */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s cubic-bezier(.16,1,.3,1)}
+.rv.in{opacity:1;transform:none}
+.rv-d1{transition-delay:.06s}.rv-d2{transition-delay:.12s}.rv-d3{transition-delay:.18s}
+.rv-d4{transition-delay:.24s}.rv-d5{transition-delay:.3s}.rv-d6{transition-delay:.36s}
+.rv-d7{transition-delay:.42s}.rv-d8{transition-delay:.48s}.rv-d9{transition-delay:.54s}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+
 /* ── nav ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:99;background:rgba(246,247,251,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+nav{position:fixed;top:0;left:0;right:0;z-index:99;background:rgba(247,248,252,.75);backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:.25s}
+nav.sc{background:rgba(255,255,255,.88);border-bottom-color:var(--line);box-shadow:0 2px 16px rgba(26,33,48,.05)}
 nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:.3px}
 .logo .mark{width:26px;height:26px;border-radius:8px;background:var(--grad);display:grid;place-items:center;font-size:12px;color:#fff;box-shadow:0 3px 10px rgba(251,114,153,.35)}
-.nav-links{display:flex;gap:28px;font-size:14px;color:var(--tx2)}
+.nav-links{display:flex;gap:26px;font-size:14px;color:var(--tx2)}
+.nav-links a{padding:4px 2px;border-bottom:2px solid transparent;transition:.18s}
 .nav-links a:hover{color:var(--tx)}
+.nav-links a.act{color:var(--tx);border-bottom-color:var(--ac)}
 .nav-gh{font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 14px;color:var(--tx2);background:var(--card);transition:.18s}
 .nav-gh:hover{color:var(--tx);border-color:var(--ac);box-shadow:var(--sh)}
 
 /* ── hero ── */
-.hero{padding:150px 0 90px;text-align:center;position:relative;overflow:hidden}
-.hero .blob{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none}
-.hero .b1{width:520px;height:520px;background:rgba(251,114,153,.16);top:-140px;left:-100px}
-.hero .b2{width:480px;height:480px;background:rgba(0,161,214,.13);top:-80px;right:-120px}
-.hero .b3{width:360px;height:360px;background:rgba(16,185,129,.08);bottom:-160px;left:34%}
+.hero{padding:148px 0 84px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(26,33,48,.05) 1px,transparent 1px);background-size:26px 26px;-webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 30%,transparent 75%);mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 30%,transparent 75%);pointer-events:none}
+.hero .blob{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;animation:drift 14s ease-in-out infinite alternate}
+.hero .b1{width:520px;height:520px;background:rgba(251,114,153,.17);top:-150px;left:-110px}
+.hero .b2{width:480px;height:480px;background:rgba(0,161,214,.14);top:-90px;right:-130px;animation-delay:-5s}
+.hero .b3{width:380px;height:380px;background:rgba(16,185,129,.09);bottom:-170px;left:32%;animation-delay:-9s}
+@keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(30px,20px) scale(1.06)}}
 .badge{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--tx2);border:1px solid var(--line);border-radius:999px;padding:6px 16px;margin-bottom:26px;background:var(--card);box-shadow:var(--sh);position:relative}
-.badge .dot{width:7px;height:7px;border-radius:50%;background:var(--gr);box-shadow:0 0 8px rgba(16,185,129,.6)}
-h1{font-size:clamp(34px,6vw,58px);font-weight:800;line-height:1.15;letter-spacing:-.5px;position:relative}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:var(--gr);box-shadow:0 0 8px rgba(16,185,129,.6);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+h1{font-size:clamp(34px,6vw,58px);font-weight:800;line-height:1.13;letter-spacing:-.5px;position:relative}
 h1 .gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero p.sub{max-width:640px;margin:22px auto 0;font-size:17px;color:var(--tx2);position:relative}
+.hero p.sub{max-width:660px;margin:22px auto 0;font-size:17px;color:var(--tx2);position:relative}
 .hero p.sub b{color:var(--tx);font-weight:600}
 .ctas{display:flex;gap:14px;justify-content:center;margin-top:36px;flex-wrap:wrap;position:relative}
-.btn{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;border-radius:10px;padding:12px 26px;border:1px solid var(--line);background:var(--card);transition:.18s;box-shadow:var(--sh)}
+.btn{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;border-radius:11px;padding:12px 26px;border:1px solid var(--line);background:var(--card);transition:.18s;box-shadow:var(--sh)}
 .btn:hover{transform:translateY(-2px);box-shadow:var(--sh-lg);border-color:#c8d2e0}
 .btn.primary{background:var(--grad);border:none;color:#fff;box-shadow:0 8px 24px rgba(251,114,153,.35)}
 .btn.primary:hover{filter:brightness(1.06)}
-.hero-meta{margin-top:34px;display:flex;gap:26px;justify-content:center;flex-wrap:wrap;font-size:13px;color:var(--tx2);position:relative}
-.hero-meta span{display:flex;align-items:center;gap:6px}
-.hero-meta i{width:15px;height:15px;border-radius:5px;background:var(--card);display:inline-grid;place-items:center;font-style:normal;font-size:9px;border:1px solid var(--line);color:var(--ac)}
+
+/* stats band */
+.band{display:flex;justify-content:center;gap:0;margin-top:52px;position:relative;flex-wrap:wrap}
+.band>div{padding:4px 30px;text-align:center;border-right:1px solid var(--line)}
+.band>div:last-child{border-right:none}
+.band b{font-size:26px;font-weight:800;display:block;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.band span{font-size:12px;color:var(--tx2)}
 
 /* ── mockup ── */
-.mock{max-width:920px;margin:64px auto 0;border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden;box-shadow:var(--sh-lg);text-align:left;position:relative}
-.mock-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);background:#fbfbfe}
+.mock{max-width:920px;margin:70px auto 0;border:1px solid var(--line);border-radius:18px;background:var(--card);overflow:hidden;box-shadow:var(--sh-lg);text-align:left;position:relative}
+.mock-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);background:#fbfbfd}
 .mock-bar i{width:11px;height:11px;border-radius:50%}
 .mock-bar i:nth-child(1){background:#ff5f57}.mock-bar i:nth-child(2){background:#febc2e}.mock-bar i:nth-child(3){background:#28c840}
 .mock-bar .url{margin-left:12px;font-size:12px;color:var(--tx3);background:var(--bg);border-radius:6px;padding:4px 12px;border:1px solid var(--line)}
 .mock-body{display:flex;min-height:340px}
-.mock-side{width:150px;border-right:1px solid var(--line);padding:16px 10px;font-size:12px;color:var(--tx2);background:#fbfbfe}
+.mock-side{width:150px;border-right:1px solid var(--line);padding:16px 10px;font-size:12px;color:var(--tx2);background:#fbfbfd}
 .mock-side div{padding:7px 10px;border-radius:7px;margin-bottom:4px}
 .mock-side .on{background:rgba(251,114,153,.1);color:var(--ac);font-weight:600}
 .mock-main{flex:1;padding:18px}
@@ -67,12 +86,14 @@ h1 .gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;
 .mock-stats b{font-size:18px;display:block}
 .mock-stats span{font-size:11px;color:var(--tx2)}
 .mock-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.mock-card{background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden;box-shadow:0 2px 8px rgba(28,35,51,.04)}
+.mock-card{background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden;box-shadow:0 2px 8px rgba(26,33,48,.05)}
 .mock-card .th{height:86px;background:linear-gradient(120deg,#dfe8f5,#e8e0f0);position:relative}
 .mock-card:nth-child(2) .th{background:linear-gradient(120deg,#f0dfe8,#dfe8f5)}
 .mock-card:nth-child(3) .th{background:linear-gradient(120deg,#e0f0e8,#dce8f0)}
 .mock-card:nth-child(4) .th{background:linear-gradient(120deg,#f0e8dc,#e8dcf0)}
-.mock-card .th em{position:absolute;right:8px;bottom:6px;font-style:normal;font-size:10px;background:rgba(28,35,51,.72);border-radius:4px;padding:2px 6px;color:#fff}
+.mock-card .th em{position:absolute;right:8px;bottom:6px;font-style:normal;font-size:10px;background:rgba(26,33,48,.72);border-radius:4px;padding:2px 6px;color:#fff}
+.mock-card .th .pb{position:absolute;left:0;bottom:0;height:3px;background:var(--grad);animation:fill 3s ease-in-out infinite alternate}
+@keyframes fill{from{width:18%}to{width:78%}}
 .mock-card .bd{padding:10px 12px}
 .mock-card .bd .t{font-size:12px;font-weight:600;height:32px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .mock-card .ft{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
@@ -81,34 +102,53 @@ h1 .gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;
 .mock-card .ft s.warm{color:#0284b8;border-color:rgba(0,161,214,.4);background:rgba(0,161,214,.07)}
 
 /* ── sections ── */
-section{padding:84px 0}
-.sec-tag{font-size:13px;font-weight:700;color:var(--ac);letter-spacing:2px;text-transform:uppercase}
-h2{font-size:clamp(24px,4vw,34px);font-weight:800;margin-top:10px;letter-spacing:-.3px}
+section{padding:80px 0}
+.sec-tag{display:inline-block;font-size:12px;font-weight:700;color:var(--ac);letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(251,114,153,.3);background:rgba(251,114,153,.06);border-radius:999px;padding:4px 14px}
+h2{font-size:clamp(24px,4vw,34px);font-weight:800;margin-top:14px;letter-spacing:-.3px}
 .sec-sub{color:var(--tx2);margin-top:12px;max-width:560px;font-size:15px}
 
 /* pipeline */
 .pipe{display:flex;gap:0;margin-top:48px;align-items:stretch;flex-wrap:wrap}
-.pipe-step{flex:1;min-width:170px;background:var(--card);border:1px solid var(--line);padding:22px 18px;position:relative;box-shadow:0 2px 10px rgba(28,35,51,.04)}
-.pipe-step:first-child{border-radius:14px 0 0 14px}
-.pipe-step:last-child{border-radius:0 14px 14px 0}
+.pipe-step{flex:1;min-width:170px;background:var(--card);border:1px solid var(--line);padding:24px 18px;position:relative;box-shadow:0 2px 10px rgba(26,33,48,.04);transition:.18s}
+.pipe-step:hover{transform:translateY(-4px);box-shadow:var(--sh);border-color:#c8d2e0;z-index:1}
+.pipe-step:first-child{border-radius:var(--r) 0 0 var(--r)}
+.pipe-step:last-child{border-radius:0 var(--r) var(--r) 0}
 .pipe-step+.pipe-step{border-left:none}
-.pipe-step .n{font-size:11px;color:var(--ac);font-weight:700}
-.pipe-step h3{font-size:15px;margin:8px 0 6px}
+.pipe-step .n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;font-size:11px;font-weight:800;color:#fff;background:var(--grad);box-shadow:0 3px 8px rgba(0,161,214,.25)}
+.pipe-step h3{font-size:15px;margin:12px 0 6px}
 .pipe-step p{font-size:12px;color:var(--tx2);line-height:1.55}
 .pipe-step::after{content:"→";position:absolute;right:-9px;top:50%;transform:translateY(-50%);color:var(--tx3);z-index:2;font-size:14px}
 .pipe-step:last-child::after{display:none}
 
+/* lanes */
+.lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
+.lane{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px;position:relative;overflow:hidden;transition:.18s;box-shadow:0 2px 10px rgba(26,33,48,.04)}
+.lane:hover{transform:translateY(-3px);box-shadow:var(--sh-lg)}
+.lane::before{content:"";position:absolute;top:0;left:0;right:0;height:4px}
+.lane.m::before{background:linear-gradient(90deg,#fb7299,#e063a5)}
+.lane.r::before{background:linear-gradient(90deg,#00a1d6,#38bdf8)}
+.lane.a::before{background:linear-gradient(90deg,#10b981,#4ade80)}
+.lane .le{font-size:22px;margin-bottom:12px}
+.lane h3{font-size:16px;margin-bottom:8px}
+.lane p{font-size:13px;color:var(--tx2);line-height:1.6}
+.lane .tags{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
+.lane .tags s{text-decoration:none;font-size:11px;color:var(--tx2);border:1px solid var(--line);border-radius:6px;padding:3px 9px;background:var(--bg)}
+
 /* features */
 .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
-.feat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 24px;transition:.18s;box-shadow:0 2px 10px rgba(28,35,51,.04)}
+.feat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px;transition:.18s;box-shadow:0 2px 10px rgba(26,33,48,.04)}
 .feat:hover{border-color:#c8d2e0;transform:translateY(-3px);box-shadow:var(--sh-lg)}
-.feat .ic{width:38px;height:38px;border-radius:11px;background:rgba(251,114,153,.1);display:grid;place-items:center;font-size:17px;margin-bottom:16px}
+.feat .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:16px;margin-bottom:16px;font-weight:800}
+.feat:nth-child(3n+1) .ic{background:rgba(251,114,153,.1);color:var(--ac)}
+.feat:nth-child(3n+2) .ic{background:rgba(0,161,214,.1);color:var(--ac2)}
+.feat:nth-child(3n) .ic{background:rgba(16,185,129,.1);color:var(--gr)}
 .feat h3{font-size:16px;margin-bottom:8px}
 .feat p{font-size:13px;color:var(--tx2);line-height:1.65}
 
 /* platforms */
 .plat{display:flex;gap:16px;margin-top:40px;flex-wrap:wrap}
-.plat-card{flex:1;min-width:230px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:0 2px 10px rgba(28,35,51,.04)}
+.plat-card{flex:1;min-width:230px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px;box-shadow:0 2px 10px rgba(26,33,48,.04);transition:.18s}
+.plat-card:hover{transform:translateY(-3px);box-shadow:var(--sh)}
 .plat-card h3{display:flex;align-items:center;gap:10px;font-size:16px}
 .plat-card h3 .pm{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
 .pm.b{background:#00a1d6}.pm.k{background:#ff4906}.pm.t{background:#07c160}
@@ -117,18 +157,21 @@ h2{font-size:clamp(24px,4vw,34px);font-weight:800;margin-top:10px;letter-spacing
 .plat-card .tags s{text-decoration:none;font-size:11px;color:var(--tx2);border:1px solid var(--line);border-radius:6px;padding:3px 8px;background:var(--bg)}
 
 /* quickstart */
-.qs{margin-top:44px;background:#1c2333;border-radius:14px;overflow:hidden;box-shadow:var(--sh-lg)}
-.qs-bar{display:flex;gap:14px;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px;color:#8b96ad}
+.qs{margin-top:44px;background:#1a2130;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-lg);position:relative}
+.qs-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px;color:#8b96ad}
+.qs-bar .cp{cursor:pointer;border:1px solid rgba(255,255,255,.16);border-radius:6px;padding:3px 10px;color:#b6c0d4;transition:.15s}
+.qs-bar .cp:hover{background:rgba(255,255,255,.08);color:#fff}
 .qs pre{padding:24px;overflow-x:auto;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.8;color:#d6deeb}
 .qs .c{color:#637088}.qs .g{color:#4ade80}.qs .p{color:#fb7299}
 .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px}
-.step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:0 2px 10px rgba(28,35,51,.04)}
+.step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:0 2px 10px rgba(26,33,48,.04);transition:.18s}
+.step:hover{transform:translateY(-2px);box-shadow:var(--sh)}
 .step .sn{width:26px;height:26px;border-radius:8px;background:var(--grad);display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;margin-bottom:12px;box-shadow:0 3px 10px rgba(0,161,214,.3)}
 .step h4{font-size:14px;margin-bottom:5px}
 .step p{font-size:12px;color:var(--tx2)}
 
 /* legal */
-.legal{background:#fffbf3;border:1px solid #f0e4c8;border-left:4px solid var(--yl);border-radius:12px;padding:26px 28px;margin-top:40px}
+.legal{background:#fffcf3;border:1px solid #f0e4c8;border-left:4px solid var(--yl);border-radius:12px;padding:26px 28px;margin-top:40px}
 .legal h3{font-size:15px;color:var(--yl);margin-bottom:10px}
 .legal p{font-size:13px;color:var(--tx2)}
 .legal p+p{margin-top:6px}
@@ -141,7 +184,7 @@ footer .r{display:flex;gap:22px;font-size:13px;color:var(--tx2)}
 footer .r a:hover{color:var(--ac)}
 
 @media(max-width:820px){
-  .feat-grid{grid-template-columns:1fr 1fr}
+  .feat-grid,.lanes{grid-template-columns:1fr 1fr}
   .steps{grid-template-columns:1fr 1fr}
   .pipe{flex-direction:column}
   .pipe-step{border-radius:0!important;border-left:1px solid var(--line)!important}
@@ -150,17 +193,18 @@ footer .r a:hover{color:var(--ac)}
   .mock-cards{grid-template-columns:1fr}
   .mock-side{display:none}
   .nav-links{display:none}
+  .band>div{padding:4px 18px}
 }
-@media(max-width:560px){.feat-grid,.steps{grid-template-columns:1fr}}
+@media(max-width:560px){.feat-grid,.steps,.lanes{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<nav>
+<nav id="nav">
   <div class="wrap">
     <a class="logo" href="#"><span class="mark">▶</span>video-hub</a>
     <div class="nav-links">
-      <a href="#flow">流程</a><a href="#feat">功能</a><a href="#plat">平台</a><a href="#start">快速开始</a>
+      <a href="#flow" data-s="flow">流程</a><a href="#feat" data-s="feat">功能</a><a href="#plat" data-s="plat">平台</a><a href="#start" data-s="start">快速开始</a>
     </div>
     <a class="nav-gh" href="https://github.com/zhaojiale001016/video-hub">GitHub →</a>
   </div>
@@ -169,20 +213,24 @@ footer .r a:hover{color:var(--ac)}
 <header class="hero">
   <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
   <div class="wrap">
-    <div class="badge"><span class="dot"></span>v1.0.0 · MIT 开源</div>
-    <h1>外网优质视频<br>一站搬运到 <span class="gt">B站 / 快手 / 视频号</span></h1>
-    <p class="sub">订阅源轮询 → yt-dlp 下载 → <b>whisper 字幕翻译烧录</b> → <b>LLM 中文标题</b> → Web 管理台审核 → 三平台<b>独立勾选</b>一键发布。</p>
-    <div class="ctas">
+    <div class="badge rv in"><span class="dot"></span>v1.0.0 · MIT 开源</div>
+    <h1 class="rv in">外网优质视频<br>一站搬运到 <span class="gt">B站 / 快手 / 视频号</span></h1>
+    <p class="sub rv in rv-d1">订阅源轮询 → yt-dlp 下载 → <b>whisper 字幕翻译烧录</b> → <b>LLM 中文标题</b> → Web 管理台审核 → 三平台<b>独立勾选</b>一键发布。</p>
+    <div class="ctas rv in rv-d2">
       <a class="btn primary" href="https://github.com/zhaojiale001016/video-hub">⭐ GitHub</a>
       <a class="btn" href="https://github.com/zhaojiale001016/video-hub/releases">下载 v1.0.0</a>
       <a class="btn" href="#start">快速开始</a>
     </div>
-    <div class="hero-meta">
-      <span><i>▶</i>yt-dlp 订阅源</span><span><i>字</i>whisper 字幕</span><span><i>AI</i>LLM 元数据</span><span><i>⚙</i>配置全前端可控</span><span><i>⏱</i>错峰定时</span>
+    <div class="band rv in rv-d3">
+      <div><b>3</b><span>发布平台</span></div>
+      <div><b>5</b><span>层防重机制</span></div>
+      <div><b>14d</b><span>积压自动老化</span></div>
+      <div><b>100%</b><span>本地私有数据</span></div>
+      <div><b>0</b><span>配置硬编码</span></div>
     </div>
   </div>
   <div class="wrap">
-    <div class="mock">
+    <div class="mock rv">
       <div class="mock-bar"><i></i><i></i><i></i><span class="url">http://127.0.0.1:8600</span></div>
       <div class="mock-body">
         <div class="mock-side">
@@ -196,7 +244,7 @@ footer .r a:hover{color:var(--ac)}
             <div class="mock-card"><div class="th"><em>08:12</em></div><div class="bd"><div class="t">这条河里的金子比你想象的多得多！淘金实测</div><div class="ft"><s class="ok">✓B站</s><s class="ok">✓快手</s><s class="warm">字幕✓</s></div></div></div>
             <div class="mock-card"><div class="th"><em>12:40</em></div><div class="bd"><div class="t">强迫症狂喜：高压水枪清洗地毯全过程</div><div class="ft"><s class="ok">✓视频号</s><s class="warm">错峰18:00</s></div></div></div>
             <div class="mock-card"><div class="th"><em>03:55</em></div><div class="bd"><div class="t">THE FIRST TAKE 现场切片「熟肉」</div><div class="ft"><s>未勾选B站</s><s class="ok">✓快手</s></div></div></div>
-            <div class="mock-card"><div class="th"><em>21:07</em></div><div class="bd"><div class="t">荒野建造 72 小时：丛林深处的庇护所</div><div class="ft"><s class="warm">处理中 62%</s></div></div></div>
+            <div class="mock-card"><div class="th"><span class="pb"></span><em>21:07</em></div><div class="bd"><div class="t">荒野建造 72 小时：丛林深处的庇护所</div><div class="ft"><s class="warm">处理中 62%</s></div></div></div>
           </div>
         </div>
       </div>
@@ -206,48 +254,61 @@ footer .r a:hover{color:var(--ac)}
 
 <section id="flow">
   <div class="wrap">
-    <span class="sec-tag">Pipeline</span>
-    <h2>五步流水线，全自动跑通</h2>
-    <p class="sec-sub">从订阅源发现到三平台投递，每一段都可单独手动干预。</p>
+    <span class="sec-tag rv">Pipeline</span>
+    <h2 class="rv rv-d1">五步流水线，全自动跑通</h2>
+    <p class="sec-sub rv rv-d2">从订阅源发现到三平台投递，每一段都可单独手动干预。</p>
     <div class="pipe">
-      <div class="pipe-step"><div class="n">01</div><h3>订阅源轮询</h3><p>YouTube 频道/关键词搜索，定时拉新；撞稿预检相似 ≥72% 自动拦截</p></div>
-      <div class="pipe-step"><div class="n">02</div><h3>下载 + 字幕</h3><p>yt-dlp 下载，whisper 探测语音→转写→翻译→烧入画面；按源配策略</p></div>
-      <div class="pipe-step"><div class="n">03</div><h3>LLM 元数据</h3><p>kscc/OpenAI 兼容接口生成中文标题、简介、标签，B站分区自动匹配</p></div>
-      <div class="pipe-step"><div class="n">04</div><h3>管理台审核</h3><p>封面预览、标题编辑、平台勾选、错峰定时、活动匹配，本地 127.0.0.1</p></div>
-      <div class="pipe-step"><div class="n">05</div><h3>三平台发布</h3><p>B站(biliup)+快手+视频号(sau) 独立投递，逐平台记录结果与失败原因</p></div>
+      <div class="pipe-step rv rv-d1"><div class="n">01</div><h3>订阅源轮询</h3><p>YouTube 频道/关键词搜索，定时拉新；撞稿预检相似 ≥72% 自动拦截</p></div>
+      <div class="pipe-step rv rv-d2"><div class="n">02</div><h3>下载 + 字幕</h3><p>yt-dlp 下载，whisper 探测语音→转写→翻译→烧入画面；按源配策略</p></div>
+      <div class="pipe-step rv rv-d3"><div class="n">03</div><h3>LLM 元数据</h3><p>kscc/OpenAI 兼容接口生成中文标题、简介、标签，B站分区自动匹配</p></div>
+      <div class="pipe-step rv rv-d4"><div class="n">04</div><h3>管理台审核</h3><p>封面预览、标题编辑、平台勾选、错峰定时、活动匹配，本地 127.0.0.1</p></div>
+      <div class="pipe-step rv rv-d5"><div class="n">05</div><h3>三平台发布</h3><p>B站(biliup)+快手+视频号(sau) 独立投递，逐平台记录结果与失败原因</p></div>
     </div>
   </div>
 </section>
 
-<section id="feat" style="background:var(--bg2)">
+<section id="lanes" style="background:var(--bg2)">
   <div class="wrap">
-    <span class="sec-tag">Features</span>
-    <h2>为「持续搬运」设计的机制</h2>
+    <span class="sec-tag rv">Content Lanes</span>
+    <h2 class="rv rv-d1">三条内容线，按线配字幕策略</h2>
+    <p class="sec-sub rv rv-d2">每条源归属一条内容线，线级默认字幕策略 + 源级覆盖，生肉熟肉自动分流。</p>
+    <div class="lanes">
+      <div class="lane m rv rv-d1"><div class="le">🎵</div><h3>音乐线</h3><p>演唱会切片 / MV / 综艺舞台——默认仅翻官方字幕（歌词 whisper 不可靠），B站音乐分区自动映射。</p><div class="tags"><s>THE FIRST TAKE</s><s>88rising</s><s>Coachella</s><s>字幕策略: subs_only</s></div></div>
+      <div class="lane r rv rv-d2"><div class="le">🧼</div><h3>解压线</h3><p>洗地毯 / 切肥皂 / 修蹄 / 液压机——ASMR 源无需字幕，有旁白自动探测转写。</p><div class="tags"><s>地毯清洗</s><s>动力沙</s><s>修马蹄</s><s>策略: auto / never</s></div></div>
+      <div class="lane a rv rv-d3"><div class="le">🏕</div><h3>探索线</h3><p>淘金 / 荒野建造 / 户外烹饪 / 废墟探险——旁白密集，whisper 全片转写+翻译。</p><div class="tags"><s>淘金</s><s>丛林建造</s><s>原始技术</s><s>策略: always</s></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="feat">
+  <div class="wrap">
+    <span class="sec-tag rv">Features</span>
+    <h2 class="rv rv-d1">为「持续搬运」设计的机制</h2>
     <div class="feat-grid">
-      <div class="feat"><div class="ic">🛡</div><h3>五层防重复</h3><p>DB 唯一键 + yt-dlp archive + 已发布免重入 + 撞稿预检 + 同名拦截——同一视频绝不会下载两次、重投两次。</p></div>
-      <div class="feat"><div class="ic">⧉</div><h3>三平台平等</h3><p>B站/快手/视频号无主次之分，任意勾选组合；只发快手时 B站域流程（撞检/活动/biliup）完全跳过。</p></div>
-      <div class="feat"><div class="ic">↻</div><h3>重试去重</h3><p>逐平台记录投递结果，重试只补失败平台——已成功的平台绝不重复投稿产生双稿。</p></div>
-      <div class="feat"><div class="ic">⚙</div><h3>配置全前端可控</h3><p>限额/调度/字幕/LLM/屏蔽词/平台开关都在设置面板热更新，sources.yaml 与 overrides.json 分层。</p></div>
-      <div class="feat"><div class="ic">⏱</div><h3>错峰定时</h3><p>稿件自动排到 ≥4h 间隔的预设档位，跨次分配不撞档；每日下载/上传限额养号防风控。</p></div>
-      <div class="feat"><div class="ic">字</div><h3>生肉→熟肉</h3><p>whisper VAD 探测是否有解说，按源策略选 官方字幕翻译/whisper转写/跳过，字幕样式随分辨率自适应。</p></div>
-      <div class="feat"><div class="ic">🗓</div><h3>仅工作日自动</h3><p>调度器每 tick 重读配置，周末自动停摆，手动按钮不受影响；launchd 常驻崩溃自愈。</p></div>
-      <div class="feat"><div class="ic">🗑</div><h3>积压老化</h3><p>发现超过 14 天未下载自动转 skipped（可恢复），队列不无限堆积；发布成功可自动删本地文件。</p></div>
-      <div class="feat"><div class="ic">🔒</div><h3>本地私有</h3><p>cookie/队列/下载全在 gitignore 的 data/；管理台仅监听 127.0.0.1；API 回显自动给代理账密打码。</p></div>
+      <div class="feat rv rv-d1"><div class="ic">🛡</div><h3>五层防重复</h3><p>DB 唯一键 + yt-dlp archive + 已发布免重入 + 撞稿预检 + 同名拦截——同一视频绝不会下载两次、重投两次。</p></div>
+      <div class="feat rv rv-d2"><div class="ic">⧉</div><h3>三平台平等</h3><p>B站/快手/视频号无主次之分，任意勾选组合；只发快手时 B站域流程（撞检/活动/biliup）完全跳过。</p></div>
+      <div class="feat rv rv-d3"><div class="ic">↻</div><h3>重试去重</h3><p>逐平台记录投递结果，重试只补失败平台——已成功的平台绝不重复投稿产生双稿。</p></div>
+      <div class="feat rv rv-d4"><div class="ic">⚙</div><h3>配置全前端可控</h3><p>限额/调度/字幕/LLM/屏蔽词/平台开关都在设置面板热更新，sources.yaml 与 overrides.json 分层。</p></div>
+      <div class="feat rv rv-d5"><div class="ic">⏱</div><h3>错峰定时</h3><p>稿件自动排到 ≥4h 间隔的预设档位，跨次分配不撞档；每日下载/上传限额养号防风控。</p></div>
+      <div class="feat rv rv-d6"><div class="ic">字</div><h3>生肉→熟肉</h3><p>whisper VAD 探测是否有解说，按源策略选 官方字幕翻译/whisper转写/跳过，字幕样式随分辨率自适应。</p></div>
+      <div class="feat rv rv-d7"><div class="ic">🗓</div><h3>仅工作日自动</h3><p>调度器每 tick 重读配置，周末自动停摆，手动按钮不受影响；launchd 常驻崩溃自愈。</p></div>
+      <div class="feat rv rv-d8"><div class="ic">🗑</div><h3>积压老化</h3><p>发现超过 14 天未下载自动转 skipped（可恢复），队列不无限堆积；发布成功可自动删本地文件。</p></div>
+      <div class="feat rv rv-d9"><div class="ic">🔒</div><h3>本地私有</h3><p>cookie/队列/下载全在 gitignore 的 data/；管理台仅监听 127.0.0.1；API 回显自动给代理账密打码。</p></div>
     </div>
   </div>
 </section>
 
-<section id="plat">
+<section id="plat" style="background:var(--bg2)">
   <div class="wrap">
-    <span class="sec-tag">Platforms</span>
-    <h2>一次加工，三平台分发</h2>
-    <p class="sec-sub">每条稿件在抽屉里独立勾选目标平台，投递结果逐平台留痕。</p>
+    <span class="sec-tag rv">Platforms</span>
+    <h2 class="rv rv-d1">一次加工，三平台分发</h2>
+    <p class="sec-sub rv rv-d2">每条稿件在抽屉里独立勾选目标平台，投递结果逐平台留痕。</p>
     <div class="plat">
-      <div class="plat-card"><h3><span class="pm b">B</span>哔哩哔哩</h3><p>biliup-rs 投稿，分区/活动/版权类型全量支持；自制稿自动匹配投稿活动。</p><div class="tags"><s>biliup-rs</s><s>分区映射</s><s>投稿活动</s><s>自制/转载</s></div></div>
-      <div class="plat-card"><h3><span class="pm k">快</span>快手</h3><p>vendored social-auto-upload 驱动，上传超时调优至 1500s，扫码登录一次即长效。</p><div class="tags"><s>social-auto-upload</s><s>扫码登录</s><s>1500s 超时</s></div></div>
-      <div class="plat-card"><h3><span class="pm t">视</span>视频号</h3><p>同一 sau 引擎微信视频号投递，独立账号槽位，与快手互不干扰。</p><div class="tags"><s>独立账号</s><s>失败重试</s></div></div>
+      <div class="plat-card rv rv-d1"><h3><span class="pm b">B</span>哔哩哔哩</h3><p>biliup-rs 投稿，分区/活动/版权类型全量支持；自制稿自动匹配投稿活动。</p><div class="tags"><s>biliup-rs</s><s>分区映射</s><s>投稿活动</s><s>自制/转载</s></div></div>
+      <div class="plat-card rv rv-d2"><h3><span class="pm k">快</span>快手</h3><p>vendored social-auto-upload 驱动，上传超时调优至 1500s，扫码登录一次即长效。</p><div class="tags"><s>social-auto-upload</s><s>扫码登录</s><s>1500s 超时</s></div></div>
+      <div class="plat-card rv rv-d3"><h3><span class="pm t">视</span>视频号</h3><p>同一 sau 引擎微信视频号投递，独立账号槽位，与快手互不干扰。</p><div class="tags"><s>独立账号</s><s>失败重试</s></div></div>
     </div>
-    <div class="legal">
+    <div class="legal rv">
       <h3>⚠ 合规提醒</h3>
       <p>本工具是中转/发布引擎，<b style="color:var(--tx)">不对内容版权做任何保证</b>。请确认对所搬内容拥有合法使用权（授权/CC/合理使用），尊重原作者，收到权利人通知立即配合下架。</p>
       <p>B站「转载」须如实填出处；「自制」构成原创声明，被查实搬运会下架扣分甚至封号。使用者对自身发布行为负全部责任。</p>
@@ -255,23 +316,23 @@ footer .r a:hover{color:var(--ac)}
   </div>
 </section>
 
-<section id="start" style="background:var(--bg2)">
+<section id="start">
   <div class="wrap">
-    <span class="sec-tag">Quickstart</span>
-    <h2>四步跑起来</h2>
+    <span class="sec-tag rv">Quickstart</span>
+    <h2 class="rv rv-d1">四步跑起来</h2>
     <div class="steps">
-      <div class="step"><div class="sn">1</div><h4>装环境</h4><p>Python ≥3.11 + ffmpeg；创建 venv 装 requirements</p></div>
-      <div class="step"><div class="sn">2</div><h4>备配置</h4><p>复制 sources.example.yaml，或首启自动创建</p></div>
-      <div class="step"><div class="sn">3</div><h4>登录</h4><p>三个平台分别扫码，cookie 存本地 data/</p></div>
-      <div class="step"><div class="sn">4</div><h4>启动</h4><p>cli.py serve 起管理台，可选 launchd 常驻</p></div>
+      <div class="step rv rv-d1"><div class="sn">1</div><h4>装环境</h4><p>Python ≥3.11 + ffmpeg；创建 venv 装 requirements</p></div>
+      <div class="step rv rv-d2"><div class="sn">2</div><h4>备配置</h4><p>复制 sources.example.yaml，或首启自动创建</p></div>
+      <div class="step rv rv-d3"><div class="sn">3</div><h4>登录</h4><p>三个平台分别扫码，cookie 存本地 data/</p></div>
+      <div class="step rv rv-d4"><div class="sn">4</div><h4>启动</h4><p>cli.py serve 起管理台，可选 launchd 常驻</p></div>
     </div>
-    <div class="qs">
-      <div class="qs-bar"><span>bash</span><span>需要 ffmpeg · biliup 二进制见 README</span></div>
-      <pre><span class="c"># 1. 环境</span>
-<span class="g">python3</span> -m venv .venv && .venv/bin/pip install -r requirements.txt
+    <div class="qs rv">
+      <div class="qs-bar"><span>bash · 需要 ffmpeg，biliup 二进制见 README</span><span class="cp" id="copyBtn">复制</span></div>
+      <pre id="qsPre"><span class="c"># 1. 环境</span>
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 <span class="c"># 2. 配置（首启缺省自动从 example 复制）</span>
-<span class="g">cp</span> config/sources.example.yaml config/sources.yaml
+cp config/sources.example.yaml config/sources.yaml
 
 <span class="c"># 3. 登录（扫码）</span>
 .venv/bin/python3 cli.py login      <span class="c"># B站</span>
@@ -279,7 +340,7 @@ footer .r a:hover{color:var(--ac)}
 .venv/bin/python3 cli.py login-sph  <span class="c"># 视频号</span>
 
 <span class="c"># 4. 跑起来</span>
-.venv/bin/python3 cli.py serve --port <span class="p">8600</span>
+.venv/bin/python3 cli.py serve --port 8600
 <span class="c"># → http://127.0.0.1:8600</span></pre>
     </div>
   </div>
@@ -296,6 +357,23 @@ footer .r a:hover{color:var(--ac)}
     </div>
   </div>
 </footer>
+
+<script>
+// 滚动显现
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.rv:not(.in)').forEach(el=>io.observe(el));
+// 导航滚动态 + 当前区块高亮
+const nav=document.getElementById('nav'),links=[...document.querySelectorAll('.nav-links a')],secs=links.map(a=>document.getElementById(a.dataset.s));
+addEventListener('scroll',()=>{
+  nav.classList.toggle('sc',scrollY>10);
+  let cur=-1;secs.forEach((s,i)=>{if(s&&s.getBoundingClientRect().top<140)cur=i});
+  links.forEach((a,i)=>a.classList.toggle('act',i===cur));
+},{passive:true});
+// 复制命令
+document.getElementById('copyBtn').onclick=function(){
+  navigator.clipboard.writeText(document.getElementById('qsPre').innerText).then(()=>{this.textContent='已复制 ✓';setTimeout(()=>this.textContent='复制',1600)});
+};
+</script>
 
 </body>
 </html>
