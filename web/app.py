@@ -446,7 +446,8 @@ def _next_slot_ts(used: set) -> int | None:
                 ts = time.mktime(time.strptime(f"{base} {s}", "%Y-%m-%d %H:%M"))
             except Exception:
                 continue
-            if ts - now >= 4 * 3600 and int(ts) not in occupied:
+            gap_h = C.get_setting(cfg, "publish_slot_gap_h", 4)
+            if ts - now >= gap_h * 3600 and int(ts) not in occupied:
                 return int(ts)
     return None
 
@@ -610,8 +611,10 @@ SETTINGS_SCHEMA = {
         "auto_download_after_poll": bool, "delete_after_publish": bool,
         "publish_slots": list, "min_free_gb": int,
         "precheck_before_download": bool, "biliup_bin": str,
-        "biliup_cookie": str, "download_dir": str, "archive_file": str},
-    "extra_platforms": {"kuaishou": dict, "tencent": dict},
+        "biliup_cookie": str, "download_dir": str, "archive_file": str,
+        "stale_days": int, "publish_slot_gap_h": int,
+        "precheck_threshold": float, "precheck_autoskip": float},
+    "extra_platforms": {"*": dict},   # 任意 sau 平台: {平台id: {enabled,account}}
     "missions": {"enabled": bool, "match": dict},
     "subtitles": {
         "enabled": bool, "whisper_model": str, "whisper_device": str,
@@ -632,9 +635,25 @@ def _mask_secret(sec: str, k: str, v):
 
 @app.get("/api/settings")
 def get_settings():
-    return {sec: {k: _mask_secret(sec, k, (cfg.get(sec) or {}).get(k))
-                  for k in keys}
-            for sec, keys in SETTINGS_SCHEMA.items()}
+    out = {}
+    for sec, keys in SETTINGS_SCHEMA.items():
+        if "*" in keys:                       # 通配段: 整个 dict 原样回显
+            out[sec] = cfg.get(sec) or {}
+        else:
+            out[sec] = {k: _mask_secret(sec, k, (cfg.get(sec) or {}).get(k))
+                        for k in keys}
+    return out
+
+
+@app.get("/api/platforms")
+def get_platforms():
+    """全部可投递平台(供抽屉勾选/设置渲染): B站 + extra_platforms 全量。"""
+    from pipeline import multipub
+    out = {"bilibili": {"name": "B站", "enabled": True}}
+    for p, c in (cfg.get("extra_platforms") or {}).items():
+        out[p] = {"name": multipub.PLATFORMS.get(p, p),
+                  "enabled": bool((c or {}).get("enabled"))}
+    return out
 
 
 @app.put("/api/settings")
@@ -646,7 +665,7 @@ def put_settings(body: dict = Body(...)):
         if not schema or not isinstance(fields, dict):
             continue
         for k, v in fields.items():
-            typ = schema.get(k)
+            typ = schema.get(k, schema.get("*"))   # "*" 通配: 任意键按该类型收
             if typ is None:
                 continue
             if isinstance(v, str) and "***@" in v:
@@ -663,6 +682,10 @@ def put_settings(body: dict = Body(...)):
                         raise ValueError("不能为负数")
                     if k == "default_copyright" and v not in (1, 2):
                         raise ValueError("default_copyright 须为 1 或 2")
+                elif typ is float:
+                    v = float(v)
+                    if v < 0 or v > 1:
+                        raise ValueError("须在 0~1 之间")
                 elif typ is list and not isinstance(v, list):
                     v = [x for x in str(v).split(",") if x.strip()]
                 elif typ is dict:
@@ -752,9 +775,11 @@ def _scheduler():
             log.exception("scheduler tick failed")
 
 
-def _prune_stale_new(max_age_days: int = 14):
+def _prune_stale_new(max_age_days: int = 0):
     """积压老化: new 状态超 N 天未下载 → 自动 skipped(可恢复), 保持队列新鲜。"""
     try:
+        if not max_age_days:
+            max_age_days = int(C.get_setting(cfg, "stale_days", 14))
         cutoff = time.time() - max_age_days * 86400
         stale = [r for r in db.list_items(status="new", limit=5000)
                  if (r.get("created_at") or 0) < cutoff]

@@ -114,7 +114,7 @@ h2{font-size:clamp(22px,3.5vw,30px);font-weight:800;margin-top:12px;letter-spaci
 .plat-card{flex:1;min-width:210px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:20px}
 .plat-card h3{display:flex;align-items:center;gap:10px;font-size:15px}
 .plat-card h3 .pm{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
-.pm.b{background:#00a1d6}.pm.k{background:#ff4906}.pm.t{background:#07c160}
+.pm.b{background:#00a1d6}.pm.k{background:#ff4906}.pm.t{background:#07c160}.pm.g{background:#8a5cf6}
 .plat-card p{font-size:12.5px;color:var(--tx2);margin-top:9px}
 .legal{margin-top:20px;font-size:12.5px;color:var(--tx2);background:#fffcf3;border:1px solid #f0e4c8;border-radius:10px;padding:14px 18px}
 .legal b{color:var(--yl)}
@@ -161,16 +161,16 @@ footer .r a:hover{color:var(--ac)}
 <header class="hero">
   <div class="blob b1"></div><div class="blob b2"></div>
   <div class="wrap">
-    <div class="badge rv in"><span class="dot"></span>v1.1.0 · MIT 开源</div>
+    <div class="badge rv in"><span class="dot"></span>v1.3.0 · MIT 开源</div>
     <h1 class="rv in">外网视频<br>一站搬运到 <span class="gt">B站 / 快手 / 视频号</span></h1>
-    <p class="sub rv in">yt-dlp 下载 → whisper 字幕烧录 → LLM 中文标题 → 管理台审核 → 三平台独立投递</p>
+    <p class="sub rv in">yt-dlp 下载 → whisper 字幕烧录 → LLM 中文标题 → 管理台审核 → 多平台独立投递</p>
     <div class="ctas rv in">
       <a class="btn primary" href="https://github.com/zhaojiale001016/video-hub">⭐ GitHub</a>
       <a class="btn" href="https://github.com/zhaojiale001016/video-hub/releases">Releases</a>
       <a class="btn" href="#start">快速开始</a>
     </div>
     <div class="band rv in">
-      <div><b>3</b><span>发布平台</span></div>
+      <div><b>16+</b><span>可接发布平台</span></div>
       <div><b>5</b><span>层防重</span></div>
       <div><b>逐平台</b><span>投递留痕补投</span></div>
       <div><b>0</b><span>配置硬编码</span></div>
@@ -208,7 +208,7 @@ footer .r a:hover{color:var(--ac)}
       <div class="pipe-step rv"><div class="n">02</div><h3>下载+字幕</h3><p>whisper 转写翻译烧入，按源配策略</p></div>
       <div class="pipe-step rv"><div class="n">03</div><h3>LLM 元数据</h3><p>生成中文标题/简介/标签/分区</p></div>
       <div class="pipe-step rv"><div class="n">04</div><h3>管理台审核</h3><p>编辑、勾平台、错峰定时，本地运行</p></div>
-      <div class="pipe-step rv"><div class="n">05</div><h3>三平台投递</h3><p>互不阻断，逐平台留痕，可补投</p></div>
+      <div class="pipe-step rv"><div class="n">05</div><h3>多平台投递</h3><p>互不阻断，逐平台留痕，可补投</p></div>
     </div>
   </div>
 </section>
@@ -218,7 +218,7 @@ footer .r a:hover{color:var(--ac)}
     <span class="sec-tag rv">Features</span>
     <h2 class="rv">核心机制</h2>
     <div class="feat-grid">
-      <div class="feat rv"><div class="ic">⧉</div><h3>三平台平等投递</h3><p>B站/快手/视频号独立勾选互不阻断，逐平台留痕；部分成功可补投，全成功才自动清理文件。</p></div>
+      <div class="feat rv"><div class="ic">⧉</div><h3>多平台平等投递</h3><p>B站/快手/视频号/抖音等 sau 全平台独立勾选互不阻断，逐平台留痕；部分成功可补投，全成功才自动清理文件。</p></div>
       <div class="feat rv"><div class="ic">🛡</div><h3>五层防重复</h3><p>DB 唯一键、下载 archive、已发布免重入、撞稿预检、同名拦截——同稿绝不二次处理。</p></div>
       <div class="feat rv"><div class="ic">字</div><h3>生肉→熟肉</h3><p>whisper 探测有无解说，官方字幕翻译/whisper 转写/跳过按源配策略，字号随分辨率自适应。</p></div>
       <div class="feat rv"><div class="ic">⚙</div><h3>配置全前端可控</h3><p>限额/调度/字幕/LLM/屏蔽词/平台开关设置面板热更新，yaml 底包+overrides 分层。</p></div>
@@ -231,11 +231,12 @@ footer .r a:hover{color:var(--ac)}
 <section id="plat">
   <div class="wrap">
     <span class="sec-tag rv">Platforms</span>
-    <h2 class="rv">一次加工，三平台分发</h2>
+    <h2 class="rv">一次加工，多平台分发</h2>
     <div class="plat">
       <div class="plat-card rv"><h3><span class="pm b">B</span>哔哩哔哩</h3><p>biliup-rs · 分区/活动/版权类型/定时投稿</p></div>
       <div class="plat-card rv"><h3><span class="pm k">快</span>快手</h3><p>social-auto-upload · 扫码登录 · 1500s 超时调优</p></div>
       <div class="plat-card rv"><h3><span class="pm t">视</span>视频号</h3><p>同一 sau 引擎 · 独立账号槽位</p></div>
+      <div class="plat-card rv"><h3><span class="pm g">+</span>任意 sau 平台</h3><p>抖音/小红书/百家号/微博/TikTok · <code>login-extra &lt;id&gt;</code> 扫码即用</p></div>
     </div>
     <div class="legal rv"><b>⚠</b> 请确认对所搬内容拥有合法使用权；转载如实填出处，「自制」构成原创声明。使用者对自身发布行为负全部责任。</div>
   </div>
@@ -253,8 +254,9 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 <span class="c"># 配置（首启自动从 example 复制）</span>
 cp config/sources.example.yaml config/sources.yaml
 
-<span class="c"># 三平台扫码登录</span>
+<span class="c"># 扫码登录(B站 + 任意 sau 平台)</span>
 .venv/bin/python3 cli.py login && .venv/bin/python3 cli.py login-ks && .venv/bin/python3 cli.py login-sph
+<span class="c"># 更多平台: cli.py login-extra douyin</span>
 
 <span class="c"># 启动 → http://127.0.0.1:8600</span>
 .venv/bin/python3 cli.py serve</pre>

@@ -199,11 +199,13 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
             bili_block = str(e)
     if not bili_block and not force:  # 站内撞稿预检
         from . import precheck
-        hit = precheck.check_collision(cfg, item, db=db)
+        hit = precheck.check_collision(
+            cfg, item, db=db,
+            threshold=C.get_setting(cfg, "precheck_threshold", 0.72))
         if hit:
             msg = (f"撞稿(相似度{hit['sim']:.0%}): {hit['bvid']} "
                    f"《{hit['title']}》@{hit['author']}")
-            if hit["sim"] >= 0.85:
+            if hit["sim"] >= C.get_setting(cfg, "precheck_autoskip", 0.85):
                 # 高度相似=确认重复: 该内容已在B站存在, 全平台停发+清理
                 db.set_status(item_id, "skipped",
                               fail_reason=f"{msg} —— 已自动清理")

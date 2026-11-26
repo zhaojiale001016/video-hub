@@ -408,13 +408,9 @@ function openDrawer(id) {
           </div>
           <div>
             <div class="text-[11px] text-base-content/40 mb-1.5">发布平台（至少勾一个）</div>
-            <div class="flex gap-4">
-              <label class="flex items-center gap-1.5 text-[12.5px] cursor-pointer">
-                <input type="checkbox" id="dwbl" class="checkbox checkbox-primary checkbox-sm" ${(!sel||sel.has("bilibili"))?"checked":""}>B站</label>
-              <label class="flex items-center gap-1.5 text-[12.5px] cursor-pointer">
-                <input type="checkbox" id="dwks" class="checkbox checkbox-primary checkbox-sm" ${(!sel||sel.has("kuaishou"))?"checked":""}>快手</label>
-              <label class="flex items-center gap-1.5 text-[12.5px] cursor-pointer">
-                <input type="checkbox" id="dwsph" class="checkbox checkbox-primary checkbox-sm" ${(!sel||sel.has("tencent"))?"checked":""}>视频号</label>
+            <div class="flex gap-4 flex-wrap">${Object.entries(platsInfo).filter(([,c])=>c.enabled).map(([p,c])=>
+              `<label class="flex items-center gap-1.5 text-[12.5px] cursor-pointer">
+                <input type="checkbox" class="checkbox checkbox-primary checkbox-sm dwpl" data-pl="${p}" ${(!sel||sel.has(p))?"checked":""}>${esc(c.name)}</label>`).join("")}
             </div>
           </div>
         </div>`}
@@ -482,8 +478,8 @@ async function save(id) {
     tid: +g("dwp").value,
     mission_id: +(g("dwm").value||0),
     copyright: +g("dwcr").value || undefined,
-    pub_platforms: [["dwbl","bilibili"],["dwks","kuaishou"],["dwsph","tencent"]]
-      .filter(([e])=>g(e)?.checked).map(([,p])=>p),
+    pub_platforms: [...document.querySelectorAll(".dwpl")]
+      .filter(e=>e.checked).map(e=>e.dataset.pl),
   };
   if (dtime !== undefined) body.dtime = dtime;   // 非法时间格式则保留原值
   await api(`/api/items/${id}`, "PATCH", body);   // 单请求原子保存
@@ -562,6 +558,10 @@ const SGROUPS = [
   ["settings.delete_after_publish","发布后删文件","bool"],
   ["settings.default_copyright","默认版权","copy"],
   ["settings.publish_slots","定时档位(逗号分隔)","csv"],
+  ["settings.publish_slot_gap_h","定时间隔下限(h)","int"],
+  ["settings.stale_days","积压老化天数","int"],
+  ["settings.precheck_threshold","撞稿阈值(0~1)","float"],
+  ["settings.precheck_autoskip","自动跳过阈值(0~1)","float"],
   ["extra_platforms","启用多平台","platforms"],
   ["missions.enabled","自动参加B站活动","bool"],
   ["missions.match","活动匹配关键词(JSON: 线名→词表)","dict"],
@@ -596,6 +596,7 @@ const SGROUPS = [
  ]],
 ];
 let _cfg = null;
+let platsInfo = {"bilibili":{name:"B站",enabled:true}};   // /api/platforms 缓存(抽屉/设置共用)
 function _cfgVal(key) {
   const [sec, ...rest] = key.split(".");
   let v = _cfg?.[sec];
@@ -622,12 +623,14 @@ function renderSettings(cfg) {
           `<option value="${o}" ${v===o?"selected":""}>${o}</option>`).join("")}</select></div>`;
     }
     if (type === "platforms") {
-      const PL = [["kuaishou","快手"],["tencent","视频号"]];
-      return `<div><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
-        <div class="flex gap-3 items-center h-8">${PL.map(([p,n]) =>
-          `<label class="flex items-center gap-1 text-[12px]"><input type="checkbox"
-            id="${id}-${p}" class="checkbox checkbox-primary checkbox-xs"
-            ${v?.[p]?.enabled?"checked":""}>${n}</label>`).join("")}</div></div>`;
+      const rows = Object.keys(v||{}).map(p =>
+        `<label class="flex items-center gap-1 text-[12px]" data-pl="${esc(p)}"><input type="checkbox"
+          class="checkbox checkbox-primary checkbox-xs plat-sel"
+          ${v[p]?.enabled?"checked":""}>${esc(platsInfo[p]?.name||p)} <code class="text-[10px] opacity-50">${esc(p)}</code></label>`).join("");
+      return `<div class="col-span-2" id="${id}"><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
+        <div class="flex gap-3 items-center flex-wrap">${rows||'<span class="text-[11px] opacity-50">未配置</span>'}</div>
+        <div class="flex gap-1.5 mt-1.5"><input id="${id}-new" class="input input-xs input-bordered w-32" placeholder="新平台id(如 douyin)">
+        <button type="button" class="btn btn-xs btn-outline" onclick="platAdd('${id}')">＋加平台</button></div></div>`;
     }
     if (type === "dict")
       return `<div class="col-span-2"><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
@@ -713,6 +716,17 @@ function polAdd(id) {
     <select class="select select-xs select-bordered flex-1 pol-sel">${OPTS.map(o=>`<option>${o}</option>`).join("")}</select>`;
   box.querySelector(".space-y-1\\.5").appendChild(row); inp.value = "";
 }
+function platAdd(id) {
+  const inp = document.getElementById(id + "-new"), p = (inp.value || "").trim().toLowerCase();
+  if (!/^[a-z][a-z0-9_-]{0,19}$/.test(p)) { toast("平台id需小写字母开头, ≤20字符", "err"); return; }
+  const box = document.getElementById(id);
+  if (box.querySelector(`[data-pl="${p}"]`)) { toast("该平台已存在", "err"); return; }
+  const row = document.createElement("label");
+  row.className = "flex items-center gap-1 text-[12px]"; row.dataset.pl = p;
+  row.innerHTML = `<input type="checkbox" class="checkbox checkbox-primary checkbox-xs plat-sel" checked>${esc(p)} <code class="text-[10px] opacity-50">${esc(p)}</code>`;
+  box.querySelector(".flex-wrap").appendChild(row); inp.value = "";
+  toast("已加入，保存后生效；登录跑 cli.py login-extra " + p, "ok");
+}
 async function saveSettings() {
   const body = {};
   for (const [, items] of SGROUPS) for (const [key,,type] of items) {
@@ -721,15 +735,16 @@ async function saveSettings() {
     if (!el) continue;
     let v;
     if (type === "bool") v = el.checked;
-    else if (type === "int") { if (el.value.trim()==="") continue; v = +el.value; }
+    else if (type === "int" || type === "float") { if (el.value.trim()==="") continue; v = +el.value; }
     else if (type === "copy") v = +el.value;
     else if (type === "csv") v = el.value.split(",").map(s=>s.trim()).filter(Boolean);
     else if (type === "lines") v = el.value.split("\n").map(s=>s.trim()).filter(Boolean);
     else if (type === "dict") { try { v = JSON.parse(el.value || "{}"); } catch(e) { toast(`${key} JSON 格式错误`, "err"); continue; } }
     else if (type === "policy") { v = {}; el.querySelectorAll("[data-pl]").forEach(r =>
       v[r.dataset.pl] = r.querySelector(".pol-sel").value); }
-    else if (type === "platforms") { v = {}; for (const p of ["kuaishou","tencent"])
-      v[p] = {enabled: document.getElementById(`${_fieldId(key)}-${p}`)?.checked ?? false}; }
+    else if (type === "platforms") { v = {}; el.querySelectorAll("[data-pl]").forEach(r =>
+      v[r.dataset.pl] = {enabled: r.querySelector(".plat-sel")?.checked ?? false,
+                         account: _cfg?.extra_platforms?.[r.dataset.pl]?.account || "main"}); }
     else if (type?.startsWith("sel:")) v = el.value;
     else v = el.value;
     body[sec] = body[sec] || {};
@@ -740,6 +755,7 @@ async function saveSettings() {
   }
   try {
     const r = await api("/api/settings", "PUT", body);
+    try { platsInfo = await api("/api/platforms"); } catch(e) {}
     toast(`已保存 ${Object.keys(r.applied||{}).length} 项，即时生效`, "ok");
   } catch(e) { toast(e.message, "err"); }
 }
@@ -850,7 +866,9 @@ setInterval(pollJobs, 4000);
 setInterval(loadStats, 30000);
 
 async function loadAll() { renderNav(); await loadStats(); await loadItems(); }
-(async () => { tids = await api("/api/tids"); await loadAll(); })();
+(async () => { tids = await api("/api/tids");
+  try { platsInfo = await api("/api/platforms"); } catch(e) {}
+  await loadAll(); })();
 </script>
 </body>
 </html>

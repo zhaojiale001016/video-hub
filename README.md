@@ -50,6 +50,7 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.videohub.pipeline.pl
 .venv/bin/python3 cli.py renew         # B站 cookie 刷新
 .venv/bin/python3 cli.py login-ks      # 快手扫码(浏览器弹窗)
 .venv/bin/python3 cli.py login-sph     # 视频号扫码
+.venv/bin/python3 cli.py login-extra douyin   # 任意 sau 平台扫码(抖音/小红书/百家号…)
 .venv/bin/python3 cli.py missions      # 查看可参加的投稿活动
 ```
 
@@ -108,12 +109,13 @@ cp config/sources.example.yaml config/sources.yaml   # 首启缺省时也会自�
 | `web/` | FastAPI 管理台 |
 | `data/` | sqlite 队列 + 下载文件 + cookies + server.log |
 
-## 多平台发布（三平台平等）
+## 多平台发布（平台平等 + 可扩展）
 
-- **B站/快手/视频号是平等的可选目标**，无默认必选平台；抽屉里三个勾选框任意组合
+- **B站 + extra_platforms 里启用的所有平台是平等的可选目标**；抽屉勾选框按 `/api/platforms` 动态生成，无写死平台
+- `extra_platforms` 支持 **sau 全部平台**：`kuaishou` 快手 / `tencent` 视频号 / `douyin` 抖音 / `xiaohongshu` 小红书 / `baijiahao` 百家号 / `weibo` 微博 / `youtube` / `tiktok` 等（以 `vendor/sau/sau_cli.py` 的 `PLATFORMS` 为准）。新增平台：`cli.py login-extra <平台id>` 扫码登录 → 设置面板「＋加平台」或 yaml 里 `enabled: true`
 - `pub_platforms` 语义：空/`""`=启用平台全发；`["kuaishou"]`=只发快手(B站完全不碰)；`[]`=拒绝发布
 - 不勾 B站的稿件跳过全部 B站域流程（撞稿预检/活动匹配/biliup/bvid），只走 sau 多平台投递；≥1 成功即 `published`
-- 每条 `extra_pub` JSON 记录**逐平台结果**（含B站），抽屉里以徽标展示成功/失败/未勾选
+- 每条 `extra_pub` JSON 记录**逐平台结果**（含B站），抽屉里以徽标展示成功/失败/未勾选；重试/补投自动跳过已成功平台，文件在全平台成功前保留
 - `sources.yaml` 的 `extra_platforms` 里 `enabled` 为总开关；条目勾选是在启用平台上的过滤
 - sau 引擎独立 venv 隔离，快手上传超时已调 1500s（vendored 改动，`git pull` 会被覆盖需重补）
 

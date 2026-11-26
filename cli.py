@@ -34,6 +34,8 @@ def main():
     sub.add_parser("login", help="B站扫码登录(写 cookies.json)")
     sub.add_parser("login-ks", help="快手扫码登录(弹浏览器,手机快手APP扫码)")
     sub.add_parser("login-sph", help="视频号扫码登录(弹浏览器,微信扫码)")
+    p = sub.add_parser("login-extra", help="任意 sau 平台扫码登录(如 douyin/xiaohongshu)")
+    p.add_argument("platform", help="平台id(见 vendor/sau/sau_cli.py PLATFORMS)")
     sub.add_parser("renew", help="刷新登录态")
     sub.add_parser("missions", help="列出当前可参加的B站投稿活动(需登录)")
     p = sub.add_parser("verify", help="核对已发稿件存活状态(下架/退回标出)")
@@ -100,11 +102,12 @@ def main():
                 print(f"#{it['id']} 失败: {e}")
     elif args.cmd == "login":
         uploader.login(cfg)
-    elif args.cmd in ("login-ks", "login-sph"):
+    elif args.cmd in ("login-ks", "login-sph", "login-extra"):
         from pipeline import multipub
-        platform = "kuaishou" if args.cmd == "login-ks" else "tencent"
+        platform = {"login-ks": "kuaishou", "login-sph": "tencent"}.get(
+            args.cmd, args.platform if args.cmd == "login-extra" else None)
         cmd, cwd = multipub.login_cmd(platform, cfg)
-        print(f"即将弹出浏览器，请用手机{multipub.PLATFORMS[platform]}APP扫码…")
+        print(f"即将弹出浏览器，请登录{multipub.PLATFORMS.get(platform, platform)}…")
         subprocess.call(cmd, cwd=cwd)
     elif args.cmd == "renew":
         subprocess.call([C.abs_path(cfg, C.get_setting(cfg, "biliup_bin")),
