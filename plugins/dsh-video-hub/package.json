@@ -27,7 +27,7 @@
       }
     }
   },
-  "keywords": ["dsh-plugin", "video-hub", "bilibili", "yt-dlp"],
+  "keywords": ["dsh-plugin", "deepseek-harness", "video-hub", "bilibili", "yt-dlp"],
   "license": "MIT",
   "repository": {
     "type": "git",

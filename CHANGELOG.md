@@ -3,6 +3,7 @@
 ## v1.6.0 (2025-06)
 ### Added
 - **DeepSeek Harness 原生插件**：`plugins/dsh-video-hub/` 标准 dsh bundle 包（`dsh.bundle.patch` + `cordis.patch.yml` + 纯 JS host entry），把 19 个 `hub_*` 工具注册进 dsh 原生 `tools` 服务（非外挂 MCP）；`dsh plugin --profile <p> add` 一条命令安装，config.api / `VIDEOHUB_API` 可换 API 地址
+- **插件市场索引**：`docs/dsh-index.json` + `docs/icons/` 随 GitHub Pages 发布——用户在 DSH 开「Custom plugin indexes」加源即可 Discover 一键安装（git 源指向 tag commit+子目录）；仓库加 `dsh-plugin`/`deepseek-harness` topic 进社区目录自动收录
 - `tests/test_dsh_plugin.py` 5 例：manifest/patch 结构、19 工具齐全、node 沙箱注册+离线错误兜底
 
 ## v1.5.0 (2025-06)

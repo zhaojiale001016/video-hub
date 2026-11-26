@@ -349,11 +349,11 @@ footer .r a:hover{color:var(--ac)}
 <section id="ai">
   <div class="wrap">
     <span class="sec-tag rv">Bonus · Agent Access</span>
-    <h2 class="rv">不想点鼠标？整条流水线也开给了 agent</h2>
-    <p class="sec-sub rv">19 个 <code style="background:var(--bg2);border-radius:4px;padding:0 5px;font-size:12px;color:var(--ac)">hub_*</code> 工具覆盖查队列/改元数据/发布/补投/加源/追任务——附属能力，不用也完全不影响 Web 管理台。语义红线内置：已发布绝不重投、部分失败只补缺口、长任务异步收尾。</p>
+    <h2 class="rv">不想点鼠标？装个插件给 agent 用</h2>
+    <p class="sec-sub rv">官方插件包装到你的 DeepSeek Harness / MCP 客户端后，agent 就能替你操作整条流水线——19 个 <code style="background:var(--bg2);border-radius:4px;padding:0 5px;font-size:12px;color:var(--ac)">hub_*</code> 工具覆盖查队列/改元数据/发布/补投/加源/追任务。附属能力，不装也完全不影响 Web 管理台。</p>
     <div class="agent-demo">
       <div class="chat rv">
-        <div class="chat-bar">DeepSeek Harness · 会话实录<span class="dsh-badge">dsh-video-hub 插件</span></div>
+        <div class="chat-bar">DeepSeek Harness · 装好后的使用预览<span class="dsh-badge">dsh-video-hub 插件</span></div>
         <div class="chat-body">
           <div class="msg u">ready 里淘金那条，B站定时今晚8点，快手现在就发，抖音明早错峰</div>
           <div class="tc">hub_list<span class="ar">(status="ready")</span> <span class="rs">→ 2 条</span></div>
@@ -367,7 +367,7 @@ footer .r a:hover{color:var(--ac)}
         </div>
       </div>
       <div class="path-list">
-        <div class="path top rv"><h4>🧩 DSH 原生插件<span class="tag">推荐</span></h4><p><code>dsh plugin --profile desktop add …/plugins/dsh-video-hub</code> 一条命令，19 个工具进 dsh 原生工具系统（非外挂 MCP），重启即生效。</p></div>
+        <div class="path top rv"><h4>🧩 DSH 插件（可安装分发）<span class="tag">推荐</span></h4><p>Plugins → 开「Custom plugin indexes」→ Discover 添加 index 源 <code>zhaojiale001016.github.io/video-hub/dsh-index.json</code> → 一键安装；或命令行 <code>dsh plugin --profile &lt;p&gt; add github:…</code>。装完 19 个工具进原生工具系统。</p></div>
         <div class="path rv"><h4>🔌 MCP Server</h4><p><code>cli.py mcp</code> 零依赖 stdio server，Claude Code / Cursor / Devin / Windsurf 配一行 JSON 即用。</p></div>
         <div class="path rv"><h4>📎 Agent Skill</h4><p><code>skills/video-hub/SKILL.md</code> 软链进 .claude/.codex/.devin，教 agent 用 REST/CLI 驱动，含语义红线。</p></div>
         <div class="path rv"><h4>🌐 裸 API / CLI</h4><p>FastAPI 自带 OpenAPI（<code>/openapi.json</code> + <code>/docs</code>），任何能发 HTTP 的 agent 自举。</p></div>

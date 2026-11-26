@@ -224,16 +224,14 @@ video-hub 不止有 Web 管理台——四种方式让 AI 工具直接驱动整�
 
 **1. DeepSeek Harness 原生插件（dsh 用户首选）**
 
-`plugins/dsh-video-hub/` 是标准 dsh bundle 包——把 19 个 `hub_*` 工具注册进 dsh 原生工具系统（非外挂 MCP），会话里直接说"把 ready 队列发掉""1372 改个标题"：
+`plugins/dsh-video-hub/` 是标准 dsh bundle 包，装到你的 DSH 后 19 个 `hub_*` 工具进原生工具系统（非外挂 MCP），会话里直接说"把 ready 队列发掉""1372 改个标题"：
 
-```bash
-dsh plugin --profile desktop add /path/to/video-hub/plugins/dsh-video-hub
-# 或 GitHub 子目录安装
-dsh plugin --profile desktop add github:zhaojiale001016/video-hub#main:plugins/dsh-video-hub
-```
+- **插件市场**：DSH Plugins → 开「Custom plugin indexes」→ Discover 添加源 `https://zhaojiale001016.github.io/video-hub/dsh-index.json` → 搜 video-hub 一键安装
+- **命令行**：`dsh plugin --profile <p> add 'zhaojiale001016/video-hub#path:/plugins/dsh-video-hub'`
+- **本地**：`dsh plugin --profile <p> add ./plugins/dsh-video-hub`
 
-装完重启 DSH 桌面端即生效（desktop profile 由 Electron 托管）。默认连 `http://127.0.0.1:8600`，
-改端口在 profile 的 `cordis.patch.yml` 覆盖 `video-hub` 条目的 `config.api`，或设 `VIDEOHUB_API` 环境变量。
+装完重启 DSH 生效。默认连 `http://127.0.0.1:8600`，改端口在 profile 的 `cordis.patch.yml`
+覆盖 `video-hub` 条目 `config.api`，或设 `VIDEOHUB_API` 环境变量。
 详见 [plugins/dsh-video-hub/README.md](plugins/dsh-video-hub/README.md)。
 
 **2. MCP Server（一次接入全 MCP 生态）**

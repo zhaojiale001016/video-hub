@@ -1,0 +1,40 @@
+{
+  "format": 1,
+  "title": {
+    "en": "video-hub plugins",
+    "zh": "video-hub 插件"
+  },
+  "plugins": [
+    {
+      "name": "dsh-video-hub",
+      "title": "video-hub",
+      "description": "本地视频搬运中台的 19 个 hub_* 工具：查队列/改元数据/发布/补投/加源/追任务进度",
+      "icon": "icons/dsh-video-hub.svg",
+      "author": "zhaojiale001016",
+      "homepage": "https://github.com/zhaojiale001016/video-hub",
+      "repository": {
+        "url": "https://github.com/zhaojiale001016/video-hub"
+      },
+      "keywords": [
+        "video",
+        "bilibili",
+        "automation"
+      ],
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1751500800,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/zhaojiale001016/video-hub",
+            "commit": "fff70d4ad57d4fce17ecf5ea0dc9c1e3a29327c4",
+            "path": "plugins/dsh-video-hub"
+          },
+          "engines": {
+            "dsh": ">=0.2.0-rc.2 || >=0.2.1-rc.2"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -7,14 +7,29 @@ video-hub 多平台视频搬运中台的 **DeepSeek Harness 插件** — 把管�
 - video-hub 管理服务在跑：`cli.py serve`（或 launchd/systemd 常驻）→ `http://127.0.0.1:8600`
 - DeepSeek Harness ≥ 0.2.0-rc.2 / 0.2.1-rc.2
 
-## 安装
+## 安装（三种，任选）
+
+**① 插件市场（推荐，DSH 内点一下就装完）**
+
+```
+Plugins → 实验插件开「Custom plugin indexes」→ Discover → Add index source:
+  https://zhaojiale001016.github.io/video-hub/dsh-index.json
+→ 搜 video-hub → Install → 确认(commit/目录都给你看) → 重启
+```
+
+**② 命令行（GitHub 源码安装）**
 
 ```bash
-# 本地目录(开发/自用)
-dsh plugin --profile desktop add /path/to/video-hub/plugins/dsh-video-hub
+dsh plugin --profile <profile> add \
+  'zhaojiale001016/video-hub#path:/plugins/dsh-video-hub'
+# 固定版本: 在 #path: 前再加一段 #<tag>, 如
+# 'zhaojiale001016/video-hub#v1.6.0#path:/plugins/dsh-video-hub'
+```
 
-# 或从 GitHub(固定 commit 更稳)
-dsh plugin --profile desktop add github:zhaojiale001016/video-hub#main:plugins/dsh-video-hub
+**③ 本地目录（开发调试）**
+
+```bash
+dsh plugin --profile <profile> add /path/to/video-hub/plugins/dsh-video-hub
 ```
 
 验证层生效：`dsh --profile desktop --dump-config` 应出现 `# == dsh-video-hub` 层。
