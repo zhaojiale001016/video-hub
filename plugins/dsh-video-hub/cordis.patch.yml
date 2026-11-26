@@ -1,0 +1,7 @@
+# Bundle patch: video-hub 中台工具集(host half, 无 UI client)
+# config.api 可由用户在 profile 的 cordis.patch.yml 中覆盖
+- insert:
+    - id: video-hub
+      name: dsh-video-hub
+      config:
+        api: http://127.0.0.1:8600

@@ -13,6 +13,8 @@ jobs:
         run: |
           python3 -c "import re; h=open('web/static/index.html').read(); open('/tmp/app.js','w').write(re.search(r'<script>(?!src)(.*)</script>', h, re.S).group(1))"
           node --check /tmp/app.js
+      - name: DSH plugin syntax
+        run: cp plugins/dsh-video-hub/index.js /tmp/dsh-plugin.mjs && node --check /tmp/dsh-plugin.mjs
   test:
     runs-on: ubuntu-latest
     steps:

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.6.0 (2025-06)
+### Added
+- **DeepSeek Harness 原生插件**：`plugins/dsh-video-hub/` 标准 dsh bundle 包（`dsh.bundle.patch` + `cordis.patch.yml` + 纯 JS host entry），把 19 个 `hub_*` 工具注册进 dsh 原生 `tools` 服务（非外挂 MCP）；`dsh plugin --profile <p> add` 一条命令安装，config.api / `VIDEOHUB_API` 可换 API 地址
+- `tests/test_dsh_plugin.py` 5 例：manifest/patch 结构、19 工具齐全、node 沙箱注册+离线错误兜底
+
 ## v1.5.0 (2025-06)
 ### Added
 - **AI Agent 接入**：`mcp_server.py` 零依赖 stdio MCP server（19 个 `hub_*` 工具），`cli.py mcp` 启动；`skills/video-hub/SKILL.md` 通用 skill；`AGENTS.md` 仓库导引

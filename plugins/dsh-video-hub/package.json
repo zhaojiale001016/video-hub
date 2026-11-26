@@ -1,0 +1,37 @@
+{
+  "name": "dsh-video-hub",
+  "version": "0.1.0",
+  "description": "video-hub 多平台视频搬运中台的 DeepSeek Harness 插件 — 队列/发布/补投/加源/任务进度全套 hub_* 工具",
+  "type": "module",
+  "main": "index.js",
+  "icon": "icon.svg",
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0",
+    "dsh": ">=0.2.0-rc.2 || >=0.2.1-rc.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "compatibility": {
+      "dshReleases": {
+        "0.2.0-rc.2": "compatible",
+        "0.2.1-rc.2": "compatible"
+      }
+    }
+  },
+  "keywords": ["dsh-plugin", "video-hub", "bilibili", "yt-dlp"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhaojiale001016/video-hub.git",
+    "directory": "plugins/dsh-video-hub"
+  }
+}

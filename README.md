@@ -218,11 +218,25 @@ subtitles:
 
 其余（失败重试、撞稿预检、活动匹配、转载来源）手动自动完全一致。
 
-## 给 AI Agent 用（MCP / Skill / 裸 API 三选一）
+## 给 AI Agent 用（DSH 插件 / MCP / Skill / 裸 API 四选一）
 
-video-hub 不止有 Web 管理台——三种方式让 AI 工具直接驱动整条流水线：
+video-hub 不止有 Web 管理台——四种方式让 AI 工具直接驱动整条流水线：
 
-**1. MCP Server（推荐，一次接入全 MCP 生态）**
+**1. DeepSeek Harness 原生插件（dsh 用户首选）**
+
+`plugins/dsh-video-hub/` 是标准 dsh bundle 包——把 19 个 `hub_*` 工具注册进 dsh 原生工具系统（非外挂 MCP），会话里直接说"把 ready 队列发掉""1372 改个标题"：
+
+```bash
+dsh plugin --profile desktop add /path/to/video-hub/plugins/dsh-video-hub
+# 或 GitHub 子目录安装
+dsh plugin --profile desktop add github:zhaojiale001016/video-hub#main:plugins/dsh-video-hub
+```
+
+装完重启 DSH 桌面端即生效（desktop profile 由 Electron 托管）。默认连 `http://127.0.0.1:8600`，
+改端口在 profile 的 `cordis.patch.yml` 覆盖 `video-hub` 条目的 `config.api`，或设 `VIDEOHUB_API` 环境变量。
+详见 [plugins/dsh-video-hub/README.md](plugins/dsh-video-hub/README.md)。
+
+**2. MCP Server（一次接入全 MCP 生态）**
 
 `mcp_server.py` 是零依赖 stdio MCP server（只需 httpx），暴露 19 个 `hub_*` 工具。
 要求管理服务在跑（`cli.py serve`/常驻）。客户端配置：
@@ -236,7 +250,7 @@ video-hub 不止有 Web 管理台——三种方式让 AI 工具直接驱动整�
 配进 `claude_desktop_config.json` / `.mcp.json` / Cursor / Devin / Windsurf 等任意 MCP 客户端，
 agent 即可查队列、改元数据、发布、补投、加源、追任务进度。
 
-**2. Agent Skill（免 MCP 配置的轻量方案）**
+**3. Agent Skill（免 MCP 配置的轻量方案）**
 
 `skills/video-hub/SKILL.md` 是通用 skill 定义——教会 agent 用 REST API/CLI 驱动中台。
 安装：复制或软链到对应目录即可——
@@ -247,7 +261,7 @@ ln -s ~/video-hub/skills/video-hub ~/.codex/skills/video-hub    # Codex
 ln -s ~/video-hub/skills/video-hub ~/.devin/skills/video-hub    # Devin
 ```
 
-**3. 裸 API / CLI**
+**4. 裸 API / CLI**
 
 FastAPI 自带 OpenAPI：`http://127.0.0.1:8600/openapi.json`（在线文档 `/docs`），
 agent 可自行生成调用；CLI 全功能 `cli.py --help`。给 coding agent 的仓库导引见 [AGENTS.md](AGENTS.md)。

@@ -5,9 +5,12 @@ description: 驱动本地 video-hub 视频搬运中台(订阅源→下载→字�
 
 # video-hub 操作指南
 
-本地视频搬运中台。**优先级**: 若已配置 video-hub MCP server → 用 hub_* 工具;
+本地视频搬运中台。**优先级**: DeepSeek Harness 装了 `dsh-video-hub` 插件 → 直接用 19 个 hub_* 原生工具;
+若配置了 video-hub MCP server → 同名 hub_* MCP 工具;
 否则用 REST API(http://127.0.0.1:8600, 可用 `curl`/httpx);
 兜底用 CLI(`<项目>/.venv/bin/python3 cli.py <cmd>`, 项目根目录问用户或找 `config/sources.yaml`)。
+
+DSH 插件安装: `dsh plugin --profile <p> add <仓库>/plugins/dsh-video-hub`(GitHub 源 `github:zhaojiale001016/video-hub#main:plugins/dsh-video-hub`), 重启 DSH 生效。
 
 ## 前置检查
 
