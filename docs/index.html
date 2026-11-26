@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>video-hub · 多平台视频搬运中台</title>
-<meta name="description" content="外网视频自动搬运中台：下载 → 字幕翻译烧录 → LLM 中文标题 → 一键发布 B站/快手/视频号">
+<meta name="description" content="通用视频搬运中台：订阅源 → 下载 → 字幕翻译烧录 → LLM 中文标题 → 管理台审核 → 投递到 B站/快手/抖音等 14 个平台。平台与内容线全可配，本地私有运行。">
 <style>
 :root{
   --bg:#f7f8fc; --bg2:#eff2f8; --card:#ffffff; --line:#e4e9f2;
@@ -42,7 +42,7 @@ nav .wrap{display:flex;align-items:center;justify-content:space-between;height:5
 .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--gr)}
 h1{font-size:clamp(32px,5.5vw,54px);font-weight:800;line-height:1.14;letter-spacing:-.5px;position:relative}
 h1 .gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero p.sub{max-width:600px;margin:18px auto 0;font-size:16px;color:var(--tx2);position:relative}
+.hero p.sub{max-width:640px;margin:18px auto 0;font-size:16px;color:var(--tx2);position:relative}
 .ctas{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap;position:relative}
 .btn{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;border-radius:11px;padding:12px 26px;border:1px solid var(--line);background:var(--card);transition:.18s;box-shadow:var(--sh)}
 .btn:hover{transform:translateY(-2px);box-shadow:var(--sh-lg)}
@@ -54,7 +54,7 @@ h1 .gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;
 .band b{font-size:24px;font-weight:800;display:block;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .band span{font-size:12px;color:var(--tx2)}
 
-.mock{max-width:860px;margin:60px auto 0;border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden;box-shadow:var(--sh-lg);text-align:left;position:relative}
+.mock{max-width:880px;margin:60px auto 0;border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden;box-shadow:var(--sh-lg);text-align:left;position:relative}
 .mock-bar{display:flex;align-items:center;gap:8px;padding:11px 15px;border-bottom:1px solid var(--line);background:#fbfbfd}
 .mock-bar i{width:10px;height:10px;border-radius:50%}
 .mock-bar i:nth-child(1){background:#ff5f57}.mock-bar i:nth-child(2){background:#febc2e}.mock-bar i:nth-child(3){background:#28c840}
@@ -64,10 +64,15 @@ h1 .gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;
 .mock-side div{padding:7px 10px;border-radius:7px;margin-bottom:3px}
 .mock-side .on{background:rgba(251,114,153,.1);color:var(--ac);font-weight:600}
 .mock-main{flex:1;padding:16px}
-.mock-stats{display:flex;gap:9px;margin-bottom:14px}
-.mock-stats div{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
-.mock-stats b{font-size:17px;display:block}
+.mock-stats{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap}
+.mock-stats>div{flex:1;min-width:100px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.mock-stats b{font-size:15px;display:block}
 .mock-stats span{font-size:11px;color:var(--tx2)}
+.mock-stats .dots{margin-top:3px}
+.mock-stats .dots i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gr);margin-right:3px}
+.mock-stats .dots em{font-style:normal;font-size:10.5px;color:var(--tx2);margin-right:7px}
+.mock-stats .bar{height:3px;border-radius:99px;background:var(--line);margin-top:6px;overflow:hidden}
+.mock-stats .bar i{display:block;height:100%;border-radius:99px;background:var(--ac2)}
 .mock-cards{display:grid;grid-template-columns:1fr 1fr;gap:11px}
 .mock-card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .mock-card .th{height:78px;background:linear-gradient(120deg,#dfe8f5,#e8e0f0);position:relative}
@@ -88,6 +93,7 @@ h1 .gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;
 section{padding:64px 0}
 .sec-tag{display:inline-block;font-size:12px;font-weight:700;color:var(--ac);letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(251,114,153,.3);background:rgba(251,114,153,.06);border-radius:999px;padding:4px 14px}
 h2{font-size:clamp(22px,3.5vw,30px);font-weight:800;margin-top:12px;letter-spacing:-.3px}
+.sec-sub{font-size:14px;color:var(--tx2);margin-top:8px}
 
 .pipe{display:flex;margin-top:36px;flex-wrap:wrap}
 .pipe-step{flex:1;min-width:160px;background:var(--card);border:1px solid var(--line);padding:20px 16px;position:relative}
@@ -109,13 +115,19 @@ h2{font-size:clamp(22px,3.5vw,30px);font-weight:800;margin-top:12px;letter-spaci
 .feat:nth-child(3n) .ic{background:rgba(16,185,129,.1);color:var(--gr)}
 .feat h3{font-size:15px;margin-bottom:6px}
 .feat p{font-size:12.5px;color:var(--tx2);line-height:1.6}
+.feat code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:11px;color:var(--ac)}
 
-.plat{display:flex;gap:14px;margin-top:36px;flex-wrap:wrap}
-.plat-card{flex:1;min-width:210px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:20px}
-.plat-card h3{display:flex;align-items:center;gap:10px;font-size:15px}
-.plat-card h3 .pm{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
-.pm.b{background:#00a1d6}.pm.k{background:#ff4906}.pm.t{background:#07c160}.pm.g{background:#8a5cf6}
-.plat-card p{font-size:12.5px;color:var(--tx2);margin-top:9px}
+.plat-engines{display:grid;grid-template-columns:1fr 1.6fr;gap:14px;margin-top:36px}
+.engine{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:22px}
+.engine h3{display:flex;align-items:center;gap:10px;font-size:15px}
+.engine h3 .pm{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.pm.b{background:#00a1d6}.pm.s{background:#8a5cf6}
+.engine>p{font-size:12.5px;color:var(--tx2);margin-top:9px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.chips s{text-decoration:none;font-size:12px;border:1px solid var(--line);border-radius:7px;padding:5px 11px;color:var(--tx2);background:var(--bg);transition:.15s}
+.chips s:hover{border-color:var(--ac);color:var(--ac)}
+.chips s b{font-weight:600;color:var(--tx)}
+.chips s small{font-size:9.5px;opacity:.55;margin-left:4px}
 .legal{margin-top:20px;font-size:12.5px;color:var(--tx2);background:#fffcf3;border:1px solid #f0e4c8;border-radius:10px;padding:14px 18px}
 .legal b{color:var(--yl)}
 
@@ -134,6 +146,7 @@ footer .r a:hover{color:var(--ac)}
 
 @media(max-width:820px){
   .feat-grid{grid-template-columns:1fr 1fr}
+  .plat-engines{grid-template-columns:1fr}
   .pipe{flex-direction:column}
   .pipe-step{border-radius:0!important;border-left:1px solid var(--line)!important}
   .pipe-step+.pipe-step{border-top:none}
@@ -152,7 +165,7 @@ footer .r a:hover{color:var(--ac)}
   <div class="wrap">
     <a class="logo" href="#"><span class="mark">▶</span>video-hub</a>
     <div class="nav-links">
-      <a href="#flow">流程</a><a href="#feat">功能</a><a href="#plat">平台</a><a href="#start">快速开始</a>
+      <a href="#flow">流程</a><a href="#feat">能力</a><a href="#plat">平台</a><a href="#start">快速开始</a>
     </div>
     <a class="nav-gh" href="https://github.com/zhaojiale001016/video-hub">GitHub →</a>
   </div>
@@ -161,19 +174,19 @@ footer .r a:hover{color:var(--ac)}
 <header class="hero">
   <div class="blob b1"></div><div class="blob b2"></div>
   <div class="wrap">
-    <div class="badge rv in"><span class="dot"></span>v1.3.0 · MIT 开源</div>
-    <h1 class="rv in">外网视频<br>一站搬运到 <span class="gt">B站 / 快手 / 视频号</span></h1>
-    <p class="sub rv in">yt-dlp 下载 → whisper 字幕烧录 → LLM 中文标题 → 管理台审核 → 多平台独立投递</p>
+    <div class="badge rv in"><span class="dot"></span>v1.3.6 · MIT 开源 · 本地运行</div>
+    <h1 class="rv in">视频搬运中台<br>什么内容，<span class="gt">搬到哪个平台，你说了算</span></h1>
+    <p class="sub rv in">订阅源轮询 → yt-dlp 下载 → whisper 字幕翻译烧录 → LLM 中文标题 → 管理台审核 → 独立投递到你勾选的所有平台。不内置内容类型，不写死发布目标。</p>
     <div class="ctas rv in">
       <a class="btn primary" href="https://github.com/zhaojiale001016/video-hub">⭐ GitHub</a>
       <a class="btn" href="https://github.com/zhaojiale001016/video-hub/releases">Releases</a>
       <a class="btn" href="#start">快速开始</a>
     </div>
     <div class="band rv in">
-      <div><b>13+</b><span>可接发布平台</span></div>
+      <div><b>14</b><span>可接发布平台</span></div>
       <div><b>5</b><span>层防重</span></div>
-      <div><b>逐平台</b><span>投递留痕补投</span></div>
-      <div><b>0</b><span>配置硬编码</span></div>
+      <div><b>∞</b><span>内容线自定义</span></div>
+      <div><b>100%</b><span>本地私有</span></div>
     </div>
   </div>
   <div class="wrap">
@@ -181,14 +194,18 @@ footer .r a:hover{color:var(--ac)}
       <div class="mock-bar"><i></i><i></i><i></i><span class="url">http://127.0.0.1:8600</span></div>
       <div class="mock-body">
         <div class="mock-side">
-          <div class="on">全部</div><div>待发布</div><div>已发布</div><div>处理中</div><div>已跳过</div><div>任务中心</div>
+          <div class="on">待发布 2</div><div>待下载 467</div><div>已发布 6</div><div>失败 1</div><div>已跳过 45</div>
+          <div style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;opacity:.65">全部 / 探险 / 音乐 / 解压</div>
         </div>
         <div class="mock-main">
           <div class="mock-stats">
-            <div><b>467</b><span>待处理</span></div><div><b>2</b><span>待发布</span></div><div><b>6</b><span>已发布</span></div><div><b>0/10</b><span>今日下载</span></div>
+            <div><b>登录态</b><div class="dots"><em><i></i>B站</em><em><i></i>快手</em><em><i style="background:#f43f5e"></i>抖音</em></div></div>
+            <div><b>今日发布 0/5</b><div class="bar"><i style="width:0%"></i></div></div>
+            <div><b>今日下载 5/10</b><div class="bar"><i style="width:50%"></i></div></div>
+            <div><b>下轮轮询</b><span>5h55m</span></div>
           </div>
           <div class="mock-cards">
-            <div class="mock-card"><div class="th"><em>08:12</em></div><div class="bd"><div class="t">这条河里的金子比你想象的多得多！淘金实测</div><div class="ft"><s class="ok">✓B站</s><s class="ok">✓快手</s><s class="warm">字幕✓</s></div></div></div>
+            <div class="mock-card"><div class="th"><em>08:12</em></div><div class="bd"><div class="t">这条河里的金子比你想象的多得多！淘金实测</div><div class="ft"><s class="ok">✓B站</s><s class="ok">✓快手</s><s class="ok">✓抖音</s></div></div></div>
             <div class="mock-card"><div class="th"><em>12:40</em></div><div class="bd"><div class="t">强迫症狂喜：高压水枪清洗地毯全过程</div><div class="ft"><s class="ok">✓视频号</s><s class="warm">错峰18:00</s></div></div></div>
             <div class="mock-card"><div class="th"><em>03:55</em></div><div class="bd"><div class="t">THE FIRST TAKE 现场切片「熟肉」</div><div class="ft"><s class="bad">✗B站↻补投</s><s class="ok">✓快手</s><s class="ok">✓视频号</s></div></div></div>
             <div class="mock-card"><div class="th"><span class="pb"></span><em>21:07</em></div><div class="bd"><div class="t">荒野建造 72 小时：丛林深处的庇护所</div><div class="ft"><s class="warm">处理中 62%</s></div></div></div>
@@ -205,25 +222,25 @@ footer .r a:hover{color:var(--ac)}
     <h2 class="rv">五步流水线</h2>
     <div class="pipe">
       <div class="pipe-step rv"><div class="n">01</div><h3>订阅源轮询</h3><p>频道/关键词定时拉新，撞稿预检拦截</p></div>
-      <div class="pipe-step rv"><div class="n">02</div><h3>下载+字幕</h3><p>whisper 转写翻译烧入，按源配策略</p></div>
-      <div class="pipe-step rv"><div class="n">03</div><h3>LLM 元数据</h3><p>生成中文标题/简介/标签/分区</p></div>
+      <div class="pipe-step rv"><div class="n">02</div><h3>下载+字幕</h3><p>whisper 探测解说，翻译烧入按线配策略</p></div>
+      <div class="pipe-step rv"><div class="n">03</div><h3>LLM 元数据</h3><p>生成中文标题/简介/标签，风格随内容线</p></div>
       <div class="pipe-step rv"><div class="n">04</div><h3>管理台审核</h3><p>编辑、勾平台、错峰定时，本地运行</p></div>
-      <div class="pipe-step rv"><div class="n">05</div><h3>多平台投递</h3><p>互不阻断，逐平台留痕，可补投</p></div>
+      <div class="pipe-step rv"><div class="n">05</div><h3>多平台投递</h3><p>互不阻断，逐平台留痕，失败可补投</p></div>
     </div>
   </div>
 </section>
 
 <section id="feat" style="background:var(--bg2)">
   <div class="wrap">
-    <span class="sec-tag rv">Features</span>
-    <h2 class="rv">核心机制</h2>
+    <span class="sec-tag rv">Capabilities</span>
+    <h2 class="rv">工具能力，不设边界</h2>
     <div class="feat-grid">
-      <div class="feat rv"><div class="ic">⧉</div><h3>多平台平等投递</h3><p>B站/快手/视频号/抖音等 sau 全平台独立勾选互不阻断，逐平台留痕；部分成功可补投，全成功才自动清理文件。</p></div>
-      <div class="feat rv"><div class="ic">🛡</div><h3>五层防重复</h3><p>DB 唯一键、下载 archive、已发布免重入、撞稿预检、同名拦截——同稿绝不二次处理。</p></div>
-      <div class="feat rv"><div class="ic">字</div><h3>生肉→熟肉</h3><p>whisper 探测有无解说，官方字幕翻译/whisper 转写/跳过按源配策略，字号随分辨率自适应。</p></div>
-      <div class="feat rv"><div class="ic">⚙</div><h3>配置全前端可控</h3><p>限额/调度/字幕/LLM/屏蔽词/平台开关设置面板热更新，yaml 底包+overrides 分层。</p></div>
-      <div class="feat rv"><div class="ic">⏱</div><h3>调度与限额</h3><p>错峰档位发布、每日下载/上传限额、仅工作日自动、积压超期自动跳过，macOS launchd 常驻。</p></div>
-      <div class="feat rv"><div class="ic">🔒</div><h3>本地私有</h3><p>cookie/队列/文件全在 gitignore 的 data/；管理台仅 127.0.0.1；敏感回显打码。</p></div>
+      <div class="feat rv"><div class="ic">⧉</div><h3>平台可扩展</h3><p>B站走 biliup-rs；快手/视频号/抖音/小红书等 13 个平台走 social-auto-upload。设置面板勾选启用，<code>login-extra</code> 扫码即用，封面/定时参数按各平台能力自动适配。</p></div>
+      <div class="feat rv"><div class="ic">◈</div><h3>内容线自定义</h3><p><code>line</code> 任意小写 slug——音乐/解压/游戏/烹饪随你定。字幕策略、活动匹配、LLM 风格按同名 key 联动，徽标颜色自动分配。</p></div>
+      <div class="feat rv"><div class="ic">🛡</div><h3>五层防重复</h3><p>DB 唯一键、下载 archive、已发布免重入、撞稿预检（阈值可调）、同名拦截——同稿绝不二次处理。</p></div>
+      <div class="feat rv"><div class="ic">字</div><h3>生肉→熟肉</h3><p>官方字幕翻译 / whisper 转写 / 直接跳过，按内容线配策略；字号随分辨率自适应，可烧录可外挂。</p></div>
+      <div class="feat rv"><div class="ic">↻</div><h3>逐平台投递留痕</h3><p>每条稿件记录各平台成败；部分成功可补投且不重复已成功平台；全平台成功才自动清理文件，也可手动清理。</p></div>
+      <div class="feat rv"><div class="ic">⚙</div><h3>配置全热更新</h3><p>限额/调度/阈值/字幕/LLM/屏蔽词/平台开关全部设置面板即改即生效，yaml 底包 + overrides 分层。</p></div>
     </div>
   </div>
 </section>
@@ -231,14 +248,28 @@ footer .r a:hover{color:var(--ac)}
 <section id="plat">
   <div class="wrap">
     <span class="sec-tag rv">Platforms</span>
-    <h2 class="rv">一次加工，多平台分发</h2>
-    <div class="plat">
-      <div class="plat-card rv"><h3><span class="pm b">B</span>哔哩哔哩</h3><p>biliup-rs · 分区/活动/版权类型/定时投稿</p></div>
-      <div class="plat-card rv"><h3><span class="pm k">快</span>快手</h3><p>social-auto-upload · 扫码登录 · 1500s 超时调优</p></div>
-      <div class="plat-card rv"><h3><span class="pm t">视</span>视频号</h3><p>同一 sau 引擎 · 独立账号槽位</p></div>
-      <div class="plat-card rv"><h3><span class="pm g">+</span>13 个 sau 平台</h3><p>抖音/小红书/百家号/微博/YouTube… · <code>login-extra &lt;id&gt;</code> 扫码即用</p></div>
+    <h2 class="rv">一次加工，投递到任何平台</h2>
+    <p class="sec-sub rv">B站为内置专业通道（分区/活动/版权/定时）；其余平台经 vendored social-auto-upload 浏览器自动化投递。</p>
+    <div class="plat-engines">
+      <div class="engine rv">
+        <h3><span class="pm b">B</span>哔哩哔哩 <small style="font-size:11px;color:var(--tx3);font-weight:400">内置 biliup-rs</small></h3>
+        <p>分区/投稿活动/版权类型/定时投稿/撞稿预检——B站域完整特性，失败不阻断其他平台。</p>
+      </div>
+      <div class="engine rv">
+        <h3><span class="pm s">S</span>social-auto-upload <small style="font-size:11px;color:var(--tx3);font-weight:400">13 平台 · 扫码登录</small></h3>
+        <p>逐平台独立账号 cookie，<code>cli.py login-extra &lt;id&gt;</code> 接入；无封面/定时能力的平台自动跳过对应参数。</p>
+        <div class="chips">
+          <s><b>快手</b><small>kuaishou</small></s><s><b>视频号</b><small>tencent</small></s>
+          <s><b>抖音</b><small>douyin</small></s><s><b>小红书</b><small>xiaohongshu</small></s>
+          <s><b>百家号</b><small>baijiahao</small></s><s><b>微博</b><small>weibo</small></s>
+          <s><b>YouTube</b><small>youtube</small></s><s><b>Facebook主页</b><small>facebook-page</small></s>
+          <s><b>Instagram</b><small>instagram</small></s><s><b>支付宝</b><small>alipay</small></s>
+          <s><b>虎扑</b><small>hupu</small></s><s><b>大鱼号</b><small>dayu</small></s>
+          <s><b>知乎</b><small>zhihu</small></s>
+        </div>
+      </div>
     </div>
-    <div class="legal rv"><b>⚠</b> 请确认对所搬内容拥有合法使用权；转载如实填出处，「自制」构成原创声明。使用者对自身发布行为负全部责任。</div>
+    <div class="legal rv"><b>⚠</b> 请确认对所搬内容拥有合法使用权，遵守源站与目标平台条款；转载如实填出处，「自制」构成原创声明。使用者对自身发布行为负全部责任。</div>
   </div>
 </section>
 
@@ -247,18 +278,19 @@ footer .r a:hover{color:var(--ac)}
     <span class="sec-tag rv">Quickstart</span>
     <h2 class="rv">跑起来</h2>
     <div class="qs rv">
-      <div class="qs-bar"><span>bash · Python ≥3.11 + ffmpeg · biliup 见 README</span><span class="cp" id="copyBtn">复制</span></div>
+      <div class="qs-bar"><span>bash · Python ≥3.11 + ffmpeg · biliup 下载见 README</span><span class="cp" id="copyBtn">复制</span></div>
       <pre id="qsPre"><span class="c"># 环境</span>
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 <span class="c"># 配置（首启自动从 example 复制）</span>
 cp config/sources.example.yaml config/sources.yaml
+<span class="c">#   → sources 里配你的订阅源，line 起任意名字</span>
 
-<span class="c"># 扫码登录(B站 + 任意 sau 平台)</span>
-.venv/bin/python3 cli.py login && .venv/bin/python3 cli.py login-ks && .venv/bin/python3 cli.py login-sph
-<span class="c"># 更多平台: cli.py login-extra douyin</span>
+<span class="c"># 登录: B站 + 任意 sau 平台(扫码弹浏览器)</span>
+.venv/bin/python3 cli.py login                <span class="c"># B站</span>
+.venv/bin/python3 cli.py login-extra douyin   <span class="c"># 抖音/其他平台同理</span>
 
-<span class="c"># 启动 → http://127.0.0.1:8600</span>
+<span class="c"># 启动 → http://127.0.0.1:8600 (设置面板勾选启用平台)</span>
 .venv/bin/python3 cli.py serve</pre>
     </div>
   </div>
