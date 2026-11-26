@@ -538,61 +538,62 @@ async function doReconcile() {
     loadAll();
   } catch(e){ toast(e.message,"err"); }
 }
-/* ═══ 设置面板 ═══ */
+/* ═══ 设置面板 ═══
+   [key, label, type, hint]  hint=字段级小字(常为后端默认值/语义) */
 const SGROUPS = [
- ["基础", [
-  ["settings.proxy","外网代理(留空读环境变量)"],
-  ["settings.cookies_file","yt-dlp cookies 文件"],
-  ["settings.max_height","清晰度上限(px)","int"],
-  ["settings.poll_limit","每源轮询量","int"],
-  ["settings.per_source_poll_cap","单源发现封顶","int"],
-  ["settings.min_free_gb","磁盘水位 GB","int"],
+ ["⚙️ 基础", [
+  ["settings.proxy","外网代理","","留空读环境变量, 如 http://127.0.0.1:7890"],
+  ["settings.cookies_file","yt-dlp cookies","","cookies.txt 路径, YouTube 风控时填"],
+  ["settings.max_height","清晰度上限(px)","int","默认 1080"],
+  ["settings.poll_limit","每源轮询量","int","默认 15"],
+  ["settings.per_source_poll_cap","单源发现封顶","int","默认 8"],
+  ["settings.min_free_gb","磁盘水位 GB","int","默认 10, 低于则暂停下载"],
  ]],
- ["限额与调度", [
-  ["settings.daily_download_limit","每日自动下载","int"],
-  ["settings.daily_upload_limit","每日投稿","int"],
-  ["settings.auto_poll_interval_min","轮询间隔(分钟)","int"],
-  ["settings.auto_workdays_only","仅工作日自动","bool"],
+ ["📊 限额与调度", [
+  ["settings.daily_download_limit","每日自动下载","int","默认 10, 0=不限"],
+  ["settings.daily_upload_limit","每日投稿","int","默认 5, 防 21566 风控"],
+  ["settings.auto_poll_interval_min","轮询间隔(分钟)","int","默认 360"],
+  ["settings.auto_workdays_only","仅工作日自动","bool","周末暂停自动轮询/下载"],
   ["settings.auto_download_after_poll","轮询后自动下载","bool"],
-  ["settings.precheck_before_download","下载前撞检","bool"],
-  ["settings.delete_after_publish","发布后删文件","bool"],
-  ["settings.default_copyright","默认版权","copy"],
-  ["settings.publish_slots","定时档位(逗号分隔)","csv"],
-  ["settings.publish_slot_gap_h","定时间隔下限(h)","int"],
-  ["settings.stale_days","积压老化天数","int"],
-  ["settings.precheck_threshold","撞稿阈值(0~1)","float"],
-  ["settings.precheck_autoskip","自动跳过阈值(0~1)","float"],
-  ["extra_platforms","启用多平台","platforms"],
+  ["settings.precheck_before_download","下载前撞检","bool","先搜B站, 撞稿不下载"],
+  ["settings.delete_after_publish","发布后删文件","bool","全平台成功才删"],
+  ["settings.default_copyright","默认版权","copy","转载禁参加活动"],
+  ["settings.publish_slots","定时档位","csv","逗号分隔, 如 12:00,18:00,21:00"],
+  ["settings.publish_slot_gap_h","定时间隔下限(h)","int","默认 4, B站要求≥4h后"],
+  ["settings.stale_days","积压老化天数","int","默认 14, 超时自动跳过"],
+  ["settings.precheck_threshold","撞稿阈值","float","默认 0.72, 命中即拦截"],
+  ["settings.precheck_autoskip","自动跳过阈值","float","默认 0.85, 命中即跳过+清理"],
+  ["extra_platforms","发布平台","platforms","勾选即启用; 新平台先 cli.py login-extra <id> 扫码"],
   ["missions.enabled","自动参加B站活动","bool"],
-  ["missions.match","活动匹配关键词(JSON: 线名→词表)","dict"],
+  ["missions.match","活动匹配关键词","dict","JSON: 线名 → 关键词数组"],
  ]],
- ["字幕", [
+ ["💬 字幕", [
   ["subtitles.enabled","启用中文字幕","bool"],
-  ["subtitles.whisper_model","whisper 模型","sel:tiny|base|small|medium"],
-  ["subtitles.whisper_device","转写设备","sel:cpu|mps"],
-  ["subtitles.burn","烧录进画面","bool"],
-  ["subtitles.font_size","字号(0=自适应)","int"],
-  ["subtitles.margin_v","下边距(0=自适应)","int"],
-  ["subtitles.policy","各内容线策略(线名自定义)","policy"],
+  ["subtitles.whisper_model","whisper 模型","sel:tiny|base|small|medium","small 平衡速度/质量"],
+  ["subtitles.whisper_device","转写设备","sel:cpu|mps","mps=Apple芯片加速"],
+  ["subtitles.burn","烧录进画面","bool","关则只存 .srt 文件"],
+  ["subtitles.font_size","字号","int","0=自适应(默认)"],
+  ["subtitles.margin_v","下边距","int","0=自适应(默认)"],
+  ["subtitles.policy","各内容线策略","policy","线名自定义, 与 sources 里 line 对应"],
  ]],
- ["LLM", [
+ ["🤖 LLM", [
   ["llm.enabled","启用 LLM","bool"],
-  ["llm.backend","后端","sel:kscc|api"],
-  ["llm.model","模型/别名"],
-  ["llm.timeout","超时(秒)","int"],
-  ["llm.base_url","API base_url"],
-  ["llm.api_key_env","API key 环境变量"],
-  ["llm.line_styles","自定义内容线风格(JSON)","dict"],
+  ["llm.backend","后端","sel:kscc|api","kscc=本地, api=OpenAI兼容"],
+  ["llm.model","模型/别名","","如 qwen2.5-7b"],
+  ["llm.timeout","超时(秒)","int","默认 120"],
+  ["llm.base_url","API base_url","","backend=api 时必填"],
+  ["llm.api_key_env","API key 环境变量","","存环境变量名, 不存密钥本体"],
+  ["llm.line_styles","内容线风格","dict","JSON: 线名 → 风格描述, 未知线走通用风格"],
  ]],
- ["路径", [
-  ["settings.biliup_bin","biliup 二进制"],
-  ["settings.biliup_cookie","B站 cookie"],
-  ["settings.download_dir","下载目录"],
-  ["settings.archive_file","去重存档"],
+ ["📁 路径", [
+  ["settings.biliup_bin","biliup 二进制","","默认 bin/biliup"],
+  ["settings.biliup_cookie","B站 cookie","","默认 data/cookies.json"],
+  ["settings.download_dir","下载目录","","默认 data/downloads"],
+  ["settings.archive_file","去重存档","","默认 data/archive.txt"],
  ]],
- ["屏蔽名单", [
-  ["blacklist.uploaders","UP主屏蔽(每行一个)","lines"],
-  ["blacklist.keywords","关键词屏蔽(每行一个)","lines"],
+ ["🚫 屏蔽名单", [
+  ["blacklist.uploaders","UP主屏蔽","lines","每行一个, 命中即跳过"],
+  ["blacklist.keywords","关键词屏蔽","lines","每行一个, 命中即跳过"],
  ]],
 ];
 let _cfg = null;
@@ -606,55 +607,64 @@ function _cfgVal(key) {
 function _fieldId(key) { return "cfg-" + key; }
 function renderSettings(cfg) {
   _cfg = cfg;
-  const inp = (key, label, type) => {
+  const lab = (label, hint) =>
+    `<div class="flex items-baseline gap-1.5 mb-1"><span class="text-[11px] font-medium text-base-content/55">${label}</span>${hint?`<span class="text-[10px] text-base-content/35 leading-snug">${hint}</span>`:""}</div>`;
+  const inp = (key, label, type, hint) => {
     const id = _fieldId(key), v = _cfgVal(key);
     if (type === "bool")
-      return `<label class="flex items-center gap-2 text-[12.5px] cursor-pointer">
-        <input type="checkbox" id="${id}" class="checkbox checkbox-primary checkbox-sm" ${v?"checked":""}>${label}</label>`;
+      return `<div>${lab(label,hint)}
+        <label class="flex items-center h-8 cursor-pointer">
+        <input type="checkbox" id="${id}" class="toggle toggle-primary toggle-sm" ${v?"checked":""}></label></div>`;
     if (type === "copy")
-      return `<div><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
+      return `<div>${lab(label,hint)}
         <select id="${id}" class="select select-sm select-bordered w-full">
-          <option value="1" ${v===1?"selected":""}>自制(可参加活动)</option>
-          <option value="2" ${v===2?"selected":""}>转载(需来源,禁活动)</option></select></div>`;
+          <option value="1" ${v===1?"selected":""}>自制（可参加活动）</option>
+          <option value="2" ${v===2?"selected":""}>转载（需来源，禁活动）</option></select></div>`;
     if (type?.startsWith("sel:")) {
       const opts = type.slice(4).split("|");
-      return `<div><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
+      return `<div>${lab(label,hint)}
         <select id="${id}" class="select select-sm select-bordered w-full">${opts.map(o =>
           `<option value="${o}" ${v===o?"selected":""}>${o}</option>`).join("")}</select></div>`;
     }
     if (type === "platforms") {
       const rows = Object.entries(platsInfo).filter(([p])=>p!=="bilibili").map(([p,c]) =>
-        `<label class="flex items-center gap-1 text-[12px]" data-pl="${esc(p)}"><input type="checkbox"
+        `<label class="flex items-center gap-1.5 text-[12px] cursor-pointer py-0.5" data-pl="${esc(p)}"><input type="checkbox"
           class="checkbox checkbox-primary checkbox-xs plat-sel"
-          ${c.enabled?"checked":""}>${esc(c.name)} <code class="text-[10px] opacity-50">${esc(p)}</code></label>`).join("");
-      return `<div class="col-span-2" id="${id}"><div class="text-[11px] text-base-content/40 mb-1">${label}<span class="opacity-50">（勾选即启用；新平台先跑 <code>cli.py login-extra &lt;id&gt;</code> 扫码）</span></div>
-        <div class="flex gap-x-3 gap-y-1 items-center flex-wrap">${rows||'<span class="text-[11px] opacity-50">未配置</span>'}</div></div>`;
+          ${c.enabled?"checked":""}><span class="whitespace-nowrap">${esc(c.name)}</span><code class="text-[9.5px] opacity-40">${esc(p)}</code></label>`).join("");
+      return `<div class="col-span-2" id="${id}">${lab(label,hint)}
+        <div class="grid grid-cols-3 gap-x-4 rounded-lg bg-base-100/60 border border-base-300/40 p-2.5">${rows}</div></div>`;
     }
     if (type === "dict")
-      return `<div class="col-span-2"><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
-        <textarea id="${id}" rows="3" class="textarea textarea-bordered textarea-sm w-full font-mono text-[11px]">${esc(JSON.stringify(v||{},null,1))}</textarea></div>`;
+      return `<div class="col-span-2">${lab(label,hint)}
+        <textarea id="${id}" rows="3" class="textarea textarea-bordered textarea-sm w-full font-mono text-[11px] leading-relaxed">${esc(JSON.stringify(v||{},null,1))}</textarea></div>`;
     if (type === "policy") {
       const pol = _cfgVal("subtitles.policy") || {}, OPTS = ["always","auto","subs_only","never"];
       const rows = Object.entries(pol).map(([ln,p]) =>
         `<div class="flex gap-2 items-center" data-pl="${esc(ln)}">
           <span class="text-[12px] w-28 truncate">${lineIcon(ln)} ${esc(ln)}</span>
           <select class="select select-xs select-bordered flex-1 pol-sel">${OPTS.map(o=>`<option ${o===p?"selected":""}>${o}</option>`).join("")}</select></div>`).join("");
-      return `<div class="col-span-2" id="${id}"><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
-        <div class="space-y-1.5">${rows}</div>
-        <div class="flex gap-1.5 mt-1.5"><input id="${id}-new" class="input input-xs input-bordered w-32" placeholder="新线名(如 cooking)">
+      return `<div class="col-span-2" id="${id}">${lab(label,hint)}
+        <div class="space-y-1.5 rounded-lg bg-base-100/60 border border-base-300/40 p-2.5">${rows}</div>
+        <div class="flex gap-1.5 mt-1.5"><input id="${id}-new" class="input input-xs input-bordered w-36" placeholder="新线名(如 cooking)">
         <button type="button" class="btn btn-xs btn-outline" onclick="polAdd('${id}')">＋加线策略</button></div></div>`;
     }
     if (type === "lines")
-      return `<div><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
-        <textarea id="${id}" rows="3" class="textarea textarea-bordered textarea-sm w-full text-[12px]">${esc((v||[]).join("\n"))}</textarea></div>`;
+      return `<div>${lab(label,hint)}
+        <textarea id="${id}" rows="3" class="textarea textarea-bordered textarea-sm w-full text-[12px] font-mono" placeholder="每行一个">${esc((v||[]).join("\n"))}</textarea></div>`;
+    if (type === "int" || type === "float")
+      return `<div>${lab(label,hint)}
+        <input type="number" id="${id}" min="0" ${type==="float"?'step="0.01"':'step="1"'}
+          class="input input-sm input-bordered w-full" value="${v??""}" placeholder="${esc(hint||"")}"></div>`;
     const val = type === "csv" ? (v||[]).join(",") : (v ?? "");
-    return `<div><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
-      <input type="text" id="${id}" class="input input-sm input-bordered w-full" value="${esc(String(val))}"></div>`;
+    return `<div>${lab(label,hint)}
+      <input type="text" id="${id}" class="input input-sm input-bordered w-full" value="${esc(String(val))}" placeholder="${esc(hint||"")}"></div>`;
   };
   document.getElementById("setbody").innerHTML = SGROUPS.map(([t, items]) =>
-    `<div class="mb-4"><div class="text-[12px] font-bold text-primary mb-2">${t}</div>
-      <div class="grid grid-cols-2 gap-x-4 gap-y-2.5">${items.map(([k,l,ty]) => inp(k,l,ty)).join("")}</div></div>`).join("") +
-    `<div class="mb-2"><div class="text-[12px] font-bold text-primary mb-2">源管理</div><div id="srcadmin" class="text-[12px]"></div></div>`;
+    `<div class="rounded-xl border border-base-300/50 bg-base-200/30 px-4 py-3 mb-3">
+      <div class="text-[12px] font-bold text-primary mb-2.5 flex items-center gap-1.5">${t}</div>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-3">${items.map(([k,l,ty,h]) => inp(k,l,ty,h)).join("")}</div></div>`).join("") +
+    `<div class="rounded-xl border border-base-300/50 bg-base-200/30 px-4 py-3">
+      <div class="text-[12px] font-bold text-primary mb-2.5">📡 源管理</div><div id="srcadmin" class="text-[12px]"></div></div>`;
 }
 async function openSettings() {
   try {
