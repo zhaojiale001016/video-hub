@@ -89,6 +89,10 @@ def main():
             except Exception as e:
                 print(f"登录态检查失败: {e}")
         print(f"活动: {len(missions.fetch_missions(cfg, force=True))} 个可参加")
+        from pipeline import multipub
+        for p in multipub.enabled_platforms(cfg):
+            st = "已登录" if multipub.logged_in(cfg, p) else f"未登录(跑 cli.py login-extra {p})"
+            print(f"{multipub.PLATFORMS.get(p, p)}: {st}")
         print(f"队列: {db.counts()}  今日已投 {db.published_today()}")
     elif args.cmd == "publish-all":
         limit = int(C.get_setting(cfg, "daily_upload_limit", 5))

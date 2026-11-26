@@ -260,8 +260,12 @@ def patch_item(item_id: int, p: ItemPatch):
     if p.mission_id is not None:
         fields["mission_id"] = p.mission_id
     if p.pub_platforms is not None:
+        # 平台 id: bilibili + 已配置/已知的 sau 平台; 未知 id 按 slug 规则放行
+        # (投递时按 enabled 过滤, 存着不碍事——保留用户意图)
+        import re as _re
         fields["pub_platforms"] = json.dumps(
-            [x for x in p.pub_platforms if x in ("bilibili", "kuaishou", "tencent")],
+            [x for x in p.pub_platforms
+             if isinstance(x, str) and _re.fullmatch(r"[a-z][a-z0-9_-]{0,19}", x)],
             ensure_ascii=False)
     if p.copyright is not None and p.copyright in (1, 2):
         fields["copyright"] = p.copyright

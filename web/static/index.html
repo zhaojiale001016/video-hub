@@ -228,7 +228,9 @@ async function loadStats() {
   const loginDots = logins.map(([p, ok]) =>
     `<span class="inline-flex items-center gap-1 mr-2" title="${esc(platsInfo[p]?.name||p)}${ok===true?" 已登录":ok===false?" 未登录":" 未知"}">
       <i class="inline-block w-[7px] h-[7px] rounded-full" style="background:${ok===true?"#22c55e":ok===false?"#f43f5e":"#94a3b8"}"></i><span class="text-[11.5px]">${esc(platsInfo[p]?.name||p)}</span></span>`).join("");
-  const fmtPoll = sec => sec==null ? "—" : sec>=3600 ? `${Math.floor(sec/3600)}h${Math.round(sec%3600/60)||""}m` : `${Math.ceil(sec/60)}分钟`;
+  const fmtPoll = sec => sec==null ? "—" : sec>=3600
+    ? `${Math.floor(sec/3600)}h${Math.round(sec%3600/60)?Math.round(sec%3600/60)+"m":""}`
+    : `${Math.ceil(sec/60)}分钟`;
   const pubPct = s.daily_limit ? s.published_today/s.daily_limit*100 : 0;
   const dlPct = s.daily_download_limit ? s.downloaded_today/s.daily_download_limit*100 : 0;
   document.getElementById("stats").innerHTML = [
@@ -395,40 +397,43 @@ async function openDrawer(id) {
             <div class="text-[11px] text-base-content/40 mb-1">标签（逗号分隔）</div>
             <input type="text" id="dwg" class="input input-sm input-bordered w-full" value="${esc((it.tags||[]).join(", "))}">
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <div class="text-[11px] text-base-content/40 mb-1">分区</div>
-              <select id="dwp" class="select select-sm select-bordered w-full">${Object.entries(tids).map(([v,n]) =>
-                `<option value="${v}" ${+v===it.tid?"selected":""}>${n}(${v})</option>`).join("")}</select>
-            </div>
-            <div>
-              <div class="text-[11px] text-base-content/40 mb-1">版权</div>
-              <select id="dwcr" class="select select-sm select-bordered w-full"
-                title="自制可参加活动;转载需来源但禁活动">
-                <option value="1" ${it.copyright===1?"selected":""}>自制</option>
-                <option value="2" ${it.copyright!==1?"selected":""}>转载</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <div class="text-[11px] text-base-content/40 mb-1">活动ID(空=自动)</div>
-              <input type="text" id="dwm" list="missionlist" class="input input-sm input-bordered w-full" value="${it.mission_id||""}"
-                placeholder="输入或选择活动" title="仅自制稿生效;转载稿B站禁止参加活动"
-                onfocus="loadMissions()">
-            </div>
-            <div>
-              <div class="text-[11px] text-base-content/40 mb-1">定时(如19:30)</div>
-              <input type="text" id="dwdt" class="input input-sm input-bordered w-full"
-                value="${it.dtime?new Date(it.dtime*1000).toTimeString().slice(0,5):""}" placeholder="留空=立即"
-                title="${it.dtime?("定时: "+new Date(it.dtime*1000).toLocaleString()):""}">
-            </div>
-          </div>
           <div>
             <div class="text-[11px] text-base-content/40 mb-1.5">发布平台（至少勾一个）</div>
             <div class="flex gap-4 flex-wrap">${Object.entries(platsInfo).filter(([,c])=>c.enabled).map(([p,c])=>
               `<label class="flex items-center gap-1.5 text-[12.5px] cursor-pointer">
                 <input type="checkbox" class="checkbox checkbox-primary checkbox-sm dwpl" data-pl="${p}" ${(!sel||sel.has(p))?"checked":""}>${esc(c.name)}</label>`).join("")}
+            </div>
+          </div>
+          <div class="rounded-lg border border-base-300/60 bg-base-200/40 p-2.5">
+            <div class="text-[10px] font-bold text-base-content/45 mb-2">ⓑ B站选项 <span class="font-normal">（分区/版权/活动仅投B站生效）</span></div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="text-[11px] text-base-content/40 mb-1">分区</div>
+                <select id="dwp" class="select select-sm select-bordered w-full">${Object.entries(tids).map(([v,n]) =>
+                  `<option value="${v}" ${+v===it.tid?"selected":""}>${n}(${v})</option>`).join("")}</select>
+              </div>
+              <div>
+                <div class="text-[11px] text-base-content/40 mb-1">版权</div>
+                <select id="dwcr" class="select select-sm select-bordered w-full"
+                  title="自制可参加活动;转载需来源但禁活动">
+                  <option value="1" ${it.copyright===1?"selected":""}>自制</option>
+                  <option value="2" ${it.copyright!==1?"selected":""}>转载</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+              <div>
+                <div class="text-[11px] text-base-content/40 mb-1">活动ID(空=自动)</div>
+                <input type="text" id="dwm" list="missionlist" class="input input-sm input-bordered w-full" value="${it.mission_id||""}"
+                  placeholder="输入或选择活动" title="仅自制稿生效;转载稿B站禁止参加活动"
+                  onfocus="loadMissions()">
+              </div>
+              <div>
+                <div class="text-[11px] text-base-content/40 mb-1">定时(如19:30)</div>
+                <input type="text" id="dwdt" class="input input-sm input-bordered w-full"
+                  value="${it.dtime?new Date(it.dtime*1000).toTimeString().slice(0,5):""}" placeholder="留空=立即"
+                  title="B站定时投稿; 支持定时的多平台(快手/抖音/视频号等)也会同步预约">
+              </div>
             </div>
           </div>
         </div>`}
@@ -489,6 +494,10 @@ async function save(id) {
     if (d.getTime() - Date.now() < 4*3600*1000) d.setDate(d.getDate()+1);
     dtime = Math.floor(d.getTime()/1000);
   } else if (!dt) dtime = 0;
+  const dwplAll = [...document.querySelectorAll(".dwpl")];
+  const plats = dwplAll.filter(e=>e.checked).map(e=>e.dataset.pl)
+    // 保留未渲染平台(已禁用/不在平台表)的旧勾选, 防静默丢配置
+    .concat(dwSel ? [...dwSel].filter(p => !dwplAll.some(e=>e.dataset.pl===p)) : []);
   const body = {
     title: g("dwt").value,
     description: g("dwd").value,
@@ -496,10 +505,10 @@ async function save(id) {
     tid: +g("dwp").value,
     mission_id: +(g("dwm").value||0),
     copyright: +g("dwcr").value || undefined,
-    pub_platforms: [...document.querySelectorAll(".dwpl")]
-      .filter(e=>e.checked).map(e=>e.dataset.pl)
-      .concat(dwSel ? [...dwSel].filter(p => !document.querySelector(`.dwpl[data-pl="${p}"]`)) : []),
   };
+  // 原本无显式勾选(null=跟随启用集)且现在全勾 → 不写字段, 保留动态语义
+  if (!(dwSel === null && plats.length === dwplAll.length))
+    body.pub_platforms = plats;
   if (dtime !== undefined) body.dtime = dtime;   // 非法时间格式则保留原值
   await api(`/api/items/${id}`, "PATCH", body);   // 单请求原子保存
   dwDirty = false;
