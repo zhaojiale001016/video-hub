@@ -69,7 +69,7 @@
     <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[15px]"
           style="background:linear-gradient(135deg,#fb7299,#ff8fab)">📺</span>
     <span class="font-bold text-[15px] tracking-tight">Video Hub</span>
-    <span class="text-[10px] text-base-content/40 mt-0.5">视频搬运中台 · B站/快手/视频号</span>
+    <span class="text-[10px] text-base-content/40 mt-0.5" id="platSub">视频搬运中台 · 多平台投递</span>
   </div>
   <div class="flex-1"></div>
   <div class="flex gap-2 items-center">
@@ -224,7 +224,7 @@ async function loadStats() {
       </div>
     </div>`;
   document.getElementById("stats").innerHTML = [
-    stat(s.login_ok===true?"🟢":s.login_ok===false?"🔴":"⚪", "B站登录",
+    stat(s.login_ok===true?"🟢":s.login_ok===false?"🔴":"⚪", `${platsInfo.bilibili?.name||"B站"}登录`,
          s.login_ok===true?"已登录":s.login_ok===false?"未登录":"未知",
          s.login_ok===true?"#22c55e":s.login_ok===false?"#f43f5e":"#94a3b8"),
     stat("📤", "今日发布", `${s.published_today}/${s.daily_limit}`,
@@ -232,7 +232,7 @@ async function loadStats() {
     stat("⬇️", "今日下载", `${s.downloaded_today}/${s.daily_download_limit||"∞"}`,
          s.downloaded_today>=s.daily_download_limit?"#fb7299":null),
     ...(s.extra_login ? Object.entries(s.extra_login).map(([p, ok]) =>
-      stat(ok?"🟢":"🔴", {kuaishou:"快手",tencent:"视频号"}[p]||p, ok?"已登录":"未登录", ok?"#22c55e":"#f43f5e")) : []),
+      stat(ok?"🟢":"🔴", `${platsInfo[p]?.name||p}登录`, ok?"已登录":"未登录", ok?"#22c55e":"#f43f5e")) : []),
     stat("⏰", "下轮轮询", s.next_poll_in!=null?`${Math.ceil(s.next_poll_in/60)}分钟后`:"—"),
     stat("💾", "磁盘可用", `${s.disk_free_gb}G`, s.disk_free_gb<15?"#f59e0b":null),
     stat("🤖", "LLM", s.llm_enabled?"开启":"关闭", s.llm_enabled?"#22c55e":"#94a3b8"),
@@ -433,7 +433,7 @@ function openDrawer(id) {
       ${it.status==="ready" ? `<button class="btn btn-sm btn-primary flex-1" onclick="publish(${it.id},false,this)">▶ 发布</button>` : ""}
       ${it.status==="published" ? (()=>{ let pr={}; try{pr=JSON.parse(it.extra_pub||"{}")}catch(e){}
         const done={bilibili:!!it.bvid}; for(const[p,r]of Object.entries(pr)) if(r.ok===true) done[p]=true;
-        const req=sel||new Set(["bilibili","kuaishou","tencent"]);
+        const req=sel||new Set(Object.keys(platsInfo).filter(p=>platsInfo[p].enabled));
         return [...req].some(p=>!done[p])
           ? `<button class="btn btn-sm btn-primary flex-1" onclick="publish(${it.id},false,this)" title="只补投未成功平台，已成功平台自动跳过">↻ 补投失败平台</button>`
           : (it.file_path?`<button class="btn btn-sm btn-ghost flex-1" onclick="cleanFiles(${it.id})" title="全部平台已投递，删除本地视频/封面/字幕文件">🗑 清理文件</button>`:""); })() : ""}
@@ -755,7 +755,7 @@ async function saveSettings() {
   }
   try {
     const r = await api("/api/settings", "PUT", body);
-    try { platsInfo = await api("/api/platforms"); } catch(e) {}
+    try { platsInfo = await api("/api/platforms"); renderPlatSub(); } catch(e) {}
     toast(`已保存 ${Object.keys(r.applied||{}).length} 项，即时生效`, "ok");
   } catch(e) { toast(e.message, "err"); }
 }
@@ -866,8 +866,14 @@ setInterval(pollJobs, 4000);
 setInterval(loadStats, 30000);
 
 async function loadAll() { renderNav(); await loadStats(); await loadItems(); }
+function renderPlatSub() {
+  const names = Object.entries(platsInfo).filter(([,c])=>c.enabled).map(([,c])=>c.name);
+  const el = document.getElementById("platSub");
+  if (el && names.length) el.textContent = `视频搬运中台 · ${names.join("/")}`;
+}
 (async () => { tids = await api("/api/tids");
   try { platsInfo = await api("/api/platforms"); } catch(e) {}
+  renderPlatSub();
   await loadAll(); })();
 </script>
 </body>
