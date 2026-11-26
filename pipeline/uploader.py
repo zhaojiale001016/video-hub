@@ -193,11 +193,11 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
     if cr == 2 and not item.get("source_url"):
         bili_block = "转载投稿必须有 source_url"
     elif item.get("title"):
-        from difflib import SequenceMatcher
+        from . import precheck as _pc
         for dup in db.list_items(status="published", limit=1000):
             t = dup.get("title") or ""
             if t and (t == item["title"]
-                      or SequenceMatcher(None, t, item["title"]).ratio() >= 0.9):
+                      or _pc._sim(t, item["title"]) >= 0.9):
                 bili_block = (f"标题与已发布 #{dup['id']}({dup.get('bvid','')}) "
                               "高度相似，请改标题")
                 break

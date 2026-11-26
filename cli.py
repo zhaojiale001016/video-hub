@@ -110,6 +110,8 @@ def main():
         from pipeline import multipub
         platform = {"login-ks": "kuaishou", "login-sph": "tencent"}.get(
             args.cmd, args.platform if args.cmd == "login-extra" else None)
+        if err := multipub.valid_platform_id(platform):
+            sys.exit(f"平台id非法: {err}")
         cmd, cwd = multipub.login_cmd(platform, cfg)
         print(f"即将弹出浏览器，请登录{multipub.PLATFORMS.get(platform, platform)}…")
         subprocess.call(cmd, cwd=cwd)

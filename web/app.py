@@ -94,13 +94,18 @@ def run_job(name: str, fn, *args, **kwargs) -> str:
 
 
 def _notify(title: str, msg: str):
-    """macOS 桌面通知(本地跑才有意义)。"""
+    """桌面通知(本地跑才有意义): macOS osascript / Linux notify-send / 其他跳过。"""
     try:
         import subprocess as sp
-        safe = msg.replace("\\", "\\\\").replace('"', '\\"')
-        sp.run(["osascript", "-e",
-                f'display notification "{safe}" with title "{title}"'],
-               capture_output=True, timeout=5)
+        import sys as _s
+        if _s.platform == "darwin":
+            safe = msg.replace("\\", "\\\\").replace('"', '\\"')
+            sp.run(["osascript", "-e",
+                    f'display notification "{safe}" with title "{title}"'],
+                   capture_output=True, timeout=5)
+        elif _s.platform.startswith("linux"):
+            sp.run(["notify-send", title, msg],
+                   capture_output=True, timeout=5)
     except Exception:
         pass
 
@@ -440,9 +445,10 @@ def _next_slot_ts(used: set) -> int | None:
     slots = C.get_setting(cfg, "publish_slots") or []
     now = time.time()
     occupied = set(used)
-    for it in db.list_items(status="ready", limit=10 ** 6):
-        if it.get("dtime"):
-            occupied.add(int(it["dtime"]))
+    for st in ("ready", "failed"):   # failed 重试会带原 dtime 回 ready, 也算占用
+        for it in db.list_items(status=st, limit=10 ** 6):
+            if it.get("dtime"):
+                occupied.add(int(it["dtime"]))
     for day in (0, 1):
         base = time.strftime("%Y-%m-%d", time.localtime(now + day * 86400))
         for s in sorted(slots):
@@ -679,12 +685,9 @@ def put_settings(body: dict = Body(...)):
             if typ is None:
                 continue
             if sec == "extra_platforms":
-                # 平台 id 会拼进 cookie 文件名/subprocess 参数 → 强制 slug;
-                # bilibili/article 保留字会重复投递或无效 → 拒收
-                if not re.fullmatch(r"[a-z][a-z0-9_-]{0,19}", k):
-                    raise HTTPException(400, f"平台id非法(须为小写slug): {k!r}")
-                if k in multipub._RESERVED:
-                    raise HTTPException(400, f"{k} 为保留平台id, 不可配在 extra_platforms")
+                # 平台 id 会拼进 cookie 文件名/subprocess 参数 → 强制 slug+拒保留字
+                if err := multipub.valid_platform_id(k):
+                    raise HTTPException(400, err)
             if isinstance(v, str) and "***@" in v:
                 continue            # 回显的掩码值不写回
             try:
@@ -872,7 +875,16 @@ def _reconcile():
 
 
 def serve(host="127.0.0.1", port=8600):
+    """管理台 API 无鉴权, 只允许监听本机回环。
+    非本机绑定一律拒绝启动——如需局域网访问请自行加反代鉴权
+    (显式放开: VIDEOHUB_ALLOW_REMOTE=1, 后果自负)。"""
+    import os
     import uvicorn
+    loopback = {"127.0.0.1", "localhost", "::1"}
+    if host not in loopback and os.environ.get("VIDEOHUB_ALLOW_REMOTE") != "1":
+        raise SystemExit(
+            f"拒绝监听 {host}: API 无鉴权, 仅允许 {sorted(loopback)}。"
+            "确需远程请自加鉴权反代, 或 VIDEOHUB_ALLOW_REMOTE=1 自担风险")
     _backup_db()
     _reconcile()
     threading.Thread(target=_scheduler, daemon=True).start()

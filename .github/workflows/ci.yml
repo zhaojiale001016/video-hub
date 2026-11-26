@@ -13,3 +13,12 @@ jobs:
         run: |
           python3 -c "import re; h=open('web/static/index.html').read(); open('/tmp/app.js','w').write(re.search(r'<script>(?!src)(.*)</script>', h, re.S).group(1))"
           node --check /tmp/app.js
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pytest pyyaml httpx
+      - run: python -m pytest tests/ -q

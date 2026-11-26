@@ -24,13 +24,14 @@ cli.py publish <id>  biliup投B站 → 成功后 sau 投递快手/视频号(可�
 ## 常用命令
 
 ```bash
-cd ~/video-hub        # 项目目录(原桌面路径经软链仍可用)
+cd ~/video-hub        # 项目目录
 
-# ── 服务（launchd 常驻，登录自启+崩溃自愈）──
+# ── 服务常驻（macOS launchd, 登录自启+崩溃自愈; Linux 用 deploy/video-hub.service.example 的 systemd 单元）──
 launchctl kickstart -k gui/$(id -u)/com.videohub.pipeline   # 重启服务
 launchctl print    gui/$(id -u)/com.videohub.pipeline       # 查看运行状态
 launchctl bootout  gui/$(id -u)/com.videohub.pipeline       # 停止
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.videohub.pipeline.plist  # 重新载入
+#   plist 模板: deploy/com.videohub.pipeline.plist.example
 
 # ── 日常 ──
 .venv/bin/python3 cli.py doctor        # 体检: cookie/登录态/队列/今日额度
@@ -96,8 +97,10 @@ cd vendor/sau && python3 -m venv .venv && .venv/bin/pip install -e . \
 | bin/biliup | B站投稿 | biliup-rs releases 手动放 bin/ |
 | vendor/sau + 其 .venv | 快手/视频号投递 | 见 vendor/sau/README(上游 social-auto-upload) |
 | LLM | 标题/简介/标签 | 默认 kscc CLI；或 api 后端 + `export LLM_API_KEY` |
-| 中文字体 | 烧录字幕 | macOS 自带 PingFang；Linux 需装 Noto Sans CJK |
+| 中文字体 | 烧录字幕 | macOS 自带 PingFang；Linux `fonts-noto-cjk`；Windows 自带 msyh |
 | 代理 | YouTube 下载 | `settings.proxy` 或 `https_proxy` |
+
+> **平台支持**：macOS 为主开发平台，全部功能验证过。Linux 可用（字体/通知/常驻已适配，见 deploy/systemd 示例）。Windows 未实测（`_sau_py` 已兼容 Scripts 路径，其余以社区反馈为准）。
 
 ## 目录
 
@@ -214,6 +217,14 @@ subtitles:
 | 流水线 | 完全相同：下载→字幕判定→LLM标题→ready | 相同 |
 
 其余（失败重试、撞稿预检、活动匹配、转载来源）手动自动完全一致。
+
+## 测试与发布
+
+```bash
+.venv/bin/python -m pytest tests/ -q     # 核心逻辑单测(平台选择/命令构造/DB/相似度)
+```
+
+发布流程：`git tag vX.Y.Z && git push --tags` → `gh release create`。版本历史见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 法律与免责（务必阅读）
 

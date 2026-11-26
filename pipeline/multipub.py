@@ -33,6 +33,17 @@ PLATFORMS = {"kuaishou": "快手", "tencent": "视频号", "douyin": "抖音",
              "instagram": "Instagram", "alipay": "支付宝", "hupu": "虎扑",
              "dayu": "大鱼号", "zhihu": "知乎"}
 _RESERVED = {"bilibili", "article"}   # 不允许进 extra_platforms
+_PLATFORM_ID_RE = __import__("re").compile(r"[a-z][a-z0-9_-]{0,19}")
+
+
+def valid_platform_id(pid: str) -> str | None:
+    """平台 id 合法性: 返回错误原因或 None。
+    强制 slug(会拼进 cookie 文件名/subprocess 参数)且非保留字。"""
+    if not isinstance(pid, str) or not _PLATFORM_ID_RE.fullmatch(pid):
+        return "平台id须为小写slug([a-z][a-z0-9_-]{0,19})"
+    if pid in _RESERVED:
+        return f"{pid} 为保留平台id, 不可配在 extra_platforms"
+    return None
 
 # sau 各平台 upload-video 可选参数支持矩阵(见 vendor/sau/sau_commands/*.py):
 _NO_THUMB = {"zhihu", "facebook-page"}   # 不支持 --thumbnail
@@ -49,7 +60,9 @@ _LIMITS = {"kuaishou": {"title": 30, "desc": 1000, "tags": 5},
 
 
 def _sau_py(cfg: dict) -> str:
-    return str(Path(C.abs_path(cfg, SAU_DIR)) / ".venv" / "bin" / "python")
+    import sys
+    sub = "Scripts/python.exe" if sys.platform == "win32" else "bin/python"
+    return str(Path(C.abs_path(cfg, SAU_DIR)) / ".venv" / sub)
 
 
 def _account(cfg: dict, platform: str) -> str:

@@ -21,9 +21,23 @@ def _norm(s: str) -> str:
     return _NON_WORD.sub("", (s or "").lower())
 
 
+def _bigrams(s: str) -> set:
+    return {s[i:i + 2] for i in range(len(s) - 1)} or {s}
+
+
 def _sim(a: str, b: str) -> float:
+    """标题相似度: 编辑距离 ∪ 字符bigram Jaccard 取大。
+    前者抓改写, 后者抓语序重排("全过程X" vs "X全过程")。"""
+    if not (a and b):
+        return 0.0
     from difflib import SequenceMatcher
-    return SequenceMatcher(None, _norm(a), _norm(b)).ratio() if a and b else 0.0
+    na, nb = _norm(a), _norm(b)
+    if not na or not nb:
+        return 0.0
+    edit = SequenceMatcher(None, na, nb).ratio()
+    A, B = _bigrams(na), _bigrams(nb)
+    jac = len(A & B) / len(A | B)
+    return max(edit, jac)
 
 
 def _own_mid(cfg: dict) -> int:

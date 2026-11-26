@@ -78,11 +78,11 @@ def abs_path(cfg: dict, p: str) -> str:
 
 
 def settings(cfg: dict) -> dict:
-    return cfg.get("settings", {})
+    return cfg.get("settings") or {}
 
 
 def get_setting(cfg: dict, key: str, default=None):
-    return cfg.get("settings", {}).get(key, default)
+    return (cfg.get("settings") or {}).get(key, default)
 
 
 def proxy(cfg: dict) -> str | None:
@@ -92,18 +92,18 @@ def proxy(cfg: dict) -> str | None:
 
 
 def enabled_sources(cfg: dict) -> list[dict]:
-    return [s for s in cfg.get("sources", []) if s.get("enabled", True)]
+    return [s for s in (cfg.get("sources") or []) if s.get("enabled", True)]
 
 
 def get_source(cfg: dict, name: str) -> dict | None:
-    for s in cfg.get("sources", []):
+    for s in (cfg.get("sources") or []):
         if s.get("name") == name:
             return s
     return None
 
 
 def blacklist_uploaders(cfg: dict) -> list[str]:
-    return cfg.get("blacklist", {}).get("uploaders", []) or []
+    return (cfg.get("blacklist") or {}).get("uploaders", []) or []
 
 
 def blacklist_keywords(cfg: dict) -> list[str]:

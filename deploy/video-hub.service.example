@@ -1,0 +1,21 @@
+# systemd 用户单元示例（Linux 常驻; macOS 用同目录的 launchd plist）
+# 用法:
+#   cp video-hub.service.example ~/.config/systemd/user/video-hub.service
+#   编辑 WorkingDirectory/ExecStart 为你的实际路径
+#   systemctl --user daemon-reload && systemctl --user enable --now video-hub
+#   登录态保持(不开机自启也行): loginctl enable-linger $USER
+[Unit]
+Description=video-hub 视频搬运中台
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/YOU/video-hub
+ExecStart=/home/YOU/video-hub/.venv/bin/python3 cli.py serve --port 8600
+Restart=on-failure
+RestartSec=10
+# 数据全在项目 data/ 下, 不写额外路径
+
+[Install]
+WantedBy=default.target

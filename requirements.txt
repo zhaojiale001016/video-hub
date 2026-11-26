@@ -7,3 +7,6 @@ bilibili-api-python>=17.4.2
 faster-whisper>=1.2.1
 
 pillow
+
+# 开发/测试
+pytest
