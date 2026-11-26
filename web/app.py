@@ -656,7 +656,7 @@ def get_platforms():
         out[p] = {"name": multipub.PLATFORMS.get(p, p),
                   "enabled": bool((ep.get(p) or {}).get("enabled"))}
     for p, c in ep.items():                      # 自定义 id 也回显
-        if p not in out:
+        if p not in out and p not in multipub._RESERVED:
             out[p] = {"name": p, "enabled": bool((c or {}).get("enabled")),
                       "custom": True}
     return out
@@ -784,8 +784,9 @@ def _scheduler():
 def _prune_stale_new(max_age_days: int = 0):
     """积压老化: new 状态超 N 天未下载 → 自动 skipped(可恢复), 保持队列新鲜。"""
     try:
-        if not max_age_days:
-            max_age_days = int(C.get_setting(cfg, "stale_days", 14))
+        max_age_days = max_age_days or int(C.get_setting(cfg, "stale_days", 14))
+        if max_age_days <= 0:
+            return                            # 0 = 关闭积压清理
         cutoff = time.time() - max_age_days * 86400
         stale = [r for r in db.list_items(status="new", limit=5000)
                  if (r.get("created_at") or 0) < cutoff]

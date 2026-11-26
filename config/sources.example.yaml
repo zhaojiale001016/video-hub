@@ -67,12 +67,13 @@ llm:
   base_url: "https://api.deepseek.com/v1"
 
 # 多平台投递(登录: cli.py login-ks / login-sph 扫码)
-# 附加发布平台: 任意 sau 支持的平台 id 均可配置
-# (可选值见 vendor/sau/sau_cli.py 的 PLATFORMS:
-#  douyin 抖音 / xiaohongshu 小红书 / baijiahao 百家号 / weibo 微博 /
-#  kuaishou 快手 / tencent 视频号 / youtube / tiktok 等)
+# 附加发布平台: 13 个 sau 视频平台均可勾选(设置面板直接勾)
+# kuaishou 快手 / tencent 视频号 / douyin 抖音 / xiaohongshu 小红书 /
+# baijiahao 百家号 / weibo 微博 / youtube / facebook-page / instagram /
+# alipay 支付宝 / hupu 虎扑 / dayu 大鱼号 / zhihu 知乎
 # 每个平台先跑 `python cli.py login-extra <平台id>` 扫码登录,
 # 再在设置面板或此处把 enabled 打开。
+# 注意能力差异: 知乎/FB主页不支持封面; 微博/小红书/百家号等不支持定时发布。
 extra_platforms:
   kuaishou: {enabled: true, account: "main"}    # 快手
   tencent:  {enabled: true, account: "main"}    # 微信视频号

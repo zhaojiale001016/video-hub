@@ -19,19 +19,27 @@ SAU_DIR = "vendor/sau"
 # 平台显示名(已知的映射中文名; 未列出的 sau 平台直接用 id 展示)。
 # sau 实际支持: douyin/xiaohongshu/bilibili/tencent/kuaishou/weibo/
 # baijiahao/tiktok(以 sau_cli.py PLATFORMS 为准), extra_platforms 任意加。
-# sau_cli.PLATFORMS 全部视频平台(去掉 article 文章、bilibili 由内置 biliup 走)。
-# extra_platforms 可勾选其中任意平台; 未列出的自定义 id 也允许(按 sau 实际支持)。
+# sau_cli.PLATFORMS 全部视频平台(去掉 article/facebook/xueqiu 纯图文、
+# bilibili 由内置 biliup 走)。extra_platforms 可勾选其中任意平台;
+# 未列出的自定义 id 也允许(按 sau 实际支持)。
 SAU_PLATFORMS = [
     "kuaishou", "tencent", "douyin", "xiaohongshu", "baijiahao",
-    "weibo", "youtube", "facebook", "facebook-page", "instagram",
-    "alipay", "hupu", "dayu", "xueqiu", "zhihu",
+    "weibo", "youtube", "facebook-page", "instagram",
+    "alipay", "hupu", "dayu", "zhihu",
 ]
 PLATFORMS = {"kuaishou": "快手", "tencent": "视频号", "douyin": "抖音",
              "xiaohongshu": "小红书", "baijiahao": "百家号", "weibo": "微博",
-             "youtube": "YouTube", "facebook": "Facebook",
-             "facebook-page": "Facebook主页", "instagram": "Instagram",
-             "alipay": "支付宝", "hupu": "虎扑", "dayu": "大鱼号",
-             "xueqiu": "雪球", "zhihu": "知乎"}
+             "youtube": "YouTube", "facebook-page": "Facebook主页",
+             "instagram": "Instagram", "alipay": "支付宝", "hupu": "虎扑",
+             "dayu": "大鱼号", "zhihu": "知乎"}
+_RESERVED = {"bilibili", "article"}   # 不允许进 extra_platforms
+
+# sau 各平台 upload-video 可选参数支持矩阵(见 vendor/sau/sau_commands/*.py):
+_NO_THUMB = {"zhihu", "facebook-page"}   # 不支持 --thumbnail
+_NO_TAGS = {"zhihu"}                     # 不支持 --tags
+_LAND_THUMB = {"tencent", "douyin"}      # 支持 --thumbnail-landscape 竖封
+_NO_SCHEDULE = {"weibo", "instagram", "hupu",
+                "baijiahao", "alipay"}   # 不支持 --schedule
 LOGIN_CMD = {"kuaishou": "ks", "tencent": "sph"}   # 便捷别名; 通用命令 login-extra <platform>
 
 # 各平台字段上限(超了被截/失败); 未列出的走默认
@@ -52,7 +60,8 @@ def enabled_platforms(cfg: dict) -> list[str]:
     """extra_platforms 里 enabled 的全部平台(不限制于内置两平台,
     sau 支持的任何平台 id 均可配)。"""
     ep = cfg.get("extra_platforms") or {}
-    return [p for p, c in ep.items() if (c or {}).get("enabled")]
+    return [p for p, c in ep.items()
+            if (c or {}).get("enabled") and p not in _RESERVED]
 
 
 def logged_in(cfg: dict, platform: str) -> bool:
@@ -78,14 +87,17 @@ def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dic
     cmd = [_sau_py(cfg), str(sau / "sau_cli.py"), platform, "upload-video",
            "--account", _account(cfg, platform),
            "--file", item["file_path"], "--title", title,
-           "--desc", desc, "--tags", ",".join(tags[:lim["tags"]])]
-    if item.get("cover_path"):
-        # 视频号主封面参数要3:4竖图, 我们的16:9横图走 landscape 专用参数
-        cmd += ["--thumbnail-landscape" if platform == "tencent"
+           "--desc", desc]
+    if platform not in _NO_TAGS:
+        cmd += ["--tags", ",".join(tags[:lim["tags"]])]
+    if item.get("cover_path") and platform not in _NO_THUMB:
+        # 视频号/抖音主封面要3:4竖图, 我们的16:9横图走 landscape 专用参数
+        cmd += ["--thumbnail-landscape" if platform in _LAND_THUMB
                 else "--thumbnail", item["cover_path"]]
-    # B站定时发布→其他平台也定时, 避免一边预约一边先发了
+    # B站定时发布→其他平台也定时, 避免一边预约一边先发了;
+    # 不支持 --schedule 的平台直接即时发
     dtime = item.get("dtime") or 0
-    if dtime and dtime > _t.time() + 600:
+    if dtime and dtime > _t.time() + 600 and platform not in _NO_SCHEDULE:
         cmd += ["--schedule", _t.strftime("%Y-%m-%d %H:%M", _t.localtime(dtime))]
     try:
         progress.set_stage(iid, f"{name}投递中", None, "浏览器自动化投稿")

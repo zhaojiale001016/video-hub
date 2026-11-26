@@ -112,7 +112,7 @@ cp config/sources.example.yaml config/sources.yaml   # 首启缺省时也会自�
 ## 多平台发布（平台平等 + 可扩展）
 
 - **B站 + extra_platforms 里启用的所有平台是平等的可选目标**；抽屉勾选框按 `/api/platforms` 动态生成，无写死平台
-- `extra_platforms` 支持 **sau 全部平台**：`kuaishou` 快手 / `tencent` 视频号 / `douyin` 抖音 / `xiaohongshu` 小红书 / `baijiahao` 百家号 / `weibo` 微博 / `youtube` / `tiktok` 等（以 `vendor/sau/sau_cli.py` 的 `PLATFORMS` 为准）。新增平台：`cli.py login-extra <平台id>` 扫码登录 → 设置面板「＋加平台」或 yaml 里 `enabled: true`
+- `extra_platforms` 支持 **sau 全部视频平台**（13 个）：`kuaishou` 快手 / `tencent` 视频号 / `douyin` 抖音 / `xiaohongshu` 小红书 / `baijiahao` 百家号 / `weibo` 微博 / `youtube` / `facebook-page` Facebook主页 / `instagram` / `alipay` 支付宝 / `hupu` 虎扑 / `dayu` 大鱼号 / `zhihu` 知乎。新增平台：设置面板勾选 → `cli.py login-extra <平台id>` 扫码登录。各平台能力有差异（封面/定时参数按 sau 支持自动适配，知乎/FB主页不支持封面，微博/小红书…不支持定时）
 - `pub_platforms` 语义：空/`""`=启用平台全发；`["kuaishou"]`=只发快手(B站完全不碰)；`[]`=拒绝发布
 - 不勾 B站的稿件跳过全部 B站域流程（撞稿预检/活动匹配/biliup/bvid），只走 sau 多平台投递；≥1 成功即 `published`
 - 每条 `extra_pub` JSON 记录**逐平台结果**（含B站），抽屉里以徽标展示成功/失败/未勾选；重试/补投自动跳过已成功平台，文件在全平台成功前保留

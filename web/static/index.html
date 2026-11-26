@@ -333,7 +333,14 @@ function renderList() {
 }
 
 /* ═══ 抽屉 ═══ */
-function openDrawer(id) {
+let platsReady = false;
+let dwSel = null;   // 当前抽屉条目的平台勾选集(供 save 保留未渲染平台)
+async function ensurePlats() {
+  if (platsReady) return;
+  try { platsInfo = await api("/api/platforms"); platsReady = true; renderPlatSub(); } catch(e) {}
+}
+async function openDrawer(id) {
+  await ensurePlats();          // 平台表未就绪时先拉, 防止勾选框缺平台导致保存误删
   const it = curItems.find(x => x.id === id);
   if (!it) return;
   dwItem = it;
@@ -341,6 +348,7 @@ function openDrawer(id) {
   const editable = it.status !== "published";
   let sel = null;
   try { sel = it.pub_platforms ? new Set(JSON.parse(it.pub_platforms)) : null; } catch(e) {}
+  dwSel = sel;
   dw.innerHTML = `
     <div class="flex items-center gap-2 px-4 py-3 border-b border-base-300">
       <span class="text-[13px] font-bold" style="color:${STCOLOR[it.status]}">#${it.id} · ${STNAME[it.status]||it.status}</span>
@@ -457,7 +465,7 @@ function openDrawer(id) {
   // 抽屉内任何输入都标脏: 任务结束时的自动刷新不得覆盖未保存编辑
   dw.oninput = dw.onchange = () => { dwDirty = true; };
 }
-function closeDrawer() { document.getElementById("drawer").classList.remove("open"); dwItem = null; dwDirty = false; }
+function closeDrawer() { document.getElementById("drawer").classList.remove("open"); dwItem = null; dwDirty = false; dwSel = null; }
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") { closeDrawer(); document.getElementById("lb").close(); }
 });
@@ -489,7 +497,8 @@ async function save(id) {
     mission_id: +(g("dwm").value||0),
     copyright: +g("dwcr").value || undefined,
     pub_platforms: [...document.querySelectorAll(".dwpl")]
-      .filter(e=>e.checked).map(e=>e.dataset.pl),
+      .filter(e=>e.checked).map(e=>e.dataset.pl)
+      .concat(dwSel ? [...dwSel].filter(p => !document.querySelector(`.dwpl[data-pl="${p}"]`)) : []),
   };
   if (dtime !== undefined) body.dtime = dtime;   // 非法时间格式则保留原值
   await api(`/api/items/${id}`, "PATCH", body);   // 单请求原子保存
@@ -762,7 +771,7 @@ async function saveSettings() {
   }
   try {
     const r = await api("/api/settings", "PUT", body);
-    try { platsInfo = await api("/api/platforms"); renderPlatSub(); } catch(e) {}
+    try { platsInfo = await api("/api/platforms"); platsReady = true; renderPlatSub(); } catch(e) {}
     toast(`已保存 ${Object.keys(r.applied||{}).length} 项，即时生效`, "ok");
   } catch(e) { toast(e.message, "err"); }
 }
@@ -879,7 +888,7 @@ function renderPlatSub() {
   if (el && names.length) el.textContent = `视频搬运中台 · ${names.join("/")}`;
 }
 (async () => { tids = await api("/api/tids");
-  try { platsInfo = await api("/api/platforms"); } catch(e) {}
+  try { platsInfo = await api("/api/platforms"); platsReady = true; } catch(e) {}
   renderPlatSub();
   await loadAll(); })();
 </script>
