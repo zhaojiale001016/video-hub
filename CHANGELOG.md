@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.7.0 (2025-06)
+### Added
+- **本地文件导入发布**：`downloader.import_local_file()` 把本机视频复制进 `download_dir/<id>/`（`video.<ext>` 归一化，可选封面同步导入 `.webp→.jpg`），`(platform=local, source_id=sha256)` 去重防重复导入；不占每日下载额度
+- `POST /api/import`：异步入库（`process=true` 直接进字幕+元数据流水线→ready 返回 job_id；`false` 只入库停 `new`）
+- `cli.py import <path>`：本地导入命令，`--line/--title/--no-process` 参数
+- 管理台顶栏「📁 导入本地」对话框（路径/内容线/原标题/是否立即处理）
+- `hub_import` 第 20 个 agent 工具（MCP + DSH 插件同步）
+- `cli.py release-plugin`：DSH 插件发版命令——bump `plugins/dsh-video-hub/package.json` version + 重写 `docs/dsh-index.json` versions 条目（commit 指向当前 HEAD）
+
+### Fixed
+- `cli.py import` 文件不存在时输出可读错误而非 traceback
+
 ## v1.6.0 (2025-06)
 ### Added
 - **DeepSeek Harness 原生插件**：`plugins/dsh-video-hub/` 标准 dsh bundle 包（`dsh.bundle.patch` + `cordis.patch.yml` + 纯 JS host entry），把 19 个 `hub_*` 工具注册进 dsh 原生 `tools` 服务（非外挂 MCP）；`dsh plugin --profile <p> add` 一条命令安装，config.api / `VIDEOHUB_API` 可换 API 地址

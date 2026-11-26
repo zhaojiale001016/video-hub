@@ -1,6 +1,6 @@
 {
   "name": "dsh-video-hub",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "video-hub 多平台视频搬运中台的 DeepSeek Harness 插件 — 队列/发布/补投/加源/任务进度全套 hub_* 工具",
   "type": "module",
   "main": "index.js",
@@ -27,7 +27,13 @@
       }
     }
   },
-  "keywords": ["dsh-plugin", "deepseek-harness", "video-hub", "bilibili", "yt-dlp"],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "video-hub",
+    "bilibili",
+    "yt-dlp"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",

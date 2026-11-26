@@ -1,6 +1,6 @@
 # dsh-video-hub
 
-video-hub 多平台视频搬运中台的 **DeepSeek Harness 插件** — 把管理台全部能力注册成 19 个 `hub_*` LLM 工具，在 dsh 会话里直接让 agent 查队列、改标题、发布、补投、加源。
+video-hub 多平台视频搬运中台的 **DeepSeek Harness 插件** — 把管理台全部能力注册成 20 个 `hub_*` LLM 工具，在 dsh 会话里直接让 agent 查队列、改标题、发布、补投、加源。
 
 ## 前置
 
@@ -43,7 +43,7 @@ patch 行默认 `api: http://127.0.0.1:8600`；改端口就在 profile 的 `cord
 ## 工具速查
 
 队列：`hub_stats` `hub_list` `hub_get` `hub_progress`
-动作：`hub_publish` `hub_publish_all` `hub_poll` `hub_download` `hub_skip` `hub_retry` `hub_regen` `hub_delete_files` `hub_edit`
+动作：`hub_publish` `hub_publish_all` `hub_poll` `hub_download` `hub_import` `hub_skip` `hub_retry` `hub_regen` `hub_delete_files` `hub_edit`
 平台/源：`hub_platforms` `hub_sources` `hub_add_source`
 任务：`hub_jobs` `hub_job` `hub_wait_job`（长任务全部返回 job_id，用 wait_job 收尾）
 

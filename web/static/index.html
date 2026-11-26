@@ -75,6 +75,7 @@
   <div class="flex gap-2 items-center">
     <button class="btn btn-sm btn-ghost" onclick="doPoll()">↻ 轮询源</button>
     <button class="btn btn-sm btn-ghost" onclick="doDownload()">⬇ 下载全部</button>
+    <button class="btn btn-sm btn-ghost" onclick="document.getElementById('impModal').showModal()" title="本地视频文件导入流水线">📁 导入本地</button>
     <div class="w-px h-5 bg-base-300"></div>
     <button class="btn btn-sm btn-primary" onclick="doPublishAll(false)">▶ 发布全部</button>
     <button class="btn btn-sm btn-outline" onclick="doPublishAll(true)" title="按 publish_slots 错峰定时">⏱ 错峰定时</button>
@@ -138,6 +139,31 @@
 <dialog id="lb" class="modal" onclick="if(event.target===this)this.close()">
   <div class="modal-box max-w-5xl p-2 bg-black">
     <video id="lbv" controls playsinline class="w-full rounded"></video>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- 导入本地 -->
+<dialog id="impModal" class="modal">
+  <div class="modal-box max-w-md">
+    <div class="font-bold text-sm mb-1">📁 导入本地视频</div>
+    <div class="text-[11px] text-base-content/50 mb-4">文件复制进下载目录统一管理(源文件不动); 默认版权=自制, 可在卡片编辑里改</div>
+    <label class="text-xs text-base-content/60">文件路径(本机绝对路径)</label>
+    <input id="impPath" class="input input-sm input-bordered w-full mt-1 mb-3" placeholder="/Users/you/Videos/foo.mp4">
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="text-xs text-base-content/60">内容线</label>
+        <input id="impLine" class="input input-sm input-bordered w-full mt-1" value="local"></div>
+      <div><label class="text-xs text-base-content/60">原标题(可空)</label>
+        <input id="impTitle" class="input input-sm input-bordered w-full mt-1" placeholder="默认取文件名"></div>
+    </div>
+    <label class="flex items-center gap-2 mt-4 text-xs cursor-pointer">
+      <input type="checkbox" id="impProc" class="checkbox checkbox-sm" checked>
+      立即处理(字幕+LLM元数据→ready); 取消则只入库待手动下载
+    </label>
+    <div class="modal-action">
+      <button class="btn btn-sm btn-primary" onclick="doImport(this)">导入</button>
+      <form method="dialog"><button class="btn btn-sm">取消</button></form>
+    </div>
   </div>
   <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
@@ -821,6 +847,21 @@ async function downloadOne(id, btn) {
   try { await api(`/api/items/${id}/download`,"POST"); toast("已加入下载任务","ok"); }
   catch(e){ toast(e.message, "err"); }
   if (btn) busy(btn, false);
+}
+async function doImport(btn) {
+  const path = document.getElementById("impPath").value.trim();
+  if (!path) { toast("请填文件路径", "err"); return; }
+  busy(btn, true);
+  try {
+    const r = await api("/api/import", "POST", {
+      path, line: document.getElementById("impLine").value.trim() || "local",
+      title: document.getElementById("impTitle").value.trim(),
+      process: document.getElementById("impProc").checked });
+    document.getElementById("impModal").close();
+    toast(r.job_id ? `已导入 #${r.id}, 处理中…` : `已导入 #${r.id}`, "ok");
+    loadAll();
+  } catch(e) { toast(e.message, "err"); }
+  busy(btn, false);
 }
 async function doDownload() { try { await api("/api/download","POST"); toast("批量下载已启动","ok"); } catch(e){ toast(e.message, "err"); } }
 async function doPublishAll(schedule) {

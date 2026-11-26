@@ -439,6 +439,32 @@ def download_one(item_id: int):
     return {"job_id": jid}
 
 
+@app.post("/api/import")
+def import_local(body: dict = Body(...)):
+    """导入本地视频文件进流水线(复制进 download_dir/<id>/, 默认自制版权)。
+    process=true 时异步接字幕+元数据→ready, 返回 job_id; 否则停在 new。"""
+    path = str(body.get("path") or "").strip()
+    if not path:
+        raise HTTPException(400, "path 必填(本机绝对路径)")
+    line = str(body.get("line") or "local").strip()
+    try:
+        r = downloader.import_local_file(path, cfg, db, line=line,
+                                         title=str(body.get("title") or ""))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"导入失败: {e}")
+    if not r.get("ok"):
+        raise HTTPException(400, r.get("error") or "导入失败")
+    if not body.get("process", True):
+        return r
+    jid = run_job(f"import:{r['id']}",
+                  lambda: downloader.process_new_items(
+                      cfg, db, item_ids=[r["id"]], ignore_cap=True,
+                      progress=lambda m: _job_log(f"import:{r['id']}", m)))
+    return {**r, "job_id": jid}
+
+
 def _next_slot_ts(used: set) -> int | None:
     """下一个 ≥4小时后 的定时档位(今明两天内的 publish_slots)。
     档位容量=1条: 已占用(本次分配或库里已有dtime)的跳过。"""

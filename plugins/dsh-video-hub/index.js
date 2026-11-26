@@ -144,6 +144,19 @@ const TOOLS = [
       : call('POST', '/api/download', { params: { limit: a.limit || 0 }, timeout: 15000 }),
   },
   {
+    name: 'hub_import',
+    description: '导入本地视频文件进流水线(复制入下载目录, 默认自制版权)。process=true 异步字幕+元数据→ready 返回 job_id; false 只入库停 new',
+    parameters: params({
+      path: S('本机视频文件绝对路径'),
+      line: S('内容线 slug, 默认 local'),
+      title: S('原标题(可空取文件名)'),
+      process: B('是否立即处理, 默认 true'),
+    }, ['path']),
+    execute: (a) => call('POST', '/api/import', {
+      body: { path: a.path, line: a.line || 'local', title: a.title || '',
+              process: a.process !== false }, timeout: 15000 }),
+  },
+  {
     name: 'hub_skip',
     description: '跳过条目(删本地文件腾磁盘); undo=true 撤销并清 download archive 允许重下',
     parameters: params({ item_id: I('条目 id'), undo: B('撤销跳过') }, ['item_id']),

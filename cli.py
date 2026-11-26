@@ -12,6 +12,42 @@ from pipeline.db import DB
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
+ROOT = __file__ and __import__("pathlib").Path(__file__).resolve().parent
+
+
+def _release_plugin(version: str, commit: str = "") -> dict:
+    """DSH 插件发版: ① package.json version bump ② dsh-index.json 前置新版本条目
+    (commit 默认当前 HEAD——先提交插件改动再跑本命令)。返回改动摘要。"""
+    import re
+    from pathlib import Path
+    if not re.fullmatch(r"\d+\.\d+\.\d+(-[\w.]+)?", version):
+        raise SystemExit(f"版本号非法: {version}")
+    pkg_p = ROOT / "plugins" / "dsh-video-hub" / "package.json"
+    idx_p = ROOT / "docs" / "dsh-index.json"
+    pkg = json.loads(pkg_p.read_text())
+    old = pkg.get("version")
+    pkg["version"] = version
+    pkg_p.write_text(json.dumps(pkg, ensure_ascii=False, indent=2) + "\n")
+    ref = commit or subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    idx = json.loads(idx_p.read_text())
+    plug = idx["plugins"][0]
+    entry = {
+        "version": version,
+        "publishTimestamp": int(__import__("time").time()),
+        "source": {"type": "git",
+                   "url": "https://github.com/zhaojiale001016/video-hub",
+                   "commit": ref,
+                   "path": "plugins/dsh-video-hub"},
+        "engines": pkg.get("engines"),
+    }
+    plug["versions"] = [e for e in plug.get("versions", [])
+                        if e.get("version") != version]
+    plug["versions"].insert(0, entry)
+    idx_p.write_text(json.dumps(idx, ensure_ascii=False, indent=2) + "\n")
+    return {"plugin": f"{old} → {version}", "index_commit": ref[:8],
+            "next": "git add -A && git commit && git tag vX.Y.Z && git push --tags"}
+
 
 def main():
     ap = argparse.ArgumentParser(description="Video Hub · 视频搬运中台")
@@ -46,6 +82,14 @@ def main():
     sub.add_parser("jobs", help="查看最近后台任务历史(含服务重启前的)")
     p = sub.add_parser("unskip", help="撤销跳过(清archive记录,回new重新下载)")
     p.add_argument("id", type=int)
+    p = sub.add_parser("import", help="导入本地视频文件进流水线(复制入队+字幕+元数据)")
+    p.add_argument("path", help="视频文件绝对路径(mp4/mkv/webm/mov/flv/avi/ts/m4v)")
+    p.add_argument("--line", default="local", help="内容线 slug(默认 local)")
+    p.add_argument("--title", default="", help="原标题(默认取文件名)")
+    p.add_argument("--no-process", action="store_true", help="只入库不处理(停 new)")
+    p = sub.add_parser("release-plugin", help="DSH插件发版: 同步 package.json 版本+dsh-index.json 条目")
+    p.add_argument("version", help="插件新版本号, 如 0.2.0")
+    p.add_argument("--commit", default="", help="index 指向的 git ref(默认当前 HEAD)")
     p = sub.add_parser("list", help="列出条目")
     p.add_argument("--status", default="ready")
     sub.add_parser("stats", help="统计")
@@ -57,7 +101,23 @@ def main():
     cfg = C.load_config(args.config)
     db = DB(C.abs_path(cfg, C.get_setting(cfg, "db_file", "data/pipeline.db")))
 
-    if args.cmd == "poll":
+    if args.cmd == "import":
+        try:
+            r = downloader.import_local_file(args.path, cfg, db, line=args.line,
+                                             title=args.title)
+        except ValueError as e:
+            sys.exit(f"导入失败: {e}")
+        if not r.get("ok"):
+            sys.exit(f"导入失败: {r.get('error')}")
+        print(f"导入 #{r['id']} → {r['file_path']}")
+        if not args.no_process:
+            downloader.process_new_items(
+                cfg, db, item_ids=[r["id"]], ignore_cap=True,
+                progress=lambda m: print(m, flush=True))
+    elif args.cmd == "release-plugin":
+        r = _release_plugin(args.version, args.commit)
+        print(json.dumps(r, ensure_ascii=False, indent=2))
+    elif args.cmd == "poll":
         for st in downloader.poll_all(cfg, db):
             print(json.dumps(st, ensure_ascii=False))
     elif args.cmd == "download":

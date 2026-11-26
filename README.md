@@ -45,6 +45,8 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.videohub.pipeline.pl
 .venv/bin/python3 cli.py download             # 批量下载+处理(占当日额度)
 .venv/bin/python3 cli.py download --id 123    # 单条续跑/手动下载(不占额度)
 .venv/bin/python3 cli.py publish 123          # 单条发布(B站+勾选的多平台)
+.venv/bin/python3 cli.py import ~/V/x.mp4     # 本地文件入库→字幕+元数据→ready(不占额度)
+.venv/bin/python3 cli.py import ~/V/x.mp4 --line music --no-process   # 指定内容线/只入库
 
 # ── 登录态 ──
 .venv/bin/python3 cli.py login         # B站扫码
@@ -224,7 +226,7 @@ video-hub 不止有 Web 管理台——四种方式让 AI 工具直接驱动整�
 
 **1. DeepSeek Harness 原生插件（dsh 用户首选）**
 
-`plugins/dsh-video-hub/` 是标准 dsh bundle 包，装到你的 DSH 后 19 个 `hub_*` 工具进原生工具系统（非外挂 MCP），会话里直接说"把 ready 队列发掉""1372 改个标题"：
+`plugins/dsh-video-hub/` 是标准 dsh bundle 包，装到你的 DSH 后 20 个 `hub_*` 工具进原生工具系统（非外挂 MCP），会话里直接说"把 ready 队列发掉""1372 改个标题"：
 
 - **插件市场**：DSH Plugins → 开「Custom plugin indexes」→ Discover 添加源 `https://zhaojiale001016.github.io/video-hub/dsh-index.json` → 搜 video-hub 一键安装
 - **命令行**：`dsh plugin --profile <p> add 'zhaojiale001016/video-hub#path:/plugins/dsh-video-hub'`
@@ -236,7 +238,7 @@ video-hub 不止有 Web 管理台——四种方式让 AI 工具直接驱动整�
 
 **2. MCP Server（一次接入全 MCP 生态）**
 
-`mcp_server.py` 是零依赖 stdio MCP server（只需 httpx），暴露 19 个 `hub_*` 工具。
+`mcp_server.py` 是零依赖 stdio MCP server（只需 httpx），暴露 20 个 `hub_*` 工具。
 要求管理服务在跑（`cli.py serve`/常驻）。客户端配置：
 
 ```json

@@ -10,7 +10,7 @@ import pytest
 PLUGIN = Path(__file__).resolve().parent.parent / "plugins" / "dsh-video-hub"
 EXPECT_TOOLS = [
     "hub_stats", "hub_platforms", "hub_progress", "hub_list", "hub_get", "hub_edit",
-    "hub_publish", "hub_publish_all", "hub_poll", "hub_download", "hub_skip",
+    "hub_publish", "hub_publish_all", "hub_poll", "hub_download", "hub_import", "hub_skip",
     "hub_retry", "hub_regen", "hub_delete_files", "hub_sources", "hub_add_source",
     "hub_jobs", "hub_job", "hub_wait_job",
 ]

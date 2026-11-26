@@ -1,7 +1,9 @@
 """yt-dlp 订阅源轮询与视频下载。"""
 import glob
+import hashlib
 import logging
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -299,3 +301,54 @@ def process_new_items(cfg: dict, db: DB, metagen=None, limit: int | None = None,
         if progress:
             progress(msg)
     return results
+
+LOCAL_EXTS = {".mp4", ".mkv", ".webm", ".mov", ".flv", ".avi", ".ts", ".m4v"}
+
+
+def _probe_duration(p: Path) -> int:
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+             "-of", "csv=p=0", str(p)],
+            capture_output=True, text=True, timeout=15)
+        return int(float(r.stdout.strip()))
+    except Exception:
+        return 0
+
+
+def import_local_file(path: str, cfg: dict, db: DB, line: str = "local",
+                      title: str = "", source_name: str = "本地导入") -> dict:
+    """把本地视频文件收进流水线: 复制进 download_dir/<id>/ 约定布局 + ffmpeg 抽封面。
+    入库 status=new 但 file_path 已就位——process_new_items 会跳过下载直接
+    字幕+元数据→ready。source_id=路径|大小|mtime 的哈希, 重复导入被唯一键挡住。"""
+    import re
+    p = Path(path).expanduser().resolve()
+    if not p.is_file():
+        raise ValueError(f"文件不存在: {p}")
+    if p.suffix.lower() not in LOCAL_EXTS:
+        raise ValueError(f"不支持的类型 {p.suffix}(支持: {', '.join(sorted(LOCAL_EXTS))})")
+    if line and not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,19}", line):
+        raise ValueError("line 须为小写字母/数字/_/- 的内容线名, ≤20字符")
+    st = p.stat()
+    sid = "local-" + hashlib.md5(
+        f"{p}|{st.st_size}|{int(st.st_mtime)}".encode()).hexdigest()[:12]
+    item_id = db.insert_item({
+        "source_name": source_name, "line": line or "local", "platform": "local",
+        "source_id": sid, "source_url": "",
+        "orig_title": title or p.stem, "orig_desc": "", "uploader": "",
+        "duration": _probe_duration(p), "upload_date": "", "tid": 0,
+    })
+    if item_id is None:
+        return {"ok": False, "error": "该文件已导入过(同路径/大小/修改时间)"}
+    item_dir = Path(C.abs_path(cfg, C.get_setting(cfg, "download_dir"))) / str(item_id)
+    item_dir.mkdir(parents=True, exist_ok=True)
+    dst = item_dir / ("video" + p.suffix.lower())
+    shutil.copy2(str(p), str(dst))
+    files = {"file_path": str(dst), "copyright": 1}   # 本地文件无出处→默认自制, 可抽屉改
+    cover = item_dir / "video.jpg"
+    r = subprocess.run(["ffmpeg", "-y", "-i", str(dst), "-frames:v", "1",
+                        "-q:v", "3", str(cover)], capture_output=True)
+    if r.returncode == 0 and cover.exists():
+        files["cover_path"] = str(cover)
+    db.update(item_id, **files)
+    return {"ok": True, "id": item_id, "file_path": str(dst)}

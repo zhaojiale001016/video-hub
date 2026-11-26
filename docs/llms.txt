@@ -5,7 +5,7 @@
 ## Agent 接入
 
 - DSH 插件: `plugins/dsh-video-hub/` — 安装源 https://zhaojiale001016.github.io/video-hub/dsh-index.json
-- MCP server: `cli.py mcp` (stdio, 19 个 hub_* 工具)
+- MCP server: `cli.py mcp` (stdio, 20 个 hub_* 工具)
 - Skill: `skills/video-hub/SKILL.md`
 - OpenAPI: `web/app.py` 起服后 `GET /openapi.json`（默认 :8600）
 

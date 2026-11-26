@@ -121,6 +121,11 @@ def _hub_download(item_id=0, limit=0):
     return _req("POST", "/api/download", params={"limit": limit}, timeout=15)
 
 
+def _hub_import(path, line="local", title="", process=True):
+    return _req("POST", "/api/import", timeout=15, json={
+        "path": path, "line": line, "title": title, "process": process})
+
+
 def _hub_skip(item_id, undo=False):
     return _req("POST", f"/api/items/{item_id}/{'unskip' if undo else 'skip'}")
 
@@ -211,6 +216,11 @@ TOOLS = [
      "description": "item_id>0 单条下载(不占日额度); 否则批量(受 daily_download_limit)。返回 job_id",
      "inputSchema": {"type": "object", "properties": {
          "item_id": _I, "limit": _I}}},
+    {"name": "hub_import", "fn": _hub_import,
+     "description": "导入本地视频文件进流水线(复制入下载目录, 默认自制版权)。process=True 异步字幕+元数据→ready 返回 job_id; False 只入库停 new",
+     "inputSchema": {"type": "object", "properties": {
+         "path": _S, "line": _S, "title": _S, "process": _B},
+         "required": ["path"]}},
     {"name": "hub_skip", "fn": _hub_skip,
      "description": "跳过(删文件腾磁盘); undo=True 撤销并清 archive 允许重下",
      "inputSchema": {"type": "object", "properties": {

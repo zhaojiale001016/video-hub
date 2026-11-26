@@ -12,7 +12,7 @@
 | `web/app.py` | FastAPI 管理台, 全部 API + 后台任务 + 启动调和 |
 | `web/static/index.html` | 单文件前端(vanilla JS) |
 | `mcp_server.py` | MCP stdio server(零协议依赖, 薄封装 HTTP API) |
-| `plugins/dsh-video-hub/` | DeepSeek Harness 原生插件包(19 个 hub_* 工具进 dsh 工具系统) |
+| `plugins/dsh-video-hub/` | DeepSeek Harness 原生插件包(20 个 hub_* 工具进 dsh 工具系统) |
 | `vendor/sau/` | social-auto-upload vendored 副本(见 PATCHES.md 本地补丁清单) |
 | `config/` | sources.yaml(私有)+example+overrides.json(私有,UI写入) |
 
