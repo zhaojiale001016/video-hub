@@ -215,25 +215,35 @@ async function loadStats() {
   const s = await api("/api/stats");
   counts = s.counts || {};
   renderNav();
-  const stat = (icon, label, val, color) =>
+  const stat = (icon, label, val, color, bar) =>
     `<div class="flex items-center gap-2.5 bg-base-100 border border-base-300 rounded-lg px-3.5 py-2 min-w-[118px]">
       <span class="text-[17px]" ${color?`style="color:${color}"`:""}>${icon}</span>
-      <div>
+      <div class="min-w-[52px]">
         <div class="text-[10px] text-base-content/45 leading-none">${label}</div>
         <div class="text-[13.5px] font-bold mt-1 leading-none" ${color?`style="color:${color}"`:""}>${val}</div>
+        ${bar?`<div class="h-[3px] rounded-full bg-base-300 mt-1.5 overflow-hidden"><div class="h-full rounded-full" style="width:${Math.min(100,bar)}%;background:${bar>=100?"#fb7299":"#00a1d6"}"></div></div>`:""}
       </div>
     </div>`;
+  const logins = [["bilibili", s.login_ok], ...Object.entries(s.extra_login || {})];
+  const loginDots = logins.map(([p, ok]) =>
+    `<span class="inline-flex items-center gap-1 mr-2" title="${esc(platsInfo[p]?.name||p)}${ok===true?" 已登录":ok===false?" 未登录":" 未知"}">
+      <i class="inline-block w-[7px] h-[7px] rounded-full" style="background:${ok===true?"#22c55e":ok===false?"#f43f5e":"#94a3b8"}"></i><span class="text-[11.5px]">${esc(platsInfo[p]?.name||p)}</span></span>`).join("");
+  const fmtPoll = sec => sec==null ? "—" : sec>=3600 ? `${Math.floor(sec/3600)}h${Math.round(sec%3600/60)||""}m` : `${Math.ceil(sec/60)}分钟`;
+  const pubPct = s.daily_limit ? s.published_today/s.daily_limit*100 : 0;
+  const dlPct = s.daily_download_limit ? s.downloaded_today/s.daily_download_limit*100 : 0;
   document.getElementById("stats").innerHTML = [
-    stat(s.login_ok===true?"🟢":s.login_ok===false?"🔴":"⚪", `${platsInfo.bilibili?.name||"B站"}登录`,
-         s.login_ok===true?"已登录":s.login_ok===false?"未登录":"未知",
-         s.login_ok===true?"#22c55e":s.login_ok===false?"#f43f5e":"#94a3b8"),
-    stat("📤", "今日发布", `${s.published_today}/${s.daily_limit}`,
-         s.published_today>=s.daily_limit?"#fb7299":null),
+    `<div class="flex items-center gap-2.5 bg-base-100 border border-base-300 rounded-lg px-3.5 py-2">
+      <span class="text-[17px]">🔑</span>
+      <div>
+        <div class="text-[10px] text-base-content/45 leading-none">登录态</div>
+        <div class="mt-1.5 leading-none">${loginDots||'<span class="text-[11px] opacity-50">无启用平台</span>'}</div>
+      </div>
+    </div>`,
+    stat("📤", "今日发布", `${s.published_today}/${s.daily_limit||"∞"}`,
+         s.published_today>=s.daily_limit?"#fb7299":null, pubPct),
     stat("⬇️", "今日下载", `${s.downloaded_today}/${s.daily_download_limit||"∞"}`,
-         s.downloaded_today>=s.daily_download_limit?"#fb7299":null),
-    ...(s.extra_login ? Object.entries(s.extra_login).map(([p, ok]) =>
-      stat(ok?"🟢":"🔴", `${platsInfo[p]?.name||p}登录`, ok?"已登录":"未登录", ok?"#22c55e":"#f43f5e")) : []),
-    stat("⏰", "下轮轮询", s.next_poll_in!=null?`${Math.ceil(s.next_poll_in/60)}分钟后`:"—"),
+         s.downloaded_today>=s.daily_download_limit?"#fb7299":null, dlPct),
+    stat("⏰", "下轮轮询", fmtPoll(s.next_poll_in)),
     stat("💾", "磁盘可用", `${s.disk_free_gb}G`, s.disk_free_gb<15?"#f59e0b":null),
     stat("🤖", "LLM", s.llm_enabled?"开启":"关闭", s.llm_enabled?"#22c55e":"#94a3b8"),
   ].join("");
