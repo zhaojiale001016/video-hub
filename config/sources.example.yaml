@@ -1,0 +1,114 @@
+# ============================================================
+# video-hub 订阅配置模板
+# 首次启动自动复制为 config/sources.yaml(本地私有, 不入库)。
+# 之后所有改动建议走 Web UI「⚙ 设置」→ 写入 config/overrides.json,
+# 本文件保持出厂状态, 升级不丢配置。
+# ============================================================
+
+settings:
+  # 外网代理（下载 YouTube/TikTok 必需）。留空则读环境变量 https_proxy
+  proxy: ""                      # 例: "http://127.0.0.1:7890"
+  # 可选：yt-dlp cookies 文件（YouTube 触发人机验证时导出 cookies.txt 填这里）
+  cookies_file: ""
+  max_height: 1080               # 清晰度上限
+  poll_limit: 15                 # 每源每轮最多发现的新视频数
+  daily_upload_limit: 5          # 每日投稿上限（养号期建议 1-3）
+  default_copyright: 1           # 1=自制(可参加活动) 2=转载(需source,禁活动)
+  daily_download_limit: 5        # 每日自动下载+生成上限；手动单条下载不受限
+  download_dir: "data/downloads"
+  db_file: "data/pipeline.db"
+  archive_file: "data/downloaded.archive"
+  biliup_bin: "bin/biliup"       # B站投稿器, 见 README「安装 biliup」
+  biliup_cookie: "data/cookies.json"
+  # 无人值守: 按间隔自动轮询(+自动下载)。0=手动
+  auto_poll_interval_min: 360
+  auto_workdays_only: true       # 周六日不自动执行, 手动不受影响
+  auto_download_after_poll: true # 轮询完自动下载+生成标题
+  delete_after_publish: true     # 投稿成功后删除本地文件
+  publish_slots: ["12:00", "18:00", "19:30", "21:00", "22:30"]  # 错峰定时档
+  per_source_poll_cap: 15        # 每源每轮发现上限(防单一搜索源刷爆队列)
+  min_free_gb: 10                # 磁盘剩余低于此值暂停下载
+  precheck_before_download: true # 下载前先搜B站撞稿, ≥85%相似直接跳过
+
+# 中文字幕(生肉→熟肉; 开启后每条多耗时1-5分钟)
+subtitles:
+  enabled: true
+  whisper_model: "small"   # tiny/base/small/medium; 探测+转写共用
+  whisper_device: "cpu"    # cpu/mps(M系芯片约2x,失败自动回退cpu)
+  burn: true               # 烧进画面
+  font_size: 0             # 0=按高度自适应(1080p≈60, 720p≈40)
+  margin_v: 0              # 0=自适应(画面高7.5%)
+  policy:                  # 默认策略; 源上可写 subtitle: 覆盖
+    music: "subs_only"     # 音乐: 只翻官方字幕(歌词转写不可靠)
+    relax: "auto"          # 解压: 官方字幕→翻译, 没有→探测有语音才转写
+    adventure: "auto"      # 探险: 旁白型为主, 探测到解说就配中字
+  # 策略取值: always(强制转写) | auto(探测) | subs_only(仅翻官方) | never(不配)
+
+# 撞稿屏蔽名单
+blacklist:
+  uploaders: []            # 原作者在目标平台有官方号的 UP 主
+  keywords:
+    - "official trailer"   # 预告片一般不搬
+
+# LLM 标题生成
+# backend: kscc=本地kscc CLI | api=OpenAI兼容接口(export LLM_API_KEY=sk-xxx)
+llm:
+  enabled: true
+  backend: "kscc"
+  model: "sn"
+  timeout: 120
+  api_key_env: "LLM_API_KEY"
+  base_url: "https://api.deepseek.com/v1"
+
+# 多平台投递(登录: cli.py login-ks / login-sph 扫码)
+extra_platforms:
+  kuaishou: {enabled: true, account: "main"}    # 快手
+  tencent:  {enabled: true, account: "main"}    # 微信视频号
+
+# 自动参加B站投稿活动(投稿页"参与活动"，需已登录)
+missions:
+  enabled: true
+  match:
+    music: ["音乐", "翻唱", "演奏", "现场", "MV", "音乐节"]
+    relax: ["解压", "生活", "手工", "修复", "治愈", "美食"]
+    adventure: ["探险", "户外", "淘金", "寻宝", "自然"]
+
+# ============================================================
+# 订阅源 —— 以下为示例, 按需增删(UI「⚙ 设置」底部可加源)
+# kind: channel(频道/videos) | search(ytsearch关键词)
+# line: music(音乐) | relax(解压) | adventure(探险)
+# tid:  B站分区号（见 config/tids.json）
+# ============================================================
+sources:
+  - name: example_music
+    line: music
+    kind: channel
+    url: "https://www.youtube.com/@kexp/videos"
+    tid: 29                      # 音乐现场
+    category: "电台Live现场"
+    tags: ["live", "音乐现场"]
+    min_duration: 120
+    max_duration: 3600
+    enabled: true
+
+  - name: example_relax
+    line: relax
+    kind: channel
+    url: "https://www.youtube.com/@TheHoofGP/videos"
+    tid: 75                      # 动物综合
+    category: "修牛蹄"
+    tags: ["修蹄", "解压"]
+    subtitle: "always"
+    min_duration: 300
+    enabled: true
+
+  - name: example_adventure_search
+    line: adventure
+    kind: search
+    url: "ytsearch5:gold panning sluice nugget found"
+    limit: 5
+    tid: 21                      # 日常
+    category: "淘金实录"
+    tags: ["淘金", "户外", "探险"]
+    min_duration: 300
+    enabled: true

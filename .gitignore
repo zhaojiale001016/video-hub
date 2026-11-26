@@ -1,0 +1,27 @@
+# ── 运行环境 ──
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# ── 本地私有配置(不要入库, 用 *.example 做模板) ──
+config/sources.yaml
+config/overrides.json
+.env
+*.local.yaml
+
+# ── 数据与凭证(含 B站/快手/视频号 cookie, 严禁入库) ──
+data/
+cookies.json
+**/cookies/*.json
+vendor/sau/cookies/
+
+# ── 第三方二进制 ──
+bin/biliup
+
+# ── 产物 ──
+*.log
+*.tmp
+dist/
+build/
+qrcode.png
