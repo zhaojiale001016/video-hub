@@ -23,11 +23,11 @@
       "versions": [
         {
           "version": "0.2.0",
-          "publishTimestamp": 1795685948,
+          "publishTimestamp": 1795685988,
           "source": {
             "type": "git",
             "url": "https://github.com/zhaojiale001016/video-hub",
-            "commit": "94e8d26a654c5288d252679ac85be59d591d9756",
+            "commit": "d69bb47ec0f5c5fbbd8499508be40260fe8e7d9b",
             "path": "plugins/dsh-video-hub"
           },
           "engines": {
