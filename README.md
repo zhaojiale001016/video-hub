@@ -1,6 +1,11 @@
-# 多平台搬运流水线
+# video-hub · 多平台搬运流水线
 
-外网优质视频 → 自动下载 → 字幕翻译烧录 → LLM 生成中文标题/简介 → Web 管理台审核 → 一键发布 B站(+快手+视频号)。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-%E2%89%A53.11-blue.svg)]()
+[![Release](https://img.shields.io/github/v/release/zhaojiale001016/video-hub)](https://github.com/zhaojiale001016/video-hub/releases)
+[![CI](https://github.com/zhaojiale001016/video-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/zhaojiale001016/video-hub/actions)
+
+外网优质视频 → 自动下载 → 字幕翻译烧录 → LLM 生成中文标题/简介 → Web 管理台审核 → 一键发布 **B站 / 快手 / 视频号**（三平台独立勾选）。
 
 ## 流程
 

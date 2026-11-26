@@ -1,0 +1,15 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m compileall pipeline web cli.py
+      - name: JS syntax
+        run: |
+          python3 -c "import re; h=open('web/static/index.html').read(); open('/tmp/app.js','w').write(re.search(r'<script>(?!src)(.*)</script>', h, re.S).group(1))"
+          node --check /tmp/app.js
