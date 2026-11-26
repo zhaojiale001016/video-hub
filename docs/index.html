@@ -213,12 +213,12 @@ footer .r a:hover{color:var(--ac)}
 <header class="hero">
   <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
   <div class="wrap">
-    <div class="badge rv in"><span class="dot"></span>v1.0.0 · MIT 开源</div>
+    <div class="badge rv in"><span class="dot"></span>v1.1.0 · MIT 开源</div>
     <h1 class="rv in">外网优质视频<br>一站搬运到 <span class="gt">B站 / 快手 / 视频号</span></h1>
     <p class="sub rv in rv-d1">订阅源轮询 → yt-dlp 下载 → <b>whisper 字幕翻译烧录</b> → <b>LLM 中文标题</b> → Web 管理台审核 → 三平台<b>独立勾选</b>一键发布。</p>
     <div class="ctas rv in rv-d2">
       <a class="btn primary" href="https://github.com/zhaojiale001016/video-hub">⭐ GitHub</a>
-      <a class="btn" href="https://github.com/zhaojiale001016/video-hub/releases">下载 v1.0.0</a>
+      <a class="btn" href="https://github.com/zhaojiale001016/video-hub/releases">下载 v1.1.0</a>
       <a class="btn" href="#start">快速开始</a>
     </div>
     <div class="band rv in rv-d3">
@@ -243,7 +243,7 @@ footer .r a:hover{color:var(--ac)}
           <div class="mock-cards">
             <div class="mock-card"><div class="th"><em>08:12</em></div><div class="bd"><div class="t">这条河里的金子比你想象的多得多！淘金实测</div><div class="ft"><s class="ok">✓B站</s><s class="ok">✓快手</s><s class="warm">字幕✓</s></div></div></div>
             <div class="mock-card"><div class="th"><em>12:40</em></div><div class="bd"><div class="t">强迫症狂喜：高压水枪清洗地毯全过程</div><div class="ft"><s class="ok">✓视频号</s><s class="warm">错峰18:00</s></div></div></div>
-            <div class="mock-card"><div class="th"><em>03:55</em></div><div class="bd"><div class="t">THE FIRST TAKE 现场切片「熟肉」</div><div class="ft"><s>未勾选B站</s><s class="ok">✓快手</s></div></div></div>
+            <div class="mock-card"><div class="th"><em>03:55</em></div><div class="bd"><div class="t">THE FIRST TAKE 现场切片「熟肉」</div><div class="ft"><s>✗B站补投中</s><s class="ok">✓快手</s><s class="ok">✓视频号</s></div></div></div>
             <div class="mock-card"><div class="th"><span class="pb"></span><em>21:07</em></div><div class="bd"><div class="t">荒野建造 72 小时：丛林深处的庇护所</div><div class="ft"><s class="warm">处理中 62%</s></div></div></div>
           </div>
         </div>
@@ -262,7 +262,7 @@ footer .r a:hover{color:var(--ac)}
       <div class="pipe-step rv rv-d2"><div class="n">02</div><h3>下载 + 字幕</h3><p>yt-dlp 下载，whisper 探测语音→转写→翻译→烧入画面；按源配策略</p></div>
       <div class="pipe-step rv rv-d3"><div class="n">03</div><h3>LLM 元数据</h3><p>kscc/OpenAI 兼容接口生成中文标题、简介、标签，B站分区自动匹配</p></div>
       <div class="pipe-step rv rv-d4"><div class="n">04</div><h3>管理台审核</h3><p>封面预览、标题编辑、平台勾选、错峰定时、活动匹配，本地 127.0.0.1</p></div>
-      <div class="pipe-step rv rv-d5"><div class="n">05</div><h3>三平台发布</h3><p>B站(biliup)+快手+视频号(sau) 独立投递，逐平台记录结果与失败原因</p></div>
+      <div class="pipe-step rv rv-d5"><div class="n">05</div><h3>三平台发布</h3><p>B站(biliup)+快手+视频号(sau) 独立投递互不阻断，逐平台留痕；部分成功可补投</p></div>
     </div>
   </div>
 </section>
@@ -287,12 +287,12 @@ footer .r a:hover{color:var(--ac)}
     <div class="feat-grid">
       <div class="feat rv rv-d1"><div class="ic">🛡</div><h3>五层防重复</h3><p>DB 唯一键 + yt-dlp archive + 已发布免重入 + 撞稿预检 + 同名拦截——同一视频绝不会下载两次、重投两次。</p></div>
       <div class="feat rv rv-d2"><div class="ic">⧉</div><h3>三平台平等</h3><p>B站/快手/视频号无主次之分，任意勾选组合；只发快手时 B站域流程（撞检/活动/biliup）完全跳过。</p></div>
-      <div class="feat rv rv-d3"><div class="ic">↻</div><h3>重试去重</h3><p>逐平台记录投递结果，重试只补失败平台——已成功的平台绝不重复投稿产生双稿。</p></div>
+      <div class="feat rv rv-d3"><div class="ic">↻</div><h3>重试去重</h3><p>逐平台记录投递结果；已发布稿件可「补投失败平台」，已成功的平台绝不重复投稿产生双稿。</p></div>
       <div class="feat rv rv-d4"><div class="ic">⚙</div><h3>配置全前端可控</h3><p>限额/调度/字幕/LLM/屏蔽词/平台开关都在设置面板热更新，sources.yaml 与 overrides.json 分层。</p></div>
       <div class="feat rv rv-d5"><div class="ic">⏱</div><h3>错峰定时</h3><p>稿件自动排到 ≥4h 间隔的预设档位，跨次分配不撞档；每日下载/上传限额养号防风控。</p></div>
       <div class="feat rv rv-d6"><div class="ic">字</div><h3>生肉→熟肉</h3><p>whisper VAD 探测是否有解说，按源策略选 官方字幕翻译/whisper转写/跳过，字幕样式随分辨率自适应。</p></div>
       <div class="feat rv rv-d7"><div class="ic">🗓</div><h3>仅工作日自动</h3><p>调度器每 tick 重读配置，周末自动停摆，手动按钮不受影响；launchd 常驻崩溃自愈。</p></div>
-      <div class="feat rv rv-d8"><div class="ic">🗑</div><h3>积压老化</h3><p>发现超过 14 天未下载自动转 skipped（可恢复），队列不无限堆积；发布成功可自动删本地文件。</p></div>
+      <div class="feat rv rv-d8"><div class="ic">🗑</div><h3>积压老化</h3><p>发现超过 14 天未下载自动转 skipped（可恢复），队列不无限堆积；全部勾选平台成功才自动删文件，部分成功保留供补投。</p></div>
       <div class="feat rv rv-d9"><div class="ic">🔒</div><h3>本地私有</h3><p>cookie/队列/下载全在 gitignore 的 data/；管理台仅监听 127.0.0.1；API 回显自动给代理账密打码。</p></div>
     </div>
   </div>
