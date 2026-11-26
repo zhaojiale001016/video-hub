@@ -30,6 +30,7 @@
 .venv/bin/python -m pytest tests/ -q          # 单测(49例)
 .venv/bin/python -m compileall pipeline web cli.py mcp_server.py
 .venv/bin/python3 cli.py doctor                # 体检(登录态/队列/额度)
+.venv/bin/python3 cli.py mcp                   # MCP stdio server(给 AI 工具接)
 curl -s http://127.0.0.1:8600/api/stats        # 服务在跑时
 ```
 

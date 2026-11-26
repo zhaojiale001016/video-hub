@@ -230,7 +230,7 @@ video-hub 不止有 Web 管理台——三种方式让 AI 工具直接驱动整�
 ```json
 {"mcpServers": {"video-hub": {
   "command": "/path/to/video-hub/.venv/bin/python3",
-  "args": ["/path/to/video-hub/mcp_server.py"]}}}
+  "args": ["/path/to/video-hub/cli.py", "mcp"]}}}
 ```
 
 配进 `claude_desktop_config.json` / `.mcp.json` / Cursor / Devin / Windsurf 等任意 MCP 客户端，

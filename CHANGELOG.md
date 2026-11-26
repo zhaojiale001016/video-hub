@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.5.0 (2025-06)
+### Added
+- **AI Agent 接入**：`mcp_server.py` 零依赖 stdio MCP server（19 个 `hub_*` 工具），`cli.py mcp` 启动；`skills/video-hub/SKILL.md` 通用 skill；`AGENTS.md` 仓库导引
+- README 新章「给 AI Agent 用」（MCP/Skill/裸 API 三选一）
+
+## v1.4.0 (2025-06)
+### Added
+- **测试体系**：49 个 pytest 用例（uploader/multipub/db/precheck/config），CI 新增 pytest job
+- 跨平台：字幕字体补 Linux/Windows 候选、`_notify` 分流 notify-send、`_sau_py` 兼容 Windows、`deploy/video-hub.service.example` systemd 单元
+- `serve()` 非本机绑定拒绝启动（`VIDEOHUB_ALLOW_REMOTE=1` 显式放开）；`valid_platform_id()` 统一校验收口
+- `vendor/sau/PATCHES.md` 补丁清单、本 CHANGELOG
+
+### Fixed
+- precheck 相似度加 bigram Jaccard（抗语序重排）；uploader 标题查重复用归一化
+- `_next_slot_ts` 计入 failed 条目 dtime；`config` 空节（`settings: null`）不再 AttributeError
+
 ## v1.3.7 (2025-06)
 ### Fixed
 - 启动调和误删文件：`delete_after_publish` 开启时，部分平台未投完的稿件文件在重启时被删，补投材料全毁。现仅 `all_selected_done` 才自动清理

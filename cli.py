@@ -51,6 +51,7 @@ def main():
     sub.add_parser("stats", help="统计")
     p = sub.add_parser("serve", help="启动Web管理台")
     p.add_argument("--port", type=int, default=8600)
+    sub.add_parser("mcp", help="启动 MCP stdio server(接 Claude/Cursor/Devin 等 AI 工具)")
 
     args = ap.parse_args()
     cfg = C.load_config(args.config)
@@ -170,6 +171,9 @@ def main():
         from web.app import serve
         print(f"管理台: http://127.0.0.1:{args.port}")
         serve(port=args.port)
+    elif args.cmd == "mcp":
+        import mcp_server
+        mcp_server.main()
 
 
 if __name__ == "__main__":
