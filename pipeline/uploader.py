@@ -90,6 +90,30 @@ def selected_platforms(item: dict) -> set | None:
         return None
 
 
+def required_platforms(item: dict, cfg: dict) -> set:
+    """实际需要投递成功的平台: 勾选 ∩ 可投递(B站 + 已启用的多平台)。
+    勾选但未启用的平台不计入(无法投递, 不应阻塞清理)。"""
+    from . import multipub
+    sel = selected_platforms(item)
+    deliverable = {"bilibili"} | set(multipub.enabled_platforms(cfg))
+    return deliverable if sel is None else (set(sel) & deliverable)
+
+
+def all_selected_done(item: dict, cfg: dict, res: dict | None = None) -> bool:
+    """所有勾选平台是否都已成功(extra_pub ok:true / 有 bvid)。
+    res 传入时优先于条目里的 extra_pub(本轮回写前判断用)。"""
+    if res is None:
+        try:
+            res = json.loads(item.get("extra_pub") or "{}")
+        except Exception:
+            res = {}
+    done = {p for p, r in res.items() if r.get("ok") is True}
+    if item.get("bvid"):
+        done.add("bilibili")
+    req = required_platforms(item, cfg)
+    return bool(req) and req <= done
+
+
 def _extra_results(item: dict, extra: list[dict]) -> str:
     return json.dumps(
         {r["platform"]: {"ok": r["ok"], "name": r["name"],
@@ -104,7 +128,7 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
     item = db.get(item_id)
     if not item:
         raise PublishError(f"item {item_id} not found")
-    if item.get("status") not in ("ready", "failed"):
+    if item.get("status") not in ("ready", "failed", "published"):
         raise PublishError(f"status={item.get('status')} 不可投稿(需 ready)")
     if not item.get("file_path"):
         raise PublishError("缺少视频文件")
@@ -147,7 +171,8 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
         _prog.clear(item_id)
         if any(r["ok"] for r in extra):
             db.mark_published(item_id, item.get("bvid") or "", "仅多平台投递")
-            if C.get_setting(cfg, "delete_after_publish", False):
+            if C.get_setting(cfg, "delete_after_publish", False) \
+                    and all_selected_done(item, cfg, merged):
                 _delete_files(item)
             return item.get("bvid") or ""
         db.set_status(item_id, "failed", fail_reason="多平台投递全部失败")
@@ -275,7 +300,8 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
     if bvid or any(r["ok"] for r in extra):
         db.mark_published(item_id, bvid or item.get("bvid") or "",
                           out[-1000:] if bvid else "多平台投递成功(B站未成功)")
-        if C.get_setting(cfg, "delete_after_publish", False):
+        if C.get_setting(cfg, "delete_after_publish", False) \
+                and all_selected_done(item, cfg, results):
             _delete_files(item)
         return bvid or item.get("bvid") or ""
     if done:  # 历史已有平台成功, 保持 published 不回退

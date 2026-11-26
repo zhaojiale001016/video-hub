@@ -353,6 +353,20 @@ def regen(item_id: int):
     return {"ok": True, **meta}
 
 
+@app.delete("/api/items/{item_id}/files")
+def delete_files(item_id: int):
+    """手动清理稿件本地文件(视频+封面+字幕目录)。仅已发布条目可用;
+    未全平台成功的稿件请先用「补投」, 文件是重投的必要材料。"""
+    item = db.get(item_id)
+    if not item:
+        raise HTTPException(404)
+    if item["status"] != "published":
+        raise HTTPException(400, "仅已发布稿件可清理文件")
+    uploader._delete_files(item)
+    db.update(item_id, file_path="", cover_path="", subtitle_path="")
+    return {"ok": True}
+
+
 @app.post("/api/items/{item_id}/publish")
 def publish(item_id: int, force: bool = False, dtime: int = 0):
     if dtime:

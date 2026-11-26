@@ -182,7 +182,7 @@ subtitles:
 - `auto_poll_interval_min: 360` + `auto_download_after_poll: true` — 每 6h 自动拉新+下载+处理
 - `auto_workdays_only: true` — **仅工作日自动执行**，周末整 tick 跳过（手动按钮不受影响）
 - `whisper_device: mps` — Apple Silicon GPU 转写（约2x速，初始化失败自动回退 cpu）
-- `delete_after_publish` — 发布成功后删本地视频，防磁盘撑爆（跳过条目也总是删文件、留去重记录）
+- `delete_after_publish` — **全部勾选平台投递成功**才删本地视频；部分成功保留文件供补投，也可在抽屉里手动「🗑 清理文件」（跳过条目总是删文件、留去重记录）
 - `cli.py doctor` — 体检：cookie/登录态/活动数/队列/今日已投
 
 ## 防重复 & 每日额度
