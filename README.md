@@ -71,12 +71,17 @@ cp config/sources.example.yaml config/sources.yaml   # 首启缺省时也会自�
 #   https://github.com/biliup/biliup-rs/releases → 下载对应平台二进制
 #   放到 bin/biliup 并 chmod +x（路径可在设置里改）
 
-# 4. 登录（扫码，终端跑）
-.venv/bin/python3 cli.py login         # B站
-.venv/bin/python3 cli.py login-ks      # 快手(浏览器弹窗)
-.venv/bin/python3 cli.py login-sph     # 视频号
+# 4. sau 投递引擎（快手/抖音/视频号等13平台; 只用B站可跳过）
+cd vendor/sau && python3 -m venv .venv && .venv/bin/pip install -e . \
+  && .venv/bin/patchright install chromium && cd ../..
+#   国内拉浏览器慢可加镜像: PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright
 
-# 5. 跑起来
+# 5. 登录（扫码，终端跑）
+.venv/bin/python3 cli.py login                  # B站
+.venv/bin/python3 cli.py login-extra douyin     # 任意 sau 平台(快手 kuaishou / 视频号 tencent ...)
+#   login-ks / login-sph 是快手/视频号的兼容别名
+
+# 6. 跑起来
 .venv/bin/python3 cli.py serve --port 8600   # 或交给 launchd 常驻(见下)
 .venv/bin/python3 cli.py doctor              # 体检
 ```

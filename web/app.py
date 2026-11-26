@@ -678,6 +678,13 @@ def put_settings(body: dict = Body(...)):
             typ = schema.get(k, schema.get("*"))   # "*" 通配: 任意键按该类型收
             if typ is None:
                 continue
+            if sec == "extra_platforms":
+                # 平台 id 会拼进 cookie 文件名/subprocess 参数 → 强制 slug;
+                # bilibili/article 保留字会重复投递或无效 → 拒收
+                if not re.fullmatch(r"[a-z][a-z0-9_-]{0,19}", k):
+                    raise HTTPException(400, f"平台id非法(须为小写slug): {k!r}")
+                if k in multipub._RESERVED:
+                    raise HTTPException(400, f"{k} 为保留平台id, 不可配在 extra_platforms")
             if isinstance(v, str) and "***@" in v:
                 continue            # 回显的掩码值不写回
             try:
@@ -706,7 +713,13 @@ def put_settings(body: dict = Body(...)):
                     if not isinstance(cur, dict):
                         cur = cfg[sec][k] = {}
                     if sec == "extra_platforms":
-                        # v 是该平台的字段字典 {enabled?, account?}
+                        # v 是该平台的字段字典 {enabled?, account?};
+                        # account 拼进 cookie 文件名 → 校验 slug
+                        acct = v.get("account")
+                        if acct is not None and not re.fullmatch(
+                                r"[a-zA-Z0-9_-]{1,30}", str(acct)):
+                            raise HTTPException(
+                                400, f"extra_platforms.{k}.account 非法: {acct!r}")
                         cur.update({kk: v[kk] for kk in ("enabled", "account")
                                     if kk in v})
                     elif sec == "subtitles" and k == "policy":
@@ -823,17 +836,25 @@ def _backup_db():
 
 def _reconcile():
     """启动调和: 上次进程死在任务中途的残留。
-    published 但本地文件还在 = 死在 multipub/删文件之间 → 告警+清文件。
-    不重投多平台(重投会在视频号/快手产生重复稿)。"""
-    orphans = []
+    published 且全平台已投完但文件还在 = 死在删文件前 → 补删;
+    部分成功的稿件文件是补投材料, 必须保留。"""
+    orphans, pending = [], []
+    auto_del = C.get_setting(cfg, "delete_after_publish", False)
     for it in db.list_items(status="published", limit=10 ** 6):
         fp = it.get("file_path") or ""
-        if fp and Path(fp).exists():
+        if not (fp and Path(fp).exists()):
+            continue
+        if uploader.all_selected_done(it, cfg):
             orphans.append(it["id"])
-            if C.get_setting(cfg, "delete_after_publish", False):
+            if auto_del:
                 uploader._delete_files(it)
+        else:
+            pending.append(it["id"])
     if orphans:
-        log.warning("reconcile: published 残留文件已清理: %s (多平台结果需人工核对 extra_pub)", orphans)
+        log.warning("reconcile: 已发布残留文件%s: %s",
+                    "已清理" if auto_del else "待清理(开启 delete_after_publish 自动清)", orphans)
+    if pending:
+        log.info("reconcile: 部分平台未投完, 文件保留待补投: %s", pending)
     # 进程崩溃残留的 progress 登记 → 清掉, 否则这些条目永远 _item_busy 无法操作
     with JOBS_LOCK:
         running_ids = {int(j["name"].rsplit(":", 1)[1]) for j in JOBS.values()
@@ -846,7 +867,8 @@ def _reconcile():
     stuck = [it["id"] for it in db.list_items(status="downloaded", limit=10 ** 6)]
     if stuck:
         log.info("reconcile: downloaded 中途态条目待续跑: %s", stuck)
-    return {"orphans_cleaned": orphans, "stuck_downloaded": stuck}
+    return {"orphans": orphans, "pending_retry": pending,
+            "stuck_downloaded": stuck}
 
 
 def serve(host="127.0.0.1", port=8600):

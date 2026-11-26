@@ -282,13 +282,17 @@ footer .r a:hover{color:var(--ac)}
       <pre id="qsPre"><span class="c"># 环境</span>
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
+<span class="c"># sau 投递引擎(13个浏览器自动化平台; 只用B站可跳过)</span>
+cd vendor/sau && python3 -m venv .venv && .venv/bin/pip install -e . \
+  && .venv/bin/patchright install chromium && cd ../..
+
 <span class="c"># 配置（首启自动从 example 复制）</span>
 cp config/sources.example.yaml config/sources.yaml
 <span class="c">#   → sources 里配你的订阅源，line 起任意名字</span>
 
 <span class="c"># 登录: B站 + 任意 sau 平台(扫码弹浏览器)</span>
 .venv/bin/python3 cli.py login                <span class="c"># B站</span>
-.venv/bin/python3 cli.py login-extra douyin   <span class="c"># 抖音/其他平台同理</span>
+.venv/bin/python3 cli.py login-extra douyin   <span class="c"># 抖音/快手kuaishou/视频号tencent...</span>
 
 <span class="c"># 启动 → http://127.0.0.1:8600 (设置面板勾选启用平台)</span>
 .venv/bin/python3 cli.py serve</pre>

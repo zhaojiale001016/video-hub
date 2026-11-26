@@ -24,12 +24,19 @@ def _cookie(cfg: dict) -> str:
 
 
 def _delete_files(item: dict):
-    """删除条目本地文件(视频+封面+字幕整目录)，DB记录保留用于去重。"""
+    """删除条目本地文件(视频+封面+字幕整目录)，DB记录保留用于去重。
+    目录护栏: 只整删 download_dir/<id>/ 约定布局; 非常规路径只删文件本身,
+    防 file_path 异常时 rmtree 误删父目录。"""
     try:
         import shutil
         fp = item.get("file_path")
-        if fp:
-            shutil.rmtree(Path(fp).parent, ignore_errors=True)
+        if not fp:
+            return
+        parent = Path(fp).parent
+        if parent.name == str(item.get("id")):
+            shutil.rmtree(parent, ignore_errors=True)
+        else:
+            Path(fp).unlink(missing_ok=True)
     except OSError:
         pass
 
@@ -72,7 +79,9 @@ def build_upload_cmd(item: dict, cfg: dict) -> list[str]:
     if cr == 1 and item.get("mission_id"):
         cmd += ["--mission-id", str(item["mission_id"])]
     dtime = item.get("dtime")
-    if dtime:
+    # 过期/临期 dtime(重试时原计划已过点)不再传给 biliup, 直接即时发;
+    # 否则 B站 API 拒绝会让该稿永远投不出
+    if dtime and dtime > __import__("time").time() + 600:
         cmd += ["--dtime", str(dtime)]
     return cmd
 
