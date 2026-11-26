@@ -82,15 +82,16 @@ def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dic
         progress.set_stage(iid, "收尾中")
 
 
-def publish_all(item: dict, cfg: dict) -> list[dict]:
-    """对启用平台逐一投递; 条目级 pub_platforms 可圈定子集(""=全部, "[]"=只发B站)。"""
-    allow = None
-    sel = (item.get("pub_platforms") or "").strip()
-    if sel:
-        try:
-            allow = set(json.loads(sel))
-        except Exception:
-            allow = None
+def publish_all(item: dict, cfg: dict, allow: set | None = None) -> list[dict]:
+    """对启用平台逐一投递; 条目级 pub_platforms 可圈定子集(""=全部, "[]"=只发B站)。
+    allow=显式白名单(重试去重: 调用方剔除已成功平台后传入)。"""
+    if allow is None:
+        sel = (item.get("pub_platforms") or "").strip()
+        if sel:
+            try:
+                allow = set(json.loads(sel))
+            except Exception:
+                allow = None
     results = []
     for p in enabled_platforms(cfg):
         if allow is not None and p not in allow:

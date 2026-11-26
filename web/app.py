@@ -52,13 +52,27 @@ def _running_job(name: str) -> str | None:
     return None
 
 
+def _prune_jobs():
+    """JOBS 表常驻内存, 防无界增长: 非 running 任务只留最近200条。"""
+    with JOBS_LOCK:
+        stale = sorted((k for k, v in JOBS.items() if v["status"] != "running"),
+                       key=lambda k: JOBS[k]["ts"])
+        for k in stale[:-200]:
+            JOBS.pop(k, None)
+
+
 def run_job(name: str, fn, *args, **kwargs) -> str:
-    """同名任务在跑时直接复用其 job_id，防止重复并发。"""
-    if old := _running_job(name):
-        return old
+    """同名任务在跑时直接复用其 job_id，防止重复并发。
+    check+insert 同锁原子, 快速双击不会产生双任务。"""
+    fam = name.split(":")[0].split("-")[0]
     jid = uuid.uuid4().hex[:8]
     with JOBS_LOCK:
+        for j in JOBS.values():
+            if (j["status"] == "running"
+                    and j["name"].split(":")[0].split("-")[0] == fam):
+                return next(k for k, v in JOBS.items() if v is j)
         JOBS[jid] = {"name": name, "status": "running", "log": [], "ts": time.time()}
+    _prune_jobs()
 
     def worker():
         try:
@@ -227,8 +241,11 @@ class ItemPatch(BaseModel):
 
 @app.patch("/api/items/{item_id}")
 def patch_item(item_id: int, p: ItemPatch):
-    if not db.get(item_id):
+    it = db.get(item_id)
+    if not it:
         raise HTTPException(404, "not found")
+    if it["status"] == "published":
+        raise HTTPException(400, "已发布稿件不可编辑(会与线上稿件脱节)")
     if _item_busy(item_id):
         raise HTTPException(400, "该条目正在处理中，等任务结束再编辑")
     fields = {}
@@ -508,9 +525,7 @@ def sources():
 
 def _persist_sources():
     """当前生效源列表整体写入覆盖层(增删/开关统一走这条)。"""
-    over = C.load_overrides()
-    over["sources"] = cfg.get("sources", [])
-    C.save_overrides(over)
+    C.update_overrides(lambda o: o.__setitem__("sources", cfg.get("sources", [])))
 
 
 @app.post("/api/sources")
@@ -609,7 +624,7 @@ def get_settings():
 
 @app.put("/api/settings")
 def put_settings(body: dict = Body(...)):
-    over = C.load_overrides()
+    pending = {}
     applied = {}
     for sec, fields in (body or {}).items():
         schema = SETTINGS_SCHEMA.get(sec)
@@ -656,9 +671,13 @@ def put_settings(body: dict = Body(...)):
             except (TypeError, ValueError):
                 raise HTTPException(400, f"{sec}.{k} 类型错误: {v!r}")
             cfg.setdefault(sec, {})[k] = v        # 内存热更新, 新任务立即生效
-            over.setdefault(sec, {})[k] = v        # 覆盖层持久化
+            pending.setdefault(sec, {})[k] = v
             applied[f"{sec}.{k}"] = v
-    C.save_overrides(over)
+
+    def _persist(o):
+        for sec, fields in pending.items():
+            C._deep_merge(o.setdefault(sec, {}), fields)
+    C.update_overrides(_persist)
     return {"ok": True, "applied": applied}
 
 
@@ -764,6 +783,14 @@ def _reconcile():
                 uploader._delete_files(it)
     if orphans:
         log.warning("reconcile: published 残留文件已清理: %s (多平台结果需人工核对 extra_pub)", orphans)
+    # 进程崩溃残留的 progress 登记 → 清掉, 否则这些条目永远 _item_busy 无法操作
+    with JOBS_LOCK:
+        running_ids = {int(j["name"].rsplit(":", 1)[1]) for j in JOBS.values()
+                       if j["status"] == "running" and ":" in j["name"]
+                       and j["name"].rsplit(":", 1)[1].isdigit()}
+    for iid in list(progress.snapshot()):
+        if iid not in running_ids:
+            progress.clear(iid)
     # 卡在 downloaded/new 但有完整文件的 = 死在加工中途, 下次下载任务会断点续跑, 仅提示
     stuck = [it["id"] for it in db.list_items(status="downloaded", limit=10 ** 6)]
     if stuck:

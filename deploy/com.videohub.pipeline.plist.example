@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- macOS launchd 常驻模板: 登录自启 + 崩溃自愈
+     用法: 复制为 ~/Library/LaunchAgents/com.videohub.pipeline.plist,
+           把 __PROJECT_DIR__ 全量替换为你的项目绝对路径(注意: 不要放 ~/Desktop
+           等 TCC 受限目录, launchd 进程无权限读), 然后:
+           launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.videohub.pipeline.plist -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PLIST 1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.videohub.pipeline</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PROJECT_DIR__/.venv/bin/python3</string>
+        <string>cli.py</string>
+        <string>serve</string>
+        <string>--port</string>
+        <string>8600</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__PROJECT_DIR__</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>__PROJECT_DIR__/data/server.log</string>
+    <key>StandardErrorPath</key>
+    <string>__PROJECT_DIR__/data/server.log</string>
+</dict>
+</plist>

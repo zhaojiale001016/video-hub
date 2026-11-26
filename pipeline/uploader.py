@@ -109,26 +109,47 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
     if not item.get("file_path"):
         raise PublishError("缺少视频文件")
     sel = selected_platforms(item)
-    if sel is not None and "bilibili" not in sel:
-        if not sel:
-            raise PublishError("未勾选任何发布平台")
-        from . import multipub
-        extra = multipub.publish_all(item, cfg)
+    if sel is not None and not sel:
+        raise PublishError("未勾选任何发布平台")
+    # 重试去重: extra_pub 里已成功的平台不再重投(防视频号/快手重复稿件)
+    try:
+        prev = json.loads(item.get("extra_pub") or "{}")
+    except Exception:
+        prev = {}
+    done = {p for p, r in prev.items() if r.get("ok") is True}
+    if item.get("bvid"):
+        done.add("bilibili")
+    from . import multipub
+    enabled_multi = multipub.enabled_platforms(cfg)
+    want_bili = (sel is None or "bilibili" in sel) and "bilibili" not in done
+    base = enabled_multi if sel is None else [p for p in sel if p != "bilibili"]
+    multi_wanted = {p for p in base if p in enabled_multi and p not in done}
+
+    if not want_bili and not multi_wanted:
+        # 勾选平台全部已成功过 → 只补状态不重投
+        db.mark_published(item_id, item.get("bvid") or "", "全部平台已投递(去重)")
+        if C.get_setting(cfg, "delete_after_publish", False):
+            _delete_files(item)
+        return item.get("bvid") or ""
+
+    if not want_bili:
+        extra = multipub.publish_all(item, cfg, allow=multi_wanted)
         if not extra:
             raise PublishError("未启用任何已勾选的发布平台")
-        db.update(item_id, extra_pub=json.dumps(
-            {"bilibili": {"ok": None, "name": "B站", "msg": "未勾选"},
-             **json.loads(_extra_results(item, extra))}, ensure_ascii=False))
+        merged = dict(prev)
+        merged.setdefault("bilibili", {"ok": None, "name": "B站", "msg": "未勾选"})
+        merged.update(json.loads(_extra_results(item, extra)))
+        db.update(item_id, extra_pub=json.dumps(merged, ensure_ascii=False))
         for r in extra:
             log.info("item %s → %s: %s", item_id, r["name"],
                      "OK" if r["ok"] else r["msg"][-120:])
         from . import progress as _prog
         _prog.clear(item_id)
         if any(r["ok"] for r in extra):
-            db.mark_published(item_id, "", "仅多平台投递")
+            db.mark_published(item_id, item.get("bvid") or "", "仅多平台投递")
             if C.get_setting(cfg, "delete_after_publish", False):
                 _delete_files(item)
-            return ""
+            return item.get("bvid") or ""
         db.set_status(item_id, "failed", fail_reason="多平台投递全部失败")
         raise PublishError("多平台投递全部失败")
     cr = effective_copyright(item, cfg)
@@ -220,11 +241,11 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
     if proc.returncode == 0 and m:
         bvid = m.group(0)
         db.mark_published(item_id, bvid, out[-1000:])
-        results = {"bilibili": {"ok": True, "name": "B站", "bvid": bvid}}
+        results = dict(prev)
+        results["bilibili"] = {"ok": True, "name": "B站", "bvid": bvid}
         # 多平台投递(尽力而为): 必须在删文件之前, 失败不影响B站结果
         try:
-            from . import multipub
-            extra = multipub.publish_all(item, cfg)
+            extra = multipub.publish_all(item, cfg, allow=multi_wanted)
             if extra:
                 results.update(json.loads(_extra_results(item, extra)))
                 for r in extra:
@@ -237,10 +258,10 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
         if C.get_setting(cfg, "delete_after_publish", False):
             _delete_files(item)
         return m.group(0)
-    db.update(item_id, extra_pub=json.dumps(
-        {"bilibili": {"ok": False, "name": "B站",
-                      "msg": out[-200:].replace("\r", " ")}},
-        ensure_ascii=False))
+    merged = dict(prev)
+    merged["bilibili"] = {"ok": False, "name": "B站",
+                          "msg": out[-200:].replace("\r", " ")}
+    db.update(item_id, extra_pub=json.dumps(merged, ensure_ascii=False))
     raise PublishError(f"投稿失败(rc={proc.returncode}): {out[-400:]}")
 
 
