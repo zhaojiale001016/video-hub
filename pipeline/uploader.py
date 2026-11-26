@@ -153,97 +153,113 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
         db.set_status(item_id, "failed", fail_reason="多平台投递全部失败")
         raise PublishError("多平台投递全部失败")
     cr = effective_copyright(item, cfg)
+    results = dict(prev)
+    # B站域前置校验: 任何阻断只记B站失败, 不拦截其他勾选平台
+    bili_block = None
     if cr == 2 and not item.get("source_url"):
-        raise PublishError("转载投稿必须有 source_url")
-    if item.get("title"):
+        bili_block = "转载投稿必须有 source_url"
+    elif item.get("title"):
         from difflib import SequenceMatcher
         for dup in db.list_items(status="published", limit=1000):
             t = dup.get("title") or ""
             if t and (t == item["title"]
                       or SequenceMatcher(None, t, item["title"]).ratio() >= 0.9):
-                raise PublishError(
-                    f"标题与已发布 #{dup['id']}({dup.get('bvid','')}) 高度相似，请改标题")
-    check_daily_limit(db, cfg)
-
-    if not force:  # 站内撞稿预检
+                bili_block = (f"标题与已发布 #{dup['id']}({dup.get('bvid','')}) "
+                              "高度相似，请改标题")
+                break
+    if not bili_block:
+        try:
+            check_daily_limit(db, cfg)
+        except PublishError as e:
+            bili_block = str(e)
+    if not bili_block and not force:  # 站内撞稿预检
         from . import precheck
         hit = precheck.check_collision(cfg, item, db=db)
         if hit:
             msg = (f"撞稿(相似度{hit['sim']:.0%}): {hit['bvid']} "
                    f"《{hit['title']}》@{hit['author']}")
             if hit["sim"] >= 0.85:
-                # 高度相似=确认重复: 自动跳过+删本地文件(库记录保留防重复入队)
+                # 高度相似=确认重复: 该内容已在B站存在, 全平台停发+清理
                 db.set_status(item_id, "skipped",
                               fail_reason=f"{msg} —— 已自动清理")
                 _delete_files(item)
                 raise PublishError(f"{msg} —— 已自动跳过+删除文件")
-            db.set_status(item_id, "failed",
-                          fail_reason=f"{msg} —— 相似度临界，确认后点「强制发」")
-            raise PublishError(msg + " —— 确认后点「强制发」")
+            bili_block = msg + " —— 确认后点「强制发」"
 
-    # 自制稿(1)才允许参加活动: 转载稿B站 code 21071 拒收
-    if cr == 1 and not item.get("mission_id"):
-        from . import missions
-        m = missions.pick_mission(cfg, item.get("line", ""), item)
-        if m:
-            tags = json.loads(item.get("tags") or "[]")
-            if m.get("tag") and m["tag"] not in tags and len(tags) < 12:
-                tags.append(m["tag"])
-            db.update(item_id, mission_id=m["mission_id"],
-                      tags=json.dumps(tags, ensure_ascii=False))
-            item = db.get(item_id)
-            log.info("item %s → mission %s(%s)", item_id, m["name"], m["mission_id"])
-
-    cmd = build_upload_cmd(item, cfg)
-    if dry_run:
-        return "DRY: " + " ".join(cmd)
-
-    # Popen 流式读输出: biliup 进度条(\r刷新)逐段解析成上传百分比
-    import time as _t
     from . import progress
-    progress.set_stage(item_id, "上传中", 0, "启动 biliup")
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, text=True, errors="ignore")
-    parts, last, t0 = [], "", _t.time()
-    try:
-        while True:
-            if _t.time() - t0 > 3600:
-                proc.kill()
-                break
-            ch = proc.stdout.read(1)
-            if not ch:
-                break
-            last += ch
-            if ch in "\r\n":
-                parts.append(last)
-                frag = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", last).strip()
-                last = ""
-                m = re.search(r"([\d.]+)\s*([KMGT]i?B)\s*/\s*([\d.]+)\s*([KMGT]i?B)", frag)
-                mp = re.search(r"([\d.]+)\s*%", frag)
-                if m:
-                    pct = _to_bytes(m.group(1), m.group(2)) / max(
-                        _to_bytes(m.group(3), m.group(4)), 1)
-                    progress.set_stage(
-                        item_id, "上传中", pct,
-                        f"共{_to_bytes(m.group(3), m.group(4))/1e6:.0f}MB")
-                elif mp:
-                    progress.set_stage(item_id, "上传中",
-                                       float(mp.group(1)) / 100, frag[-60:])
-                elif len(frag) > 4 and "{" not in frag:
-                    progress.set_stage(item_id, "上传中", None, frag[-60:])
-        proc.wait()
-        out = ("".join(parts) + last)
-    finally:
-        progress.clear(item_id)
-    log.info("biliup out: %s", out[-2000:])
+    bvid, out = "", ""
+    if bili_block:
+        if dry_run:
+            return "DRY: B站域阻断: " + bili_block
+        results["bilibili"] = {"ok": False, "name": "B站", "msg": bili_block[:200]}
+        log.warning("item %s B站域阻断(其余平台照常): %s", item_id, bili_block)
+    else:
+        # 自制稿(1)才允许参加活动: 转载稿B站 code 21071 拒收
+        if cr == 1 and not item.get("mission_id"):
+            from . import missions
+            m = missions.pick_mission(cfg, item.get("line", ""), item)
+            if m:
+                tags = json.loads(item.get("tags") or "[]")
+                if m.get("tag") and m["tag"] not in tags and len(tags) < 12:
+                    tags.append(m["tag"])
+                db.update(item_id, mission_id=m["mission_id"],
+                          tags=json.dumps(tags, ensure_ascii=False))
+                item = db.get(item_id)
+                log.info("item %s → mission %s(%s)", item_id, m["name"], m["mission_id"])
 
-    m = re.search(r"BV1[A-Za-z0-9]{9}", out)
-    if proc.returncode == 0 and m:
-        bvid = m.group(0)
-        db.mark_published(item_id, bvid, out[-1000:])
-        results = dict(prev)
-        results["bilibili"] = {"ok": True, "name": "B站", "bvid": bvid}
-        # 多平台投递(尽力而为): 必须在删文件之前, 失败不影响B站结果
+        cmd = build_upload_cmd(item, cfg)
+        if dry_run:
+            return "DRY: " + " ".join(cmd)
+
+        # Popen 流式读输出: biliup 进度条(\r刷新)逐段解析成上传百分比
+        import time as _t
+        progress.set_stage(item_id, "上传中", 0, "启动 biliup")
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, text=True, errors="ignore")
+        parts, last, t0 = [], "", _t.time()
+        try:
+            while True:
+                if _t.time() - t0 > 3600:
+                    proc.kill()
+                    break
+                ch = proc.stdout.read(1)
+                if not ch:
+                    break
+                last += ch
+                if ch in "\r\n":
+                    parts.append(last)
+                    frag = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", last).strip()
+                    last = ""
+                    m = re.search(r"([\d.]+)\s*([KMGT]i?B)\s*/\s*([\d.]+)\s*([KMGT]i?B)", frag)
+                    mp = re.search(r"([\d.]+)\s*%", frag)
+                    if m:
+                        pct = _to_bytes(m.group(1), m.group(2)) / max(
+                            _to_bytes(m.group(3), m.group(4)), 1)
+                        progress.set_stage(
+                            item_id, "上传中", pct,
+                            f"共{_to_bytes(m.group(3), m.group(4))/1e6:.0f}MB")
+                    elif mp:
+                        progress.set_stage(item_id, "上传中",
+                                           float(mp.group(1)) / 100, frag[-60:])
+                    elif len(frag) > 4 and "{" not in frag:
+                        progress.set_stage(item_id, "上传中", None, frag[-60:])
+            proc.wait()
+            out = ("".join(parts) + last)
+        finally:
+            progress.clear(item_id)
+        log.info("biliup out: %s", out[-2000:])
+
+        m = re.search(r"BV1[A-Za-z0-9]{9}", out)
+        if proc.returncode == 0 and m:
+            bvid = m.group(0)
+            results["bilibili"] = {"ok": True, "name": "B站", "bvid": bvid}
+        else:
+            results["bilibili"] = {"ok": False, "name": "B站",
+                                   "msg": out[-200:].replace("\r", " ")}
+
+    # 多平台投递: 无论B站成败, 剩余勾选平台照常执行
+    extra = []
+    if multi_wanted:
         try:
             extra = multipub.publish_all(item, cfg, allow=multi_wanted)
             if extra:
@@ -253,16 +269,21 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
                              "OK" if r["ok"] else r["msg"][-120:])
         except Exception as e:
             log.warning("multipub error: %s", e)
-        db.update(item_id, extra_pub=json.dumps(results, ensure_ascii=False))
-        progress.clear(item_id)   # multipub 各阶段进度兜底清理
+    db.update(item_id, extra_pub=json.dumps(results, ensure_ascii=False))
+    progress.clear(item_id)   # multipub 各阶段进度兜底清理
+
+    if bvid or any(r["ok"] for r in extra):
+        db.mark_published(item_id, bvid or item.get("bvid") or "",
+                          out[-1000:] if bvid else "多平台投递成功(B站未成功)")
         if C.get_setting(cfg, "delete_after_publish", False):
             _delete_files(item)
-        return m.group(0)
-    merged = dict(prev)
-    merged["bilibili"] = {"ok": False, "name": "B站",
-                          "msg": out[-200:].replace("\r", " ")}
-    db.update(item_id, extra_pub=json.dumps(merged, ensure_ascii=False))
-    raise PublishError(f"投稿失败(rc={proc.returncode}): {out[-400:]}")
+        return bvid or item.get("bvid") or ""
+    if done:  # 历史已有平台成功, 保持 published 不回退
+        raise PublishError("本轮重试平台全部失败(已有成功平台, 保持 published)")
+    db.set_status(item_id, "failed", fail_reason="全部勾选平台投递失败")
+    raise PublishError(
+        f"投稿失败: B站={results.get('bilibili',{}).get('msg','')[:200]} "
+        + "; ".join(f"{r['name']}={r['msg'][-100:]}" for r in extra if not r["ok"]))
 
 
 def verify_published(cfg: dict, db: DB, max_age: int = 86400) -> list[dict]:
