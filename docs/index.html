@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>video-hub · AI 可操作的视频搬运中台</title>
-<meta name="description" content="AI 可操作的本地视频搬运中台：订阅源 → 下载 → 字幕翻译烧录 → LLM 中文标题 → 审核 → 投递到 B站/快手/抖音等 14 个平台。DSH 原生插件 + MCP + Skill + REST API 四种接入，本地私有运行。">
+<title>video-hub · 多平台视频搬运中台</title>
+<meta name="description" content="本地视频搬运中台：订阅源 → 下载 → 字幕翻译烧录 → LLM 中文标题 → 审核 → 投递到 B站/快手/抖音等 14 个平台。附 DSH 插件/MCP/Skill/REST API 四种 agent 接入，本地私有运行。">
 <style>
 :root{
   --bg:#f7f8fc; --bg2:#eff2f8; --card:#ffffff; --line:#e4e9f2;
@@ -211,7 +211,7 @@ footer .r a:hover{color:var(--ac)}
   <div class="wrap">
     <a class="logo" href="#"><span class="mark">▶</span>video-hub</a>
     <div class="nav-links">
-      <a href="#ai">AI 接入</a><a href="#flow">工作流</a><a href="#feat">能力</a><a href="#plat">平台</a><a href="#start">快速开始</a>
+      <a href="#flow">工作流</a><a href="#feat">能力</a><a href="#plat">平台</a><a href="#ai">AI 接入</a><a href="#start">快速开始</a>
     </div>
     <a class="nav-gh" href="https://github.com/zhaojiale001016/video-hub">GitHub →</a>
   </div>
@@ -220,19 +220,19 @@ footer .r a:hover{color:var(--ac)}
 <header class="hero">
   <div class="blob b1"></div><div class="blob b2"></div>
   <div class="wrap">
-    <div class="badge rv in"><span class="dot"></span>v1.6.0 · MIT 开源 · 本地运行 · <span class="dsh">DeepSeek Harness 原生插件</span></div>
-    <h1 class="rv in">你的 AI 员工<br>帮你<span class="gt">搬运、加工、全网分发</span></h1>
-    <p class="sub rv in">订阅源轮询 → yt-dlp 下载 → whisper 字幕翻译烧录 → LLM 中文标题 → 队列审核 → 独立投递到你勾选的所有平台。整条流水线对 AI agent 开放——DSH 原生插件、MCP、Skill、REST API 任选，说句话它替你跑。</p>
+    <div class="badge rv in"><span class="dot"></span>v1.6.0 · MIT 开源 · 本地运行</div>
+    <h1 class="rv in">视频搬运中台<br>什么内容，<span class="gt">搬到哪个平台，你说了算</span></h1>
+    <p class="sub rv in">订阅源轮询 → yt-dlp 下载 → whisper 字幕翻译烧录 → LLM 中文标题 → 管理台审核 → 独立投递到你勾选的所有平台。不内置内容类型，不写死发布目标——顺手把整条流水线也开给了 AI agent。</p>
     <div class="ctas rv in">
       <a class="btn primary" href="https://github.com/zhaojiale001016/video-hub">⭐ GitHub</a>
-      <a class="btn" href="#ai">AI 接入方式</a>
+      <a class="btn" href="https://github.com/zhaojiale001016/video-hub/releases">Releases</a>
       <a class="btn" href="#start">快速开始</a>
     </div>
     <div class="band rv in">
-      <div><b>19</b><span>个 agent 工具</span></div>
       <div><b>14</b><span>可接发布平台</span></div>
       <div><b>5</b><span>层防重</span></div>
       <div><b>∞</b><span>内容线自定义</span></div>
+      <div><b>19</b><span>个 agent 工具</span></div>
       <div><b>100%</b><span>本地私有</span></div>
     </div>
   </div>
@@ -263,35 +263,7 @@ footer .r a:hover{color:var(--ac)}
   </div>
 </header>
 
-<section id="ai">
-  <div class="wrap">
-    <span class="sec-tag rv">AI-Native</span>
-    <h2 class="rv">不是"有个 API"，是 agent 真的能干活</h2>
-    <p class="sec-sub rv">19 个 <code style="background:var(--bg2);border-radius:4px;padding:0 5px;font-size:12px;color:var(--ac)">hub_*</code> 工具覆盖查队列/改元数据/发布/补投/加源/追任务——agent 拿到的是完整操作面，不是只读查询。已发布的绝不重投、部分失败只补缺口、长任务返回 job_id 异步收尾，语义红线全部内置。</p>
-    <div class="agent-demo">
-      <div class="chat rv">
-        <div class="chat-bar">DeepSeek Harness · 会话实录<span class="dsh-badge">dsh-video-hub 插件</span></div>
-        <div class="chat-body">
-          <div class="msg u">ready 里淘金那条，B站定时今晚8点，快手现在就发，抖音明早错峰</div>
-          <div class="tc">hub_list<span class="ar">(status="ready")</span> <span class="rs">→ 2 条</span></div>
-          <div class="tc">hub_edit<span class="ar">(1372, pub_platforms="bilibili,kuaishou,douyin")</span></div>
-          <div class="tc">hub_publish<span class="ar">(1372, dtime=20:00)</span> <span class="rs">→ job a3f1</span></div>
-          <div class="tc">hub_wait_job<span class="ar">(a3f1)</span> <span class="rs">→ done</span></div>
-          <div class="msg a">已安排：<b>#1372 淘金实测</b><br>B站 → 定时 20:00 · 快手 → 已投递 ✓ · 抖音 → 错峰明早 08:00。文件等三平台全成功后自动清理。</div>
-          <div class="msg u">快手那条为啥没标完成？</div>
-          <div class="tc">hub_get<span class="ar">(1372)</span> <span class="rs">→ extra_pub.kuaishou.ok=false</span></div>
-          <div class="msg a">快手 cookie 过期返回 403，已记入投递留痕。补登录后说一声"补投1372"即可——<b>已成功的 B站/抖音不会重投</b>。</div>
-        </div>
-      </div>
-      <div class="path-list">
-        <div class="path top rv"><h4>🧩 DSH 原生插件<span class="tag">推荐</span></h4><p><code>dsh plugin --profile desktop add …/plugins/dsh-video-hub</code> 一条命令，19 个工具进 dsh 原生工具系统（非外挂 MCP），重启即生效。</p></div>
-        <div class="path rv"><h4>🔌 MCP Server</h4><p><code>cli.py mcp</code> 零依赖 stdio server，Claude Code / Cursor / Devin / Windsurf 配一行 JSON 即用。</p></div>
-        <div class="path rv"><h4>📎 Agent Skill</h4><p><code>skills/video-hub/SKILL.md</code> 软链进 .claude/.codex/.devin，教 agent 用 REST/CLI 驱动，含语义红线。</p></div>
-        <div class="path rv"><h4>🌐 裸 API / CLI</h4><p>FastAPI 自带 OpenAPI（<code>/openapi.json</code> + <code>/docs</code>），任何能发 HTTP 的 agent 自举。</p></div>
-      </div>
-    </div>
-  </div>
-</section>
+
 
 <section id="flow" style="background:var(--bg2)">
   <div class="wrap">
@@ -371,6 +343,36 @@ footer .r a:hover{color:var(--ac)}
       </div>
     </div>
     <div class="legal rv"><b>⚠</b> 请确认对所搬内容拥有合法使用权，遵守源站与目标平台条款；转载如实填出处，「自制」构成原创声明。使用者对自身发布行为负全部责任。</div>
+  </div>
+</section>
+
+<section id="ai">
+  <div class="wrap">
+    <span class="sec-tag rv">Bonus · Agent Access</span>
+    <h2 class="rv">不想点鼠标？整条流水线也开给了 agent</h2>
+    <p class="sec-sub rv">19 个 <code style="background:var(--bg2);border-radius:4px;padding:0 5px;font-size:12px;color:var(--ac)">hub_*</code> 工具覆盖查队列/改元数据/发布/补投/加源/追任务——附属能力，不用也完全不影响 Web 管理台。语义红线内置：已发布绝不重投、部分失败只补缺口、长任务异步收尾。</p>
+    <div class="agent-demo">
+      <div class="chat rv">
+        <div class="chat-bar">DeepSeek Harness · 会话实录<span class="dsh-badge">dsh-video-hub 插件</span></div>
+        <div class="chat-body">
+          <div class="msg u">ready 里淘金那条，B站定时今晚8点，快手现在就发，抖音明早错峰</div>
+          <div class="tc">hub_list<span class="ar">(status="ready")</span> <span class="rs">→ 2 条</span></div>
+          <div class="tc">hub_edit<span class="ar">(1372, pub_platforms="bilibili,kuaishou,douyin")</span></div>
+          <div class="tc">hub_publish<span class="ar">(1372, dtime=20:00)</span> <span class="rs">→ job a3f1</span></div>
+          <div class="tc">hub_wait_job<span class="ar">(a3f1)</span> <span class="rs">→ done</span></div>
+          <div class="msg a">已安排：<b>#1372 淘金实测</b><br>B站 → 定时 20:00 · 快手 → 已投递 ✓ · 抖音 → 错峰明早 08:00。文件等三平台全成功后自动清理。</div>
+          <div class="msg u">快手那条为啥没标完成？</div>
+          <div class="tc">hub_get<span class="ar">(1372)</span> <span class="rs">→ extra_pub.kuaishou.ok=false</span></div>
+          <div class="msg a">快手 cookie 过期返回 403，已记入投递留痕。补登录后说一声"补投1372"即可——<b>已成功的 B站/抖音不会重投</b>。</div>
+        </div>
+      </div>
+      <div class="path-list">
+        <div class="path top rv"><h4>🧩 DSH 原生插件<span class="tag">推荐</span></h4><p><code>dsh plugin --profile desktop add …/plugins/dsh-video-hub</code> 一条命令，19 个工具进 dsh 原生工具系统（非外挂 MCP），重启即生效。</p></div>
+        <div class="path rv"><h4>🔌 MCP Server</h4><p><code>cli.py mcp</code> 零依赖 stdio server，Claude Code / Cursor / Devin / Windsurf 配一行 JSON 即用。</p></div>
+        <div class="path rv"><h4>📎 Agent Skill</h4><p><code>skills/video-hub/SKILL.md</code> 软链进 .claude/.codex/.devin，教 agent 用 REST/CLI 驱动，含语义红线。</p></div>
+        <div class="path rv"><h4>🌐 裸 API / CLI</h4><p>FastAPI 自带 OpenAPI（<code>/openapi.json</code> + <code>/docs</code>），任何能发 HTTP 的 agent 自举。</p></div>
+      </div>
+    </div>
   </div>
 </section>
 
