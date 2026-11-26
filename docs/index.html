@@ -118,6 +118,22 @@ h2{font-size:clamp(22px,3.5vw,30px);font-weight:800;margin-top:12px;letter-spaci
 .path h4 .tag{margin-left:auto;font-size:10px;font-weight:700;color:var(--pu);border:1px solid rgba(138,92,246,.4);border-radius:5px;padding:2px 8px}
 .path p{font-size:12px;color:var(--tx2);margin-top:5px;line-height:1.55}
 .path code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:11px;color:var(--ac)}
+.acc-req{margin-top:22px;font-size:12.5px;color:var(--tx2);background:#eefbf3;border:1px solid #c8ecd8;border-radius:10px;padding:12px 18px}
+.acc-req code{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:11px;color:#0a9668}
+.acc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.acc{background:#141b2c;border-radius:12px;overflow:hidden;box-shadow:var(--sh)}
+.acc-hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px;font-weight:700;color:#cfd8e8}
+.acc-hd .cp{cursor:pointer;border:1px solid rgba(255,255,255,.16);border-radius:6px;padding:2px 10px;color:#b6c0d4;font-size:11px;font-weight:400;transition:.15s}
+.acc-hd .cp:hover{background:rgba(255,255,255,.08);color:#fff}
+.acc pre{padding:13px 15px;overflow-x:auto;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11.5px;line-height:1.75;color:#d6deeb}
+.acc .c{color:#5d6a84}
+.toolset{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;box-shadow:var(--sh)}
+.toolset-hd{font-size:13px;font-weight:800;margin-bottom:13px}
+.toolset-g{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.toolset-g b{font-size:11.5px;color:var(--tx3);font-weight:700;letter-spacing:.5px;display:block;margin-bottom:6px}
+.tchips{display:flex;flex-wrap:wrap;gap:5px}
+.tchips s{text-decoration:none;font-family:"SF Mono",Menlo,monospace;font-size:10.5px;border:1px solid var(--line);border-radius:5px;padding:2px 8px;color:var(--tx2);background:var(--bg)}
+.toolset-note{margin-top:14px;font-size:11.5px;color:var(--tx2);border-top:1px solid var(--line);padding-top:12px}
 
 /* ── 状态机 ── */
 .sm{margin-top:36px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px 26px;box-shadow:var(--sh);overflow-x:auto}
@@ -192,6 +208,8 @@ footer .r a:hover{color:var(--ac)}
 
 @media(max-width:880px){
   .agent-demo{grid-template-columns:1fr}
+  .acc-grid{grid-template-columns:1fr}
+  .toolset-g{grid-template-columns:1fr}
   .feat-grid{grid-template-columns:1fr 1fr}
   .plat-engines{grid-template-columns:1fr}
   .receipt-bd{grid-template-columns:1fr 1fr}
@@ -367,11 +385,55 @@ footer .r a:hover{color:var(--ac)}
         </div>
       </div>
       <div class="path-list">
-        <div class="path top rv"><h4>🧩 DSH 插件（可安装分发）<span class="tag">推荐</span></h4><p>Plugins → 开「Custom plugin indexes」→ Discover 添加 index 源 <code>zhaojiale001016.github.io/video-hub/dsh-index.json</code> → 一键安装；或命令行 <code>dsh plugin --profile &lt;p&gt; add github:…</code>。装完 19 个工具进原生工具系统。</p></div>
-        <div class="path rv"><h4>🔌 MCP Server</h4><p><code>cli.py mcp</code> 零依赖 stdio server，Claude Code / Cursor / Devin / Windsurf 配一行 JSON 即用。</p></div>
-        <div class="path rv"><h4>📎 Agent Skill</h4><p><code>skills/video-hub/SKILL.md</code> 软链进 .claude/.codex/.devin，教 agent 用 REST/CLI 驱动，含语义红线。</p></div>
-        <div class="path rv"><h4>🌐 裸 API / CLI</h4><p>FastAPI 自带 OpenAPI（<code>/openapi.json</code> + <code>/docs</code>），任何能发 HTTP 的 agent 自举。</p></div>
+        <div class="path top rv"><h4>🧩 DSH 插件<span class="tag">推荐</span></h4><p>DeepSeek Harness 用户：Discover 市场或命令行装<b>官方插件包</b>，19 个工具进 dsh 原生工具系统；发新版时 Discover 显示 Update available 一键升级。</p></div>
+        <div class="path rv"><h4>🔌 MCP Server</h4><p>Claude Code / Cursor / Devin / Windsurf 等：内置零依赖 stdio server，配一段 JSON 即用。</p></div>
+        <div class="path rv"><h4>📎 Agent Skill</h4><p>不想配 MCP：软链 SKILL.md 进 agent skills 目录，教它用 REST/CLI 驱动，含语义红线。</p></div>
+        <div class="path rv"><h4>🌐 裸 API / CLI</h4><p>任何能发 HTTP 的 agent：OpenAPI 自举，或直接调 CLI。最底层兜底。</p></div>
       </div>
+    </div>
+    <div class="acc-req rv">前置：所有接入方式都要求 video-hub 管理服务在跑（<code>cli.py serve</code> / 常驻），统一连 <code>http://127.0.0.1:8600</code> —— 先 <code>curl /api/stats</code> 健康检查再接线。</div>
+    <div class="acc-grid">
+      <div class="acc rv"><div class="acc-hd">🧩 DSH 插件安装<span class="cp" data-acc="dshy">复制</span></div><pre id="dshy"><span class="c"># 方式1 · 插件市场: Plugins → 开「Custom plugin indexes」</span>
+<span class="c"># → Discover → Add index source 填:</span>
+https://zhaojiale001016.github.io/video-hub/dsh-index.json
+
+<span class="c"># 方式2 · 命令行(子目录包用 path: 参数)</span>
+dsh plugin --profile desktop add \
+  'zhaojiale001016/video-hub#path:/plugins/dsh-video-hub'
+
+<span class="c"># 装完重启 DSH; 换 API 地址: 覆盖 video-hub 条目</span>
+<span class="c"># config.api 或设环境变量 VIDEOHUB_API</span></pre></div>
+      <div class="acc rv"><div class="acc-hd">🔌 MCP 客户端配置<span class="cp" data-acc="mcpy">复制</span></div><pre id="mcpy"><span class="c"># claude_desktop_config.json / .mcp.json / Cursor / Devin</span>
+"mcpServers": {
+  "video-hub": {
+    "command": "/path/to/video-hub/.venv/bin/python3",
+    "args": ["/path/to/video-hub/cli.py", "mcp"]
+  }
+}
+<span class="c"># 零协议依赖, 只需 httpx(装过 requirements 就有)</span></pre></div>
+      <div class="acc rv"><div class="acc-hd">📎 Skill 软链<span class="cp" data-acc="skl">复制</span></div><pre id="skl"><span class="c"># 按你的 agent 选一个目录</span>
+ln -s /path/to/video-hub/skills/video-hub \
+  ~/.claude/skills/video-hub    <span class="c"># Claude Code</span>
+ln -s /path/to/video-hub/skills/video-hub \
+  ~/.codex/skills/video-hub     <span class="c"># Codex</span>
+ln -s /path/to/video-hub/skills/video-hub \
+  ~/.devin/skills/video-hub     <span class="c"># Devin</span></pre></div>
+      <div class="acc rv"><div class="acc-hd">🌐 裸 API<span class="cp" data-acc="apir">复制</span></div><pre id="apir"><span class="c"># 交互文档</span>
+http://127.0.0.1:8600/docs
+<span class="c"># OpenAPI schema</span>
+http://127.0.0.1:8600/openapi.json
+<span class="c"># 示例: 列出 ready 队列</span>
+curl -s 'http://127.0.0.1:8600/api/items?status=ready'</pre></div>
+    </div>
+    <div class="toolset rv">
+      <div class="toolset-hd">agent 拿到的 19 个工具</div>
+      <div class="toolset-g">
+        <div><b>队列</b><div class="tchips"><s>hub_stats</s><s>hub_list</s><s>hub_get</s><s>hub_progress</s></div></div>
+        <div><b>操作</b><div class="tchips"><s>hub_publish</s><s>hub_publish_all</s><s>hub_poll</s><s>hub_download</s><s>hub_edit</s><s>hub_skip</s><s>hub_retry</s><s>hub_regen</s><s>hub_delete_files</s></div></div>
+        <div><b>平台/源</b><div class="tchips"><s>hub_platforms</s><s>hub_sources</s><s>hub_add_source</s></div></div>
+        <div><b>任务</b><div class="tchips"><s>hub_jobs</s><s>hub_job</s><s>hub_wait_job</s></div></div>
+      </div>
+      <div class="toolset-note">语义红线内置：已发布稿件不可改 · 已成功平台绝不重投 · 部分失败文件保留=补投材料 · 长任务返回 job_id 用 hub_wait_job 收尾</div>
     </div>
   </div>
 </section>
@@ -427,6 +489,9 @@ document.querySelectorAll('.rv').forEach(el=>io.observe(el));
 document.getElementById('copyBtn').addEventListener('click',function(){
   navigator.clipboard.writeText(document.getElementById('qsPre').innerText).then(()=>{this.textContent='已复制 ✓';setTimeout(()=>this.textContent='复制',1600)});
 });
+document.querySelectorAll('[data-acc]').forEach(b=>b.addEventListener('click',function(){
+  navigator.clipboard.writeText(document.getElementById(this.dataset.acc).innerText).then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='复制',1600)});
+}));
 </script>
 </body>
 </html>

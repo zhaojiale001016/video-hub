@@ -1,0 +1,17 @@
+# video-hub
+
+> 本地多平台视频搬运中台：订阅源 → yt-dlp 下载 → whisper 字幕烧录 → LLM 中文元数据 → 审核 → 投递到 B站/快手/抖音等 14 个平台。无鉴权仅监听 127.0.0.1。
+
+## Agent 接入
+
+- DSH 插件: `plugins/dsh-video-hub/` — 安装源 https://zhaojiale001016.github.io/video-hub/dsh-index.json
+- MCP server: `cli.py mcp` (stdio, 19 个 hub_* 工具)
+- Skill: `skills/video-hub/SKILL.md`
+- OpenAPI: `web/app.py` 起服后 `GET /openapi.json`（默认 :8600）
+
+## Docs
+
+- 用法与配置: https://github.com/zhaojiale001016/video-hub#readme
+- Agent 仓库导引: https://github.com/zhaojiale001016/video-hub/blob/main/AGENTS.md
+- 变更记录: https://github.com/zhaojiale001016/video-hub/blob/main/CHANGELOG.md
+- 插件说明: https://github.com/zhaojiale001016/video-hub/tree/main/plugins/dsh-video-hub
