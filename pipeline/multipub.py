@@ -19,9 +19,19 @@ SAU_DIR = "vendor/sau"
 # 平台显示名(已知的映射中文名; 未列出的 sau 平台直接用 id 展示)。
 # sau 实际支持: douyin/xiaohongshu/bilibili/tencent/kuaishou/weibo/
 # baijiahao/tiktok(以 sau_cli.py PLATFORMS 为准), extra_platforms 任意加。
+# sau_cli.PLATFORMS 全部视频平台(去掉 article 文章、bilibili 由内置 biliup 走)。
+# extra_platforms 可勾选其中任意平台; 未列出的自定义 id 也允许(按 sau 实际支持)。
+SAU_PLATFORMS = [
+    "kuaishou", "tencent", "douyin", "xiaohongshu", "baijiahao",
+    "weibo", "youtube", "facebook", "facebook-page", "instagram",
+    "alipay", "hupu", "dayu", "xueqiu", "zhihu",
+]
 PLATFORMS = {"kuaishou": "快手", "tencent": "视频号", "douyin": "抖音",
              "xiaohongshu": "小红书", "baijiahao": "百家号", "weibo": "微博",
-             "tiktok": "TikTok", "youtube": "YouTube"}
+             "youtube": "YouTube", "facebook": "Facebook",
+             "facebook-page": "Facebook主页", "instagram": "Instagram",
+             "alipay": "支付宝", "hupu": "虎扑", "dayu": "大鱼号",
+             "xueqiu": "雪球", "zhihu": "知乎"}
 LOGIN_CMD = {"kuaishou": "ks", "tencent": "sph"}   # 便捷别名; 通用命令 login-extra <platform>
 
 # 各平台字段上限(超了被截/失败); 未列出的走默认

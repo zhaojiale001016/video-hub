@@ -647,12 +647,18 @@ def get_settings():
 
 @app.get("/api/platforms")
 def get_platforms():
-    """全部可投递平台(供抽屉勾选/设置渲染): B站 + extra_platforms 全量。"""
+    """全部可投递平台: B站 + sau 全平台 + extra_platforms 里的自定义 id。
+    enabled 按 extra_platforms 配置; 抽屉勾选只看 enabled=true 的。"""
     from pipeline import multipub
-    out = {"bilibili": {"name": "B站", "enabled": True}}
-    for p, c in (cfg.get("extra_platforms") or {}).items():
+    ep = cfg.get("extra_platforms") or {}
+    out = {"bilibili": {"name": "B站", "enabled": True, "builtin": True}}
+    for p in multipub.SAU_PLATFORMS:
         out[p] = {"name": multipub.PLATFORMS.get(p, p),
-                  "enabled": bool((c or {}).get("enabled"))}
+                  "enabled": bool((ep.get(p) or {}).get("enabled"))}
+    for p, c in ep.items():                      # 自定义 id 也回显
+        if p not in out:
+            out[p] = {"name": p, "enabled": bool((c or {}).get("enabled")),
+                      "custom": True}
     return out
 
 
