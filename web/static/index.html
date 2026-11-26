@@ -222,7 +222,7 @@ let curItems = [], hasMore = false, dwItem = null, dwDirty = false;
 async function api(path, method="GET", body) {
   const r = await fetch(path, {method, headers:{"Content-Type":"application/json"},
     body: body ? JSON.stringify(body) : undefined});
-  if (!r.ok) throw new Error(await r.text());
+  if (!r.ok) { const t = await r.text(); let d; try { d = JSON.parse(t).detail; } catch {} throw new Error(d || t); }
   return r.json();
 }
 function toast(msg, kind) {
