@@ -27,7 +27,7 @@
           "source": {
             "type": "git",
             "url": "https://github.com/zhaojiale001016/video-hub",
-            "commit": "fff70d4ad57d4fce17ecf5ea0dc9c1e3a29327c4",
+            "commit": "dc0f2d64ace61ba7a9d2047214f45dee9d883532",
             "path": "plugins/dsh-video-hub"
           },
           "engines": {
