@@ -15,6 +15,8 @@ LINE_STYLE = {
     "relax": "B站解压区搬运风格：标题以【沉浸式XX】或品类词开头，突出过程爽点和反差（脏→干净/锈→镜面/乱→整齐），口语化有吸引力",
     "adventure": "B站户外探险区风格：突出悬念和收获感（意外发现/极端环境/巨大收获/硬核过程），可用【荒野XX】【寻宝】前缀，强调真实、原始、危机与反转，口语化勾人",
 }
+# 未配置 line_styles 的自定义内容线使用的通用风格
+DEFAULT_LINE_STYLE = "B站搬运通用风格：突出视频核心看点和反差爽点，口语化有吸引力，标题带【品类/看点】前缀"
 
 SYSTEM = """你是B站资深搬运号运营，负责把外网优质视频包装成B站投稿。
 根据视频信息输出 JSON：{"title": "...", "desc": "...", "tags": ["..."]}
@@ -63,7 +65,10 @@ def gen_meta(item: dict, cfg: dict, db=None) -> dict:
     category = src.get("category") or ""
 
     if llm.is_enabled(cfg):
-        line_style = LINE_STYLE.get(item.get("line", ""), LINE_STYLE["relax"])
+        # 内容线风格: 内置三线 + cfg.llm.line_styles 自定义覆盖 + 中性兜底
+        line_styles = {**LINE_STYLE,
+                       **((cfg.get("llm") or {}).get("line_styles") or {})}
+        line_style = line_styles.get(item.get("line", ""), DEFAULT_LINE_STYLE)
         user = (
             f"业务方向: {line_style}\n"
             f"视频品类: {category}\n"

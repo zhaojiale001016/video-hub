@@ -38,10 +38,11 @@ subtitles:
   burn: true               # 烧进画面
   font_size: 0             # 0=按高度自适应(1080p≈60, 720p≈40)
   margin_v: 0              # 0=自适应(画面高7.5%)
-  policy:                  # 默认策略; 源上可写 subtitle: 覆盖
-    music: "subs_only"     # 音乐: 只翻官方字幕(歌词转写不可靠)
-    relax: "auto"          # 解压: 官方字幕→翻译, 没有→探测有语音才转写
-    adventure: "auto"      # 探险: 旁白型为主, 探测到解说就配中字
+  policy:                  # 按内容线(line)配默认策略; 源上可写 subtitle: 覆盖
+    music: "subs_only"     # music: 只翻官方字幕(歌词转写不可靠)
+    relax: "auto"          # relax: 官方字幕→翻译, 没有→探测有语音才转写
+    adventure: "auto"      # adventure: 旁白型为主, 探测到解说就配中字
+    # 自定义内容线直接在下面加一行即可, 如: gaming: "always"
   # 策略取值: always(强制转写) | auto(探测) | subs_only(仅翻官方) | never(不配)
 
 # 撞稿屏蔽名单
@@ -58,6 +59,11 @@ llm:
   model: "sn"
   timeout: 120
   api_key_env: "LLM_API_KEY"
+  # 自定义内容线的标题风格提示词(键=线名)。内置 music/relax/adventure,
+  # 未配置的线用通用风格。例:
+  # line_styles:
+  #   gaming: "B站游戏区风格：突出高光操作/版本热点，可用【游戏名】前缀"
+  #   cooking: "B站美食区风格：突出食欲感和过程治愈，口语化"
   base_url: "https://api.deepseek.com/v1"
 
 # 多平台投递(登录: cli.py login-ks / login-sph 扫码)
@@ -68,6 +74,7 @@ extra_platforms:
 # 自动参加B站投稿活动(投稿页"参与活动"，需已登录)
 missions:
   enabled: true
+  # match 键=内容线名, 值=B站活动名里的匹配关键词。自定义线名直接加即可
   match:
     music: ["音乐", "翻唱", "演奏", "现场", "MV", "音乐节"]
     relax: ["解压", "生活", "手工", "修复", "治愈", "美食"]
@@ -76,7 +83,9 @@ missions:
 # ============================================================
 # 订阅源 —— 以下为示例, 按需增删(UI「⚙ 设置」底部可加源)
 # kind: channel(频道/videos) | search(ytsearch关键词)
-# line: music(音乐) | relax(解压) | adventure(探险)
+# line: 自定义内容线名(小写字母/数字/_/- ≤20字符), 三线内置示例仅供参考,
+#       可自由定义如 gaming/cooking/asmr; 线名驱动 subtitles.policy、
+#       missions.match、llm.line_styles 三处同名 key 的配置
 # tid:  B站分区号（见 config/tids.json）
 # ============================================================
 sources:

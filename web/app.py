@@ -552,8 +552,9 @@ def add_source(s: dict = Body(...)):
     kind = s.get("kind") or "channel"
     if kind not in ("channel", "search"):
         raise HTTPException(400, "kind 须为 channel/search")
-    if s.get("line") not in ("music", "relax", "adventure"):
-        raise HTTPException(400, "line 须为 music/relax/adventure")
+    line = s.get("line") or ""
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,19}", line):
+        raise HTTPException(400, "line 须为小写字母/数字/_/- 的自定义内容线名, ≤20字符")
     url = str(s.get("url") or "").strip()
     if not url:
         raise HTTPException(400, "url 必填")
@@ -611,13 +612,13 @@ SETTINGS_SCHEMA = {
         "precheck_before_download": bool, "biliup_bin": str,
         "biliup_cookie": str, "download_dir": str, "archive_file": str},
     "extra_platforms": {"kuaishou": dict, "tencent": dict},
-    "missions": {"enabled": bool},
+    "missions": {"enabled": bool, "match": dict},
     "subtitles": {
         "enabled": bool, "whisper_model": str, "whisper_device": str,
         "burn": bool, "font_size": int, "margin_v": int, "policy": dict},
     "llm": {
         "enabled": bool, "backend": str, "model": str, "timeout": int,
-        "base_url": str, "api_key_env": str},
+        "base_url": str, "api_key_env": str, "line_styles": dict},
     "blacklist": {"uploaders": list, "keywords": list},
 }
 

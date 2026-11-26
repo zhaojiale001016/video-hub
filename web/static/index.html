@@ -176,9 +176,18 @@
 
 <script>
 const TABS = [["new","待下载","#00a1d6"],["ready","待发布","#22c55e"],["published","已发布","#a78bfa"],["failed","失败","#f43f5e"],["skipped","已跳过","#94a3b8"]];
-const LINES = [["","全部"],["music","🎵 音乐"],["relax","🧼 解压"],["adventure","⛏️ 探险"]];
+// 内容线: 内置三线仅作显示预设; 任意自定义 slug 线名同样工作(哈希配色)
+const LINE_PRESET = {music:["🎵","音乐"],relax:["🧼","解压"],adventure:["⛏️","探险"]};
+const LINE_COLOR = {music:"background:#e8f5e9;color:#2e7d32",relax:"background:#fff3e0;color:#e65100",adventure:"background:#e3f2fd;color:#1565c0"};
+function lineIcon(l){return (LINE_PRESET[l]||["🏷",l||""])[0]}
+function lineName(l){return (LINE_PRESET[l]||["🏷",l||""])[1]}
+const linesSeen = new Set(Object.keys(LINE_PRESET));
+function lineBadge(l){  // 自定义线名按哈希给柔和底色
+  if (LINE_COLOR[l]) return LINE_COLOR[l];
+  let h=0; for (const c of String(l||"")) h=(h*31+c.charCodeAt(0))%360;
+  return `background:hsl(${h} 65% 92%);color:hsl(${h} 45% 30%)`;
+}
 const TABQ = {new: "new,downloaded"};
-const LINENAME = {music:"音乐",relax:"解压",adventure:"探险"};
 const STNAME = {new:"待下载",downloaded:"处理中",ready:"待发布",published:"已发布",failed:"失败",skipped:"已跳过"};
 const STCOLOR = {new:"#00a1d6",downloaded:"#00a1d6",ready:"#22c55e",published:"#a78bfa",failed:"#f43f5e",skipped:"#94a3b8"};
 let cur = "ready", curLine = "", tids = {}, counts = {};
@@ -242,7 +251,8 @@ function renderNav() {
       ${cnt?`<span class="badge badge-xs ${k===cur?"":"badge-ghost"}" ${k===cur?'style="background:#fb7299;color:#fff;border:0"':""}>${cnt}</span>`:""}
     </div>`;
   }).join("");
-  document.getElementById("lines").innerHTML = LINES.map(([v,n]) =>
+  const lineOpts = [["","全部"], ...[...linesSeen].sort().map(l => [l, `${lineIcon(l)} ${lineName(l)}`])];
+  document.getElementById("lines").innerHTML = lineOpts.map(([v,n]) =>
     `<div class="px-3 py-1.5 rounded-lg cursor-pointer text-[12.5px]
       ${v===curLine ? "nav-act font-semibold" : "text-base-content/60 hover:bg-base-200"}"
       onclick="setLine('${v}')">${n}</div>`).join("");
@@ -254,6 +264,7 @@ async function loadItems(append) {
   const offset = append ? curItems.length : 0;
   const {items} = await api(`/api/items?status=${TABQ[cur]||cur}&limit=100&offset=${offset}${curLine?"&line="+curLine:""}`);
   curItems = append ? curItems.concat(items) : items;
+  items.forEach(i => i.line && linesSeen.add(i.line));
   hasMore = items.length === 100;
   renderList();
 }
@@ -299,7 +310,7 @@ function renderList() {
         <div class="line-clamp-2 text-[13px] font-semibold leading-snug min-h-[37px]">${esc(it.title||it.orig_title||"未命名")}</div>
         <div class="text-[11px] text-base-content/45 mt-1 truncate">📺 ${esc(it.uploader||"")}${it.bvid?` · ${esc(it.bvid)}`:""}</div>
         <div class="flex gap-1 mt-2 flex-wrap">
-          <span class="badge badge-xs b-line-${it.line}">${LINENAME[it.line]||it.line}</span>
+          <span class="badge badge-xs" style="${lineBadge(it.line)}">${lineName(it.line)}</span>
           ${subBadge(it)}${extraBadges(it)}
           ${it.dtime?`<span class="badge badge-xs b-dtime">⏰${fmtDtime(it.dtime)}</span>`:""}
         </div>
@@ -337,7 +348,7 @@ function openDrawer(id) {
         ${esc(it.uploader||"")} · ${fmtDur(it.duration)}
         ${it.bvid ? ` · <a href="https://bilibili.com/video/${it.bvid}" target="_blank" class="link link-primary">${it.bvid}</a>` : ""}
         <div class="flex gap-1 mt-1.5 flex-wrap">
-          <span class="badge badge-xs b-line-${it.line}">${LINENAME[it.line]||it.line}</span>
+          <span class="badge badge-xs" style="${lineBadge(it.line)}">${lineName(it.line)}</span>
           ${subBadge(it)}${extraBadges(it)}
           ${it.dtime?`<span class="badge badge-xs b-dtime">⏰ ${fmtDtime(it.dtime)}</span>`:""}
         </div>
@@ -553,6 +564,7 @@ const SGROUPS = [
   ["settings.publish_slots","定时档位(逗号分隔)","csv"],
   ["extra_platforms","启用多平台","platforms"],
   ["missions.enabled","自动参加B站活动","bool"],
+  ["missions.match","活动匹配关键词(JSON: 线名→词表)","dict"],
  ]],
  ["字幕", [
   ["subtitles.enabled","启用中文字幕","bool"],
@@ -561,9 +573,7 @@ const SGROUPS = [
   ["subtitles.burn","烧录进画面","bool"],
   ["subtitles.font_size","字号(0=自适应)","int"],
   ["subtitles.margin_v","下边距(0=自适应)","int"],
-  ["subtitles.policy.music","音乐策略","sel:always|auto|subs_only|never"],
-  ["subtitles.policy.relax","解压策略","sel:always|auto|subs_only|never"],
-  ["subtitles.policy.adventure","探险策略","sel:always|auto|subs_only|never"],
+  ["subtitles.policy","各内容线策略(线名自定义)","policy"],
  ]],
  ["LLM", [
   ["llm.enabled","启用 LLM","bool"],
@@ -572,6 +582,7 @@ const SGROUPS = [
   ["llm.timeout","超时(秒)","int"],
   ["llm.base_url","API base_url"],
   ["llm.api_key_env","API key 环境变量"],
+  ["llm.line_styles","自定义内容线风格(JSON)","dict"],
  ]],
  ["路径", [
   ["settings.biliup_bin","biliup 二进制"],
@@ -618,6 +629,20 @@ function renderSettings(cfg) {
             id="${id}-${p}" class="checkbox checkbox-primary checkbox-xs"
             ${v?.[p]?.enabled?"checked":""}>${n}</label>`).join("")}</div></div>`;
     }
+    if (type === "dict")
+      return `<div class="col-span-2"><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
+        <textarea id="${id}" rows="3" class="textarea textarea-bordered textarea-sm w-full font-mono text-[11px]">${esc(JSON.stringify(v||{},null,1))}</textarea></div>`;
+    if (type === "policy") {
+      const pol = _cfgVal("subtitles.policy") || {}, OPTS = ["always","auto","subs_only","never"];
+      const rows = Object.entries(pol).map(([ln,p]) =>
+        `<div class="flex gap-2 items-center" data-pl="${esc(ln)}">
+          <span class="text-[12px] w-28 truncate">${lineIcon(ln)} ${esc(ln)}</span>
+          <select class="select select-xs select-bordered flex-1 pol-sel">${OPTS.map(o=>`<option ${o===p?"selected":""}>${o}</option>`).join("")}</select></div>`).join("");
+      return `<div class="col-span-2" id="${id}"><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
+        <div class="space-y-1.5">${rows}</div>
+        <div class="flex gap-1.5 mt-1.5"><input id="${id}-new" class="input input-xs input-bordered w-32" placeholder="新线名(如 cooking)">
+        <button type="button" class="btn btn-xs btn-outline" onclick="polAdd('${id}')">＋加线策略</button></div></div>`;
+    }
     if (type === "lines")
       return `<div><div class="text-[11px] text-base-content/40 mb-1">${label}</div>
         <textarea id="${id}" rows="3" class="textarea textarea-bordered textarea-sm w-full text-[12px]">${esc((v||[]).join("\n"))}</textarea></div>`;
@@ -639,20 +664,21 @@ async function openSettings() {
   } catch(e) { toast(e.message, "err"); }
 }
 function renderSrcAdmin(list) {
-  const LICON = {music:"🎵",relax:"🧼",adventure:"⛏️"};
+  list.forEach(s => s.line && linesSeen.add(s.line));
   document.getElementById("srcadmin").innerHTML =
     list.map(s => `<div class="flex items-center gap-2 py-1 border-b border-base-300/50">
       <input type="checkbox" class="checkbox checkbox-primary checkbox-xs" ${s.enabled?"checked":""}
         onchange="srcToggle('${s.name}',this.checked)" title="启用">
       <span class="font-medium">${esc(s.name)}</span>
-      <span class="text-base-content/40">${LICON[s.line]||""}${s.kind||""}</span>
+      <span class="text-base-content/40">${lineIcon(s.line)}${s.kind||""}</span>
       <span class="text-base-content/35 truncate flex-1 text-[11px]">${esc(s.url||"")}</span>
       <button class="btn btn-xs btn-ghost text-error" onclick="srcDelete('${s.name}')">删</button></div>`).join("") +
     `<div class="flex gap-1.5 mt-2 items-center">
       <input id="newsrc-name" class="input input-xs input-bordered w-24" placeholder="名称">
       <input id="newsrc-url" class="input input-xs input-bordered flex-1" placeholder="URL(频道或搜索词)">
       <select id="newsrc-kind" class="select select-xs select-bordered"><option value="channel">channel</option><option value="search">search</option></select>
-      <select id="newsrc-line" class="select select-xs select-bordered"><option value="music">🎵音乐</option><option value="relax">🧼解压</option><option value="adventure">⛏️探险</option></select>
+      <input id="newsrc-line" list="linelist" class="input input-xs input-bordered w-20" placeholder="内容线">
+      <datalist id="linelist">${[...linesSeen].map(l=>`<option value="${l}">${lineName(l)}</option>`).join("")}</datalist>
       <input id="newsrc-limit" class="input input-xs input-bordered w-14" placeholder="限量">
       <button class="btn btn-xs btn-primary" onclick="srcAdd()">＋加源</button></div>`;
 }
@@ -675,6 +701,18 @@ async function srcAdd() {
     const {sources} = await api("/api/sources"); renderSrcAdmin(sources); toast("已添加","ok");
   } catch(e) { toast(e.message, "err"); }
 }
+function polAdd(id) {
+  const inp = document.getElementById(id + "-new"), ln = (inp.value || "").trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9_-]{0,19}$/.test(ln)) { toast("线名需小写字母/数字/_/-, ≤20字符", "err"); return; }
+  const box = document.getElementById(id);
+  if (box.querySelector(`[data-pl="${ln}"]`)) { toast("该线已存在", "err"); return; }
+  const OPTS = ["always","auto","subs_only","never"];
+  const row = document.createElement("div");
+  row.className = "flex gap-2 items-center"; row.dataset.pl = ln;
+  row.innerHTML = `<span class="text-[12px] w-28 truncate">🏷 ${ln}</span>
+    <select class="select select-xs select-bordered flex-1 pol-sel">${OPTS.map(o=>`<option>${o}</option>`).join("")}</select>`;
+  box.querySelector(".space-y-1\\.5").appendChild(row); inp.value = "";
+}
 async function saveSettings() {
   const body = {};
   for (const [, items] of SGROUPS) for (const [key,,type] of items) {
@@ -687,6 +725,9 @@ async function saveSettings() {
     else if (type === "copy") v = +el.value;
     else if (type === "csv") v = el.value.split(",").map(s=>s.trim()).filter(Boolean);
     else if (type === "lines") v = el.value.split("\n").map(s=>s.trim()).filter(Boolean);
+    else if (type === "dict") { try { v = JSON.parse(el.value || "{}"); } catch(e) { toast(`${key} JSON 格式错误`, "err"); continue; } }
+    else if (type === "policy") { v = {}; el.querySelectorAll("[data-pl]").forEach(r =>
+      v[r.dataset.pl] = r.querySelector(".pol-sel").value); }
     else if (type === "platforms") { v = {}; for (const p of ["kuaishou","tencent"])
       v[p] = {enabled: document.getElementById(`${_fieldId(key)}-${p}`)?.checked ?? false}; }
     else if (type?.startsWith("sel:")) v = el.value;
@@ -705,7 +746,7 @@ async function saveSettings() {
 async function showSources() {
   try {
     const {sources} = await api("/api/sources");
-    const LICON = {music:"🎵",relax:"🧼",adventure:"⛏️"};
+    sources.forEach(s => s.line && linesSeen.add(s.line));
     document.getElementById("srctbody").innerHTML = sources.map(s => {
       const h = s.health;
       const t = h ? new Date(h.t*1000).toLocaleString("zh-CN",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "—";
@@ -714,7 +755,7 @@ async function showSources() {
         : h ? `<span class="badge badge-xs badge-success">正常</span>`
         : `<span class="badge badge-xs badge-ghost">未轮询</span>`;
       return `<tr class="${s.enabled?"":"opacity-40"}"><td class="font-medium">${esc(s.name)}</td>` +
-        `<td>${LICON[s.line]||""} ${LINENAME[s.line]||esc(s.line||"")}</td><td>${esc(s.kind||"")}</td>` +
+        `<td>${lineIcon(s.line)} ${esc(lineName(s.line))}</td><td>${esc(s.kind||"")}</td>` +
         `<td>${t}</td><td>${h?`${h.found}/${h.new}/${h.skipped}`:"—"}</td><td>${st}</td></tr>`;
     }).join("");
     document.getElementById("srcModal").showModal();
