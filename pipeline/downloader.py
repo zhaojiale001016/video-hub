@@ -330,7 +330,8 @@ def _probe_duration(p: Path) -> int:
         r = subprocess.run(
             ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
              "-of", "csv=p=0", str(p)],
-            capture_output=True, text=True, timeout=15)
+            capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=15)
         return int(float(r.stdout.strip()))
     except Exception:
         return 0

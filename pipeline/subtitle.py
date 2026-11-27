@@ -155,7 +155,7 @@ def _translate_srt(src_path: str, dst_path: str, cfg: dict, item_id: int = 0) ->
 def _video_size(video_path: str) -> tuple[int, int]:
     r = subprocess.run(["ffprobe", "-v", "quiet", "-select_streams", "v:0",
                         "-show_entries", "stream=width,height", "-of", "csv=p=0",
-                        video_path], capture_output=True, text=True)
+                        video_path], capture_output=True, text=True, encoding="utf-8", errors="replace")
     try:
         w, h = r.stdout.strip().split(",")
         return int(w), int(h)
@@ -241,7 +241,7 @@ def _render_cue_png(text: str, video_w: int, font, font_size: int, stroke: int):
 
 def _video_duration(video_path: str) -> float:
     r = subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-                        "-of", "csv=p=0", video_path], capture_output=True, text=True)
+                        "-of", "csv=p=0", video_path], capture_output=True, text=True, encoding="utf-8", errors="replace")
     try:
         return float(r.stdout.strip())
     except ValueError:
@@ -255,7 +255,8 @@ def _run_ffmpeg_progress(cmd: list[str], total_sec: float, item_id: int,
     import re as _re
     cmd = cmd[:1] + ["-nostats", "-progress", "pipe:2"] + cmd[1:]
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
-                            stderr=subprocess.PIPE, text=True, errors="ignore")
+                            stderr=subprocess.PIPE, text=True,
+                            encoding="utf-8", errors="ignore")
     tail = ""
     for line in proc.stderr:
         tail = (tail + line)[-4000:]

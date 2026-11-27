@@ -133,6 +133,7 @@ def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dic
     try:
         progress.set_stage(iid, f"{name}投递中", None, "浏览器自动化投稿")
         r = subprocess.run(cmd, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace",
                            cwd=str(sau), timeout=timeout, env=env)
         out = ((r.stdout or "") + "\n" + (r.stderr or ""))[-800:]
         ok = r.returncode == 0

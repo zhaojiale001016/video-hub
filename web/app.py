@@ -254,7 +254,7 @@ def items(status: str | None = None, line: str | None = None,
             url = ""
             if p:
                 try:
-                    url = "/media/" + str(Path(p).relative_to(DATA_DIR))
+                    url = "/media/" + Path(p).relative_to(DATA_DIR).as_posix()
                 except ValueError:
                     url = f"/api/items/{r['id']}/file?kind={kind}"
             r[k + "_url"] = url

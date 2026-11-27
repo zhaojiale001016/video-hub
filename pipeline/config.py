@@ -73,7 +73,7 @@ def load_config(path: str | None = None) -> dict:
 
 def abs_path(cfg: dict, p: str) -> str:
     """配置里的相对路径一律相对项目根目录解析。"""
-    path = Path(p)
+    path = Path(p).expanduser()      # 支持 ~/xxx
     return str(path if path.is_absolute() else ROOT / p)
 
 

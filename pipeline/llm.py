@@ -61,7 +61,7 @@ def _kscc_gen_json(cfg: dict, system: str, user: str,
            "--json-schema", json.dumps(schema or META_SCHEMA)]
     try:
         proc = subprocess.run(cmd + [prompt], capture_output=True,
-                              text=True, timeout=timeout)
+                              text=True, encoding="utf-8", errors="replace", timeout=timeout)
         if proc.returncode != 0:
             log.warning("kscc failed: %s", (proc.stderr or proc.stdout)[-300:])
             return None

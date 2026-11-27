@@ -264,7 +264,7 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
         import time as _t
         progress.set_stage(item_id, "上传中", 0, "启动 biliup")
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, text=True, errors="ignore")
+                                stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="ignore")
         parts, last, t0 = [], "", _t.time()
         try:
             while True:
@@ -413,7 +413,7 @@ def qr_login_poll(cfg: dict, auth_code: str) -> dict:
         cp = Path(C.abs_path(cfg, C.get_setting(cfg, "biliup_cookie",
                                                 "data/cookies.json")))
         cp.parent.mkdir(parents=True, exist_ok=True)
-        cp.write_text(json.dumps(data))
+        cp.write_text(json.dumps(data), encoding="utf-8")
         return {"status": "done"}
     return {"status": {86090: "scanned", 86038: "expired",
                        86039: "waiting"}.get(code, "error"),

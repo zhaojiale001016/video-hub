@@ -24,13 +24,13 @@ def _release_plugin(version: str, commit: str = "") -> dict:
         raise SystemExit(f"版本号非法: {version}")
     pkg_p = ROOT / "plugins" / "dsh-video-hub" / "package.json"
     idx_p = ROOT / "docs" / "dsh-index.json"
-    pkg = json.loads(pkg_p.read_text())
+    pkg = json.loads(pkg_p.read_text(encoding="utf-8"))
     old = pkg.get("version")
     pkg["version"] = version
-    pkg_p.write_text(json.dumps(pkg, ensure_ascii=False, indent=2) + "\n")
+    pkg_p.write_text(json.dumps(pkg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     ref = commit or subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-    idx = json.loads(idx_p.read_text())
+    idx = json.loads(idx_p.read_text(encoding="utf-8"))
     plug = idx["plugins"][0]
     entry = {
         "version": version,
@@ -44,7 +44,7 @@ def _release_plugin(version: str, commit: str = "") -> dict:
     plug["versions"] = [e for e in plug.get("versions", [])
                         if e.get("version") != version]
     plug["versions"].insert(0, entry)
-    idx_p.write_text(json.dumps(idx, ensure_ascii=False, indent=2) + "\n")
+    idx_p.write_text(json.dumps(idx, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return {"plugin": f"{old} → {version}", "index_commit": ref[:8],
             "next": "git add -A && git commit && git tag vX.Y.Z && git push --tags"}
 
@@ -155,6 +155,15 @@ def main():
             st = "已登录" if multipub.logged_in(cfg, p) else f"未登录(跑 cli.py login-extra {p})"
             print(f"{multipub.PLATFORMS.get(p, p)}: {st}")
         print(f"队列: {db.counts()}  今日已投 {db.published_today()}")
+        # 二进制可解析性(Windows 常见坑)
+        import shutil as _sh
+        bp = uploader._bin(cfg)
+        print(f"biliup: {bp} {'✓' if Path(bp).exists() else '✗ 未找到(bin/biliup[.exe] 或 biliup_bin 设置)'}")
+        for tool in ("ffmpeg", "ffprobe"):
+            print(f"{tool}: {_sh.which(tool) or '✗ 未找到(装 ffmpeg 并加入 PATH)'}")
+        sau_py = multipub._sau_py(cfg)
+        if (cfg.get('extra_platforms') or {}):
+            print(f"sau python: {sau_py} {'✓' if Path(sau_py).exists() else '✗ 需先在 vendor/sau 建 venv(见 README 步骤4)'}")
     elif args.cmd == "publish-all":
         limit = int(C.get_setting(cfg, "daily_upload_limit", 5))
         for it in db.list_items(status="ready", limit=10 ** 6):
@@ -177,8 +186,7 @@ def main():
         print(f"即将弹出浏览器，请登录{multipub.PLATFORMS.get(platform, platform)}…")
         subprocess.call(cmd, cwd=cwd)
     elif args.cmd == "renew":
-        subprocess.call([C.abs_path(cfg, C.get_setting(cfg, "biliup_bin")),
-                         "-u", C.abs_path(cfg, C.get_setting(cfg, "biliup_cookie")), "renew"])
+        subprocess.call([uploader._bin(cfg), "-u", uploader._cookie(cfg), "renew"])
     elif args.cmd == "missions":
         from pipeline import missions
         ms = missions.fetch_missions(cfg, force=True)
@@ -214,8 +222,9 @@ def main():
         af = C.abs_path(cfg, C.get_setting(cfg, "archive_file", "data/downloaded.archive"))
         try:
             key = f"{it['platform']} {it['source_id']}".strip()
-            kept = [l for l in open(af).read().splitlines() if l.strip() != key]
-            open(af, "w").write("\n".join(kept) + "\n")
+            kept = [l for l in open(af, encoding="utf-8").read().splitlines()
+                    if l.strip() != key]
+            open(af, "w", encoding="utf-8").write("\n".join(kept) + "\n")
         except FileNotFoundError:
             pass
         db.unskip(args.id)

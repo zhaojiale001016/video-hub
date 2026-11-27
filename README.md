@@ -105,7 +105,8 @@ cd vendor/sau && python3 -m venv .venv && .venv/bin/pip install -e . \
 | 中文字体 | 烧录字幕 | macOS 自带 PingFang；Linux `fonts-noto-cjk`；Windows 自带 msyh |
 | 代理 | YouTube 下载 | `settings.proxy` 或 `https_proxy` |
 
-> **平台支持**：macOS 为主开发平台，全部功能验证过。Linux 可用（字体/通知/常驻已适配，见 deploy/systemd 示例）。Windows 未实测（`_sau_py` 已兼容 Scripts 路径，其余以社区反馈为准）。
+> **平台支持**：macOS/Linux/Windows 均可运行。
+> **Windows 注意**：① B站登录走 Web 顶栏「🔐 B站登录」扫码(无需终端)；② biliup 放 `bin/biliup.exe` 或 PATH 或设置 `biliup_bin`；③ ffmpeg/ffprobe 需装好加入 PATH；④ 常驻用任务计划程序(Task Scheduler)跑 `python cli.py serve`，或直接前台跑；⑤ `cli.py doctor` 会逐项体检二进制解析是否成功。
 
 ## 目录
 
