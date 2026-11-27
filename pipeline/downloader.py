@@ -247,7 +247,7 @@ def _smart_cover(video_path: str, dst: Path) -> str:
             continue
         score = _frame_luminance(tmp)
         if score >= 28:                    # 非黑屏帧 → 直接用
-            best_ts = ts
+            best_ts, best_score = ts, score
             break
         if score > best_score:
             best_ts, best_score = ts, score
