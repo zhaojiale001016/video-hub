@@ -350,7 +350,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
         <p>FastAPI 单页管理台：五态队列、封面预览、抽屉里改标题/简介/标签、勾发布平台、设定时；平台中枢页收齐全平台登录态/启用开关/创作中心直达。published 之后锁死只读——不与线上稿件脱节。</p></div>
       <div class="step rv"><div class="no">07</div>
         <h3>逐平台投递<code>publish</code></h3>
-        <p>B站走 biliup-rs（分区/活动/版权/定时），其余 13 平台走浏览器自动化。<b>每平台独立记账 extra_pub</b>，失败不阻断；补投自动跳过已成功平台。</p></div>
+        <p>B站走 biliup-rs（分区/活动/版权/定时），其余 13 平台走浏览器自动化。<b>每平台独立记账 extra_pub</b>，失败不阻断、原因自动归类（登录失效/风控/限流）；补投自动跳过已成功平台。</p></div>
     </div>
     <div class="guard rv">
       <div><div class="g-no">GUARD 01</div><b>DB 唯一键</b><p>UNIQUE(platform, source_id)——同一视频只入队一次，频道源和搜索源命中也合并；本地导入按内容指纹去重，改路径/改名挡不住</p></div>
@@ -550,7 +550,8 @@ cp config/sources.example.yaml config/sources.yaml
 
 <span class="c"># ── 常驻托管 ──</span>
 <span class="c"># macOS: deploy/com.videohub.pipeline.plist.example → launchd</span>
-<span class="c"># Linux: deploy/video-hub.service.example           → systemd</span></pre>
+<span class="c"># Linux: deploy/video-hub.service.example           → systemd</span>
+<span class="c"># Docker: docker compose up -d --build (镜像含 ffmpeg/双venv/sau chromium)</span></pre>
     </div>
   </div>
 </section>
