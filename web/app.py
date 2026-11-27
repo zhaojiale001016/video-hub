@@ -232,6 +232,15 @@ def get_platforms():
     return out
 
 
+@app.post("/api/platforms/{pid}/open")
+def platform_open(pid: str, body: dict = Body(default={})):
+    """带 sau 登录态拉起真实浏览器直达创作平台页(target=home/manage/publish)。"""
+    ok, msg = multipub.open_creator(cfg, pid, (body or {}).get("target", "home"))
+    if not ok:
+        raise HTTPException(400, msg)
+    return {"ok": True, "url": msg}
+
+
 @app.get("/api/bili/qrcode")
 def bili_qrcode():
     """B站扫码登录: 生成 TV 二维码(B站APP扫)。不依赖 biliup 二进制/终端,

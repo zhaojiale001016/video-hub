@@ -132,6 +132,56 @@ def logged_in(cfg: dict, platform: str) -> bool:
         any(sau.glob(f"cookies/{platform}/{_account(cfg, platform)}*.json"))
 
 
+def _cookie_file(cfg: dict, platform: str) -> Path | None:
+    """该平台最新的 storage_state cookie 文件。"""
+    sau = Path(C.abs_path(cfg, SAU_DIR))
+    acct = _account(cfg, platform)
+    files = (list(sau.glob(f"cookies/{platform}_{acct}*.json")) +
+             list(sau.glob(f"cookies/{platform}/{acct}*.json")))
+    return max(files, key=lambda p: p.stat().st_mtime) if files else None
+
+
+def _bili_storage_state(cfg: dict) -> Path | None:
+    """biliup cookies.json → playwright storage_state(临时文件)。"""
+    try:
+        info = json.loads(Path(C.abs_path(
+            cfg, C.get_setting(cfg, "biliup_cookie",
+                               "data/cookies.json"))).read_text("utf-8")
+                          )["cookie_info"]
+    except Exception:
+        return None
+    domains = info.get("domains") or [".bilibili.com"]
+    cookies = [{"name": c["name"], "value": c["value"], "domain": d,
+                "path": "/", "expires": c.get("expires") or -1,
+                "httpOnly": bool(c.get("http_only")),
+                "secure": bool(c.get("secure")), "sameSite": "Lax"}
+               for c in info.get("cookies") or [] for d in domains]
+    tmp = Path(C.abs_path(cfg, "data/_bili_state.json"))
+    tmp.write_text(json.dumps({"cookies": cookies, "origins": []}),
+                   "utf-8")
+    return tmp
+
+
+def open_creator(cfg: dict, platform: str, target: str = "home") -> tuple[bool, str]:
+    """带登录态拉起真实浏览器直达创作平台页。返回 (ok, msg|url)。"""
+    meta = PLATFORM_META.get(platform) or {}
+    url = meta.get(target) or meta.get("home")
+    if not url:
+        return False, f"{platform} 无 {target} 直达链接"
+    if platform == "bilibili":
+        cookie = _bili_storage_state(cfg)
+    else:
+        cookie = _cookie_file(cfg, platform)
+    if not cookie:
+        return False, f"{platform} 无登录态, 先 login-extra"
+    sau = Path(C.abs_path(cfg, SAU_DIR))
+    subprocess.Popen([_sau_py(cfg), str(sau / "open_creator.py"),
+                      str(cookie), url], cwd=str(sau),
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     start_new_session=True)
+    return True, url
+
+
 def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dict:
     """发布一条到指定平台，返回 {platform,name,ok,msg}。失败不抛异常。"""
     import time as _t

@@ -882,7 +882,9 @@ async function openPlatforms() {
         ? `<span class="text-[11px] text-base-content/50">发稿 ${p.ok_count}` +
           (p.fail_count ? ` <span class="text-error">失败${p.fail_count}</span>` : "") + `</span>` : "";
       const links = LINK_LABELS.filter(([k]) => p.links[k]).map(([k,l]) =>
-        `<a class="btn btn-xs btn-ghost" href="${p.links[k]}" target="_blank" rel="noopener">${l}↗</a>`).join("");
+        p.logged_in
+          ? `<button class="btn btn-xs btn-ghost" onclick="openCreator('${p.id}','${k}')" title="带登录态拉起真实浏览器直达">${l}🔑</button>`
+          : `<a class="btn btn-xs btn-ghost" href="${p.links[k]}" target="_blank" rel="noopener">${l}↗</a>`).join("");
       const hint = p.enabled && !p.logged_in
         ? `<div class="text-[10px] text-warning mt-1">cli.py login-extra ${p.id}</div>`
         : (!p.enabled ? `<div class="text-[10px] text-base-content/35 mt-1">extra_platforms 启用后投递</div>` : "");
@@ -930,6 +932,13 @@ async function doImport(btn) {
   busy(btn, false);
 }
 let _biliAuth = "", _biliTimer = null;
+async function openCreator(pid, target) {
+  try {
+    const r = await api(`/api/platforms/${pid}/open`, "POST", {target});
+    toast("已拉起登录态浏览器 → " + r.url, "ok");
+  } catch(e) { toast(e.message, "err"); }
+}
+
 async function doVerifyCode() {
   const code = prompt('输入平台发来的短信验证码（抖音投递触发验证时使用）:');
   if (!code) return;
