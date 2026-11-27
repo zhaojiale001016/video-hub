@@ -195,6 +195,10 @@ def download_item(item: dict, cfg: dict) -> dict:
                     cover = jpg
             files["cover_path"] = cover
             break
+    if files["cover_path"]:
+        pc = _make_portrait_cover(files["cover_path"], item_dir)
+        if pc:
+            files["cover_portrait_path"] = pc
     subs = sorted(glob.glob(str(item_dir / "video.*.srt")) +
                   glob.glob(str(item_dir / "video.*.vtt")))
     if subs:
@@ -204,6 +208,22 @@ def download_item(item: dict, cfg: dict) -> dict:
     if not files["file_path"]:
         raise RuntimeError("download produced no video file")
     return files
+
+
+def _make_portrait_cover(cover_path: str, item_dir: Path) -> str:
+    """从横版封面中心裁 3:4 竖版(视频号个人主页卡/抖音竖位/小红书信息流用)。
+    ffmpeg crop 双向 min() 保证输出恒为 3:4; 失败返回""不阻断主流程。"""
+    dst = item_dir / "cover_portrait.jpg"
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-y", "-i", cover_path,
+             "-vf", "crop='min(iw,ih*3/4)':'min(ih,iw*4/3)',scale=1080:-2",
+             "-q:v", "3", str(dst)], capture_output=True)
+        if r.returncode == 0 and dst.exists() and dst.stat().st_size > 0:
+            return str(dst)
+    except Exception:
+        pass
+    return ""
 
 
 def cleanup_stale(cfg: dict, db: DB, days: int = 7) -> dict:
@@ -350,5 +370,8 @@ def import_local_file(path: str, cfg: dict, db: DB, line: str = "local",
                         "-q:v", "3", str(cover)], capture_output=True)
     if r.returncode == 0 and cover.exists():
         files["cover_path"] = str(cover)
+        pc = _make_portrait_cover(str(cover), item_dir)
+        if pc:
+            files["cover_portrait_path"] = pc
     db.update(item_id, **files)
     return {"ok": True, "id": item_id, "file_path": str(dst)}

@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.7.3 (2025-06)
+### Added
+- **双封面体系**：每条稿件生成 16:9 横版（`video.jpg`，B站用）+ 中心裁剪 3:4 竖版（`cover_portrait.jpg`，ffmpeg 双向 min() 恒出 3:4）；新列 `cover_portrait_path` 自动迁移
+- tencent/douyin 双封面位全喂（`--thumbnail-landscape`+`--thumbnail-portrait`）；kuaishou/xiaohongshu 竖版信息流优先喂 3:4
+
+### Fixed
+- vendored tencent uploader 封面对话框：`count>0` 即时检查→`wait_for(visible,8s)`（Vue 挂载慢会漏），上传后等待 5s→15s——之前「编辑封面」超时被静默跳过，稿件裸发无封面
+
 ## v1.7.2 (2025-06)
 ### Fixed
 - **视频号不再自动勾「含AI生成内容」标注**：vendored sau 上游硬编码该标注（其内容是AI生成）；`apply_original_statement` 补丁支持 `SAU_TENCENT_CONTENT_LABEL` 环境变量，`none/off/skip` 整段跳过；multipub 由新设置项 `tencent_content_label`（默认 `none`）注入——已发出去的两条在视频号助手后台可手动改标

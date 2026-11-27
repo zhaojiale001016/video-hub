@@ -1014,8 +1014,12 @@ class TencentVideo(TencentBaseUploader):
 
         for title in dialog_titles:
             cover_dialog = page.locator("div.weui-desktop-dialog").filter(has_text=title).first
-            if await cover_dialog.count():
+            try:
+                # [video-hub patch] 对话框 Vue 挂载有延迟, 等可见再返回(原来只看 count>0 会漏)
+                await cover_dialog.wait_for(state="visible", timeout=8000)
                 return cover_dialog
+            except Exception:
+                continue
         return None
 
     async def confirm_thumbnail_crop(self, page: Page) -> None:
@@ -1036,7 +1040,7 @@ class TencentVideo(TencentBaseUploader):
             tencent_logger.warning(_msg("😵", f"封面裁剪确认时出错，小人继续尝试保存主弹窗: {exc}"))
 
     async def upload_thumbnail_in_dialog(self, page: Page, cover_dialog, thumbnail_path: str) -> None:
-        await cover_dialog.wait_for(state="visible", timeout=5000)
+        await cover_dialog.wait_for(state="visible", timeout=15000)   # [video-hub patch] 5s→15s 大文件上传后页面常卡顿
         file_input = cover_dialog.locator('.single-cover-uploader-wrap input[type="file"]').first
         await file_input.wait_for(state="attached", timeout=10000)
         await file_input.set_input_files(thumbnail_path)

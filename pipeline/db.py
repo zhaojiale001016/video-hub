@@ -69,7 +69,8 @@ class DB:
                              ("verified_at", "ALTER TABLE items ADD COLUMN verified_at INTEGER DEFAULT 0"),
                              ("extra_pub", "ALTER TABLE items ADD COLUMN extra_pub TEXT DEFAULT ''"),
                              ("pub_platforms", "ALTER TABLE items ADD COLUMN pub_platforms TEXT DEFAULT ''"),
-                             ("copyright", "ALTER TABLE items ADD COLUMN copyright INTEGER DEFAULT 0")):
+                             ("copyright", "ALTER TABLE items ADD COLUMN copyright INTEGER DEFAULT 0"),
+                             ("cover_portrait_path", "ALTER TABLE items ADD COLUMN cover_portrait_path TEXT DEFAULT ''")):
                 if col not in cols:
                     self.conn.execute(ddl)
             self.conn.commit()

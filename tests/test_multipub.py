@@ -136,3 +136,41 @@ def test_tencent_label_env_override():
 
 def test_non_tencent_no_label_env():
     assert _env_for("kuaishou") is None
+
+
+def test_tencent_dual_covers(tmp_path, monkeypatch):
+    p = tmp_path / "cp.jpg"; p.write_bytes(b"x")
+    captured = {}
+    def fake_run(cmd, **kw):
+        captured["cmd"] = cmd
+        class R:
+            returncode = 0
+            stdout = "ok"
+            stderr = ""
+        return R()
+    it = _item()
+    it["cover_portrait_path"] = str(p)
+    with patch.object(multipub.subprocess, "run", fake_run):
+        multipub.publish_to("tencent", it, {"settings": {}})
+    cmd = captured["cmd"]
+    assert "--thumbnail-landscape" in cmd and "--thumbnail-portrait" in cmd
+    assert cmd[cmd.index("--thumbnail-portrait") + 1] == str(p)
+
+
+def test_kuaishou_prefers_portrait(tmp_path):
+    p = tmp_path / "cp.jpg"; p.write_bytes(b"x")
+    it = _item(); it["cover_portrait_path"] = str(p)
+    cmd = _cmd_for("kuaishou", it)
+    assert cmd[cmd.index("--thumbnail") + 1] == str(p)
+
+
+def test_kuaishou_fallback_landscape():
+    assert "--thumbnail" in _cmd_for("kuaishou")   # 无竖封仍走横图
+
+
+def test_douyin_no_portrait_no_param():
+    assert "--thumbnail-portrait" not in _cmd_for("douyin")
+
+
+def test_portrait_matrix_subset():
+    assert multipub._PORTRAIT_THUMB <= set(multipub.SAU_PLATFORMS)

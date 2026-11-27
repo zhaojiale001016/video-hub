@@ -48,7 +48,8 @@ def valid_platform_id(pid: str) -> str | None:
 # sau 各平台 upload-video 可选参数支持矩阵(见 vendor/sau/sau_commands/*.py):
 _NO_THUMB = {"zhihu", "facebook-page"}   # 不支持 --thumbnail
 _NO_TAGS = {"zhihu"}                     # 不支持 --tags
-_LAND_THUMB = {"tencent", "douyin"}      # 支持 --thumbnail-landscape 竖封
+_LAND_THUMB = {"tencent", "douyin"}      # 支持 --thumbnail-landscape 横版位 + --thumbnail-portrait 竖版位
+_PORTRAIT_THUMB = {"kuaishou", "xiaohongshu"}  # 竖版信息流: 有 3:4 竖封时优先喂竖封
 _NO_SCHEDULE = {"weibo", "instagram", "hupu",
                 "baijiahao", "alipay"}   # 不支持 --schedule
 LOGIN_CMD = {"kuaishou": "ks", "tencent": "sph"}   # 便捷别名; 通用命令 login-extra <platform>
@@ -103,10 +104,20 @@ def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dic
            "--desc", desc]
     if platform not in _NO_TAGS:
         cmd += ["--tags", ",".join(tags[:lim["tags"]])]
-    if item.get("cover_path") and platform not in _NO_THUMB:
-        # 视频号/抖音主封面要3:4竖图, 我们的16:9横图走 landscape 专用参数
-        cmd += ["--thumbnail-landscape" if platform in _LAND_THUMB
-                else "--thumbnail", item["cover_path"]]
+    if platform not in _NO_THUMB:
+        cover = item.get("cover_path") or ""
+        portrait = item.get("cover_portrait_path") or ""
+        has_portrait = bool(portrait) and Path(portrait).exists()
+        if platform in _LAND_THUMB:
+            # 视频号/抖音双封面位: 4:3横版走landscape + 3:4竖版走portrait
+            if cover:
+                cmd += ["--thumbnail-landscape", cover]
+            if has_portrait:
+                cmd += ["--thumbnail-portrait", portrait]
+        elif has_portrait and platform in _PORTRAIT_THUMB:
+            cmd += ["--thumbnail", portrait]   # 竖版信息流平台喂 3:4
+        elif cover:
+            cmd += ["--thumbnail", cover]
     # B站定时发布→其他平台也定时, 避免一边预约一边先发了;
     # 不支持 --schedule 的平台直接即时发
     dtime = item.get("dtime") or 0
