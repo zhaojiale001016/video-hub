@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.8.11 (2025-06)
+### Fixed
+- **隐私清污**：公共仓库中泄入的真实私有内容线名(music/relax/adventure)清除——metagen `LINE_STYLE` 内置键删空(走 DEFAULT_LINE_STYLE)、`.b-line-*` 死CSS删除、example/README/测试示例线名全量中性化(vlog/food/tech)
+
+## v1.8.10 (2025-06)
+### Docs
+- README 全面对齐：平台中枢页、分平台进阶配置(account/offset_min/headed/declaration)、验证码Web通道、封面与片头处理、墙钟到点调度、download_mix_lines、本地导入内容指纹判重、流程图投递模型修正
+- CHANGELOG 补 v1.8.5~v1.8.9 五版条目；AGENTS.md 模块清单修正
+
 ## v1.8.9 (2025-06)
 ### Fixed
 - **本地导入重复导入→重复发布**：`source_id` 从 路径|大小|mtime 改为内容指纹（大小+头中尾各2MB采样哈希）——同视频换路径/改名/mtime变动/多副本原全部穿透去重，现按内容判重（已入库旧条目同文件最后一次穿透，之后永久判重）
