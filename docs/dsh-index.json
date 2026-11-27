@@ -8,7 +8,7 @@
     {
       "name": "dsh-video-hub",
       "title": "video-hub",
-      "description": "本地视频搬运中台的 19 个 hub_* 工具：查队列/改元数据/发布/补投/加源/追任务进度",
+      "description": "本地视频搬运中台的 20 个 hub_* 工具：查队列/改元数据/发布/补投/加源/追任务进度",
       "icon": "icons/dsh-video-hub.svg",
       "author": "zhaojiale001016",
       "homepage": "https://github.com/zhaojiale001016/video-hub",
@@ -21,6 +21,20 @@
         "automation"
       ],
       "versions": [
+        {
+          "version": "0.2.1",
+          "publishTimestamp": 1795750927,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/zhaojiale001016/video-hub",
+            "commit": "3a6df00133091c3b5139f02cfa0ea190f2abb622",
+            "path": "plugins/dsh-video-hub"
+          },
+          "engines": {
+            "node": "^22.19.0 || >=24.0.0",
+            "dsh": ">=0.2.0-rc.2 || >=0.2.1-rc.2"
+          }
+        },
         {
           "version": "0.2.0",
           "publishTimestamp": 1795685988,

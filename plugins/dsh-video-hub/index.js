@@ -2,7 +2,7 @@
  * dsh-video-hub — video-hub 视频搬运中台的 DeepSeek Harness 插件
  *
  * 把本机 video-hub 管理台(默认 http://127.0.0.1:8600)的能力注册为
- * dsh LLM 工具: 队列/发布/补投/编辑/加源/任务进度, 共 19 个 hub_*。
+ * dsh LLM 工具: 队列/发布/补投/编辑/加源/任务进度, 共 20 个 hub_*。
  * 前置: video-hub 服务在跑 (cli.py serve / launchd / systemd 常驻)。
  * 配置: 本包 cordis.patch.yml 里 config.api, 或环境变量 VIDEOHUB_API。
  */
