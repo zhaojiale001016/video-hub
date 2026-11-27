@@ -102,6 +102,11 @@ def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dic
            "--account", _account(cfg, platform),
            "--file", item["file_path"], "--title", title,
            "--desc", desc]
+    # 有头模式: 风控严格平台(抖音等)需人工过验证码。extra_platforms.<p>.headed=true
+    # 或服务级 sau_headed_platforms 名单 → 浏览器可见可交互
+    if ((cfg.get("extra_platforms") or {}).get(platform) or {}).get("headed") \
+            or platform in (C.get_setting(cfg, "sau_headed_platforms") or []):
+        cmd += ["--headed"]
     if platform not in _NO_TAGS:
         cmd += ["--tags", ",".join(tags[:lim["tags"]])]
     if platform not in _NO_THUMB:
