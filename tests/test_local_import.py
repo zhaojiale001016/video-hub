@@ -32,12 +32,12 @@ def _vid(tmp_path, name="a.mp4"):
 
 def test_import_copies_into_download_dir(env, tmp_path):
     cfg, db = env
-    r = downloader.import_local_file(_vid(tmp_path), cfg, db, line="relax")
+    r = downloader.import_local_file(_vid(tmp_path), cfg, db, line="vlog")
     assert r["ok"] and r["id"]
     it = db.get(r["id"])
     assert it["status"] == "new"
     assert it["platform"] == "local" and it["source_id"].startswith("local-")
-    assert it["line"] == "relax" and it["copyright"] == 1
+    assert it["line"] == "vlog" and it["copyright"] == 1
     fp = Path(it["file_path"])
     assert fp.exists() and fp.parent == Path(tmp_path / "dl" / str(r["id"]))
     # file_path 在约定布局内 → process_new_items 会跳过下载直接加工

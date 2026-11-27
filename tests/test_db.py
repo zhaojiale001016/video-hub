@@ -16,7 +16,7 @@ def db(tmp_path):
 
 def _add(db, sid="s1", plat="youtube"):
     return db.insert_item({"platform": plat, "source_id": sid,
-                           "source_url": "u", "line": "music",
+                           "source_url": "u", "line": "vlog",
                            "orig_title": "o"})
 
 

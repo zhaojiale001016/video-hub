@@ -46,7 +46,7 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.videohub.pipeline.pl
 .venv/bin/python3 cli.py download --id 123    # 单条续跑/手动下载(不占额度)
 .venv/bin/python3 cli.py publish 123          # 单条发布(B站+勾选的多平台)
 .venv/bin/python3 cli.py import ~/V/x.mp4     # 本地文件入库→字幕+元数据→ready(不占额度)
-.venv/bin/python3 cli.py import ~/V/x.mp4 --line music --no-process   # 指定内容线/只入库
+.venv/bin/python3 cli.py import ~/V/x.mp4 --line vlog --no-process   # 指定内容线/只入库
 
 # ── 登录态 ──
 # B站首选: 管理台「🌐 平台」页 → B站卡片「扫码登录」弹二维码, B站APP扫(无需终端/
@@ -183,8 +183,8 @@ subtitles:
   font_size: 0             # 0=按高度自适应(1080p≈60, 720p≈40)
   margin_v: 0              # 0=自适应(画面高7.5%); >0=固定px
   policy:                  # 业务线默认策略; 源上可加 subtitle: 字段覆盖
-    music: "subs_only"     # 只翻官方字幕(歌词whisper转写不可靠)
-    relax: "auto"          # 官方字幕→翻译; 没有→探测有语音才转写
+    vlog: "subs_only"      # 只翻官方字幕(无语音/转写不可靠的线)
+    food: "auto"           # 官方字幕→翻译; 没有→探测有语音才转写
 ```
 
 - 策略取值：`always` 强制whisper转写 | `auto` 探测有语音才配 | `subs_only` 仅翻译官方字幕 | `never` 不配

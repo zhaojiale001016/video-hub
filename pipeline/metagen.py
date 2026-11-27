@@ -11,10 +11,8 @@ log = logging.getLogger("metagen")
 DISCLAIMER = "视频仅供学习交流，如有侵权请联系删除。"
 
 LINE_STYLE = {
-    # 通用示例风格——个人化风格请放私有 config llm.line_styles(不进入开源仓库)
-    "music": "B站风格：标题口语化有吸引力，突出核心看点，可保留外文人名/歌名",
-    "relax": "B站风格：标题突出过程看点和反差感，口语化有吸引力",
-    "adventure": "B站风格：标题突出悬念和看点，口语化有吸引力",
+    # 公共仓库不内置线名风格——个人内容线风格放私有 config llm.line_styles;
+    # 未命中的线一律走下方 DEFAULT_LINE_STYLE
 }
 # 未配置 line_styles 的自定义内容线使用的通用风格
 DEFAULT_LINE_STYLE = "B站搬运通用风格：突出视频核心看点和反差爽点，口语化有吸引力，标题带【品类/看点】前缀"
