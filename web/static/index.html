@@ -76,9 +76,8 @@
     <button class="btn btn-sm btn-ghost" onclick="doPoll()">↻ 轮询源</button>
     <button class="btn btn-sm btn-ghost" onclick="doDownload()">⬇ 下载全部</button>
     <button class="btn btn-sm btn-ghost" onclick="document.getElementById('impModal').showModal()" title="本地视频文件导入流水线">📁 导入本地</button>
-    <button class="btn btn-sm btn-ghost" onclick="openBiliLogin()" title="B站APP扫码登录(无需终端)">🔐 B站登录</button>
     <button class="btn btn-sm btn-ghost" onclick="doVerifyCode()" title="抖音等平台弹短信验证时, 输入收到的验证码喂给投递进程">📱 验证码</button>
-    <button class="btn btn-sm btn-ghost" onclick="openPlatforms()" title="全部平台创作中心/作品管理直达">🌐 平台</button>
+    <button class="btn btn-sm btn-ghost" id="platBtn" onclick="showPlatPage()" title="平台中枢: 全平台登录态/投递矩阵/创作中心直达">🌐 平台</button>
     <div class="w-px h-5 bg-base-300"></div>
     <button class="btn btn-sm btn-primary" onclick="doPublishAll(false)">▶ 发布全部</button>
     <button class="btn btn-sm btn-outline" onclick="doPublishAll(true)" title="按 publish_slots 错峰定时">⏱ 错峰定时</button>
@@ -97,7 +96,7 @@
   </div>
 </div>
 
-<div class="flex" style="height: calc(100vh - 56px)">
+<div class="flex" id="mainPage" style="height: calc(100vh - 56px)">
 
   <!-- ══ 侧边导航 ══ -->
   <aside class="w-44 min-w-44 bg-base-100 border-r border-base-300 flex flex-col py-3 px-2 gap-1 overflow-y-auto">
@@ -121,6 +120,22 @@
       <div class="grid gap-3.5" style="grid-template-columns: repeat(auto-fill, minmax(248px, 1fr))" id="list"></div>
     </div>
   </main>
+</div>
+
+<!-- ══ 平台中枢页 ══ -->
+<div id="platPage" class="hidden overflow-y-auto bg-base-200/40" style="height: calc(100vh - 56px)">
+  <div class="max-w-5xl mx-auto p-5">
+    <div class="flex items-center gap-3 mb-4">
+      <div>
+        <div class="font-bold text-[15px]">🌐 平台中枢</div>
+        <div class="text-[11px] text-base-content/45 mt-0.5">投递矩阵 · 登录态管理 · 创作中心直达(🔑拉起带登录态浏览器)</div>
+      </div>
+      <div class="flex-1"></div>
+      <button class="btn btn-sm btn-ghost" onclick="renderPlatPage()" title="刷新状态">⟳</button>
+      <button class="btn btn-sm btn-ghost" onclick="showMain()">← 返回列表</button>
+    </div>
+    <div id="platPageGrid" class="grid gap-3 pb-8" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))"></div>
+  </div>
 </div>
 
 <!-- ══ 编辑抽屉 ══ -->
@@ -213,16 +228,6 @@
         <tbody id="srctbody"></tbody>
       </table>
     </div>
-    <div class="modal-action"><form method="dialog"><button class="btn btn-sm">关闭</button></form></div>
-  </div>
-  <form method="dialog" class="modal-backdrop"><button>close</button></form>
-</dialog>
-
-<dialog id="platModal" class="modal">
-  <div class="modal-box max-w-3xl">
-    <div class="font-bold text-sm mb-1">🌐 平台中枢</div>
-    <div class="text-xs text-base-content/50 mb-3">已登录平台点 🔑 拉起带登录态的浏览器直达; 未登录为普通外链(创作平台均禁内嵌)</div>
-    <div id="platGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto"></div>
     <div class="modal-action"><form method="dialog"><button class="btn btn-sm">关闭</button></form></div>
   </div>
   <form method="dialog" class="modal-backdrop"><button>close</button></form>
@@ -867,33 +872,71 @@ async function showSources() {
   } catch(e){ toast(e.message,"err"); }
 }
 
-async function openPlatforms() {
+// ══ 平台中枢页 ══
+async function showPlatPage() {
+  document.getElementById("mainPage").classList.add("hidden");
+  document.getElementById("platPage").classList.remove("hidden");
+  document.getElementById("platBtn").classList.add("btn-active");
+  await renderPlatPage();
+}
+function showMain() {
+  document.getElementById("platPage").classList.add("hidden");
+  document.getElementById("mainPage").classList.remove("hidden");
+  document.getElementById("platBtn").classList.remove("btn-active");
+  platsReady = false; ensurePlats();        // 回主视图前刷新平台缓存
+}
+async function renderPlatPage() {
   try {
     const data = await api("/api/platforms");
     const LINK_LABELS = [["home","创作中心"],["manage","作品管理"],["publish","发布页"]];
     const sorted = Object.entries(data).map(([id,p])=>({id,...p})).sort((a,b) =>
       (b.enabled-a.enabled) || (b.logged_in-a.logged_in) || (b.ok_count-a.ok_count));
-    document.getElementById("platGrid").innerHTML = sorted.map(p => {
+    document.getElementById("platPageGrid").innerHTML = sorted.map(p => {
       const st = p.enabled
         ? (p.logged_in ? `<span class="badge badge-xs badge-success">已登录</span>`
                        : `<span class="badge badge-xs badge-error">未登录</span>`)
         : `<span class="badge badge-xs badge-ghost">未启用</span>`;
-      const cnt = p.ok_count + p.fail_count > 0
-        ? `<span class="text-[11px] text-base-content/50">发稿 ${p.ok_count}` +
-          (p.fail_count ? ` <span class="text-error">失败${p.fail_count}</span>` : "") + `</span>` : "";
       const links = LINK_LABELS.filter(([k]) => p.links[k]).map(([k,l]) =>
         p.logged_in
-          ? `<button class="btn btn-xs btn-ghost" onclick="openCreator('${p.id}','${k}')" title="带登录态拉起真实浏览器直达">${l}🔑</button>`
-          : `<a class="btn btn-xs btn-ghost" href="${p.links[k]}" target="_blank" rel="noopener">${l}↗</a>`).join("");
+          ? `<button class="btn btn-xs btn-outline" onclick="openCreator('${p.id}','${k}')" title="带登录态拉起真实浏览器直达">${l} 🔑</button>`
+          : `<a class="btn btn-xs btn-ghost" href="${p.links[k]}" target="_blank" rel="noopener">${l} ↗</a>`).join("");
+      const ops = p.id === "bilibili"
+        ? `<button class="btn btn-xs btn-ghost" onclick="openBiliLogin()">📱 扫码登录</button>`
+        : `<button class="btn btn-xs btn-ghost" onclick="platLogin('${p.id}')" title="拉起扫码登录浏览器">🔐 ${p.logged_in?"重新登录":"扫码登录"}</button>` +
+          `<label class="flex items-center gap-1 text-[11px] cursor-pointer ml-auto" title="启用后进入投递矩阵">
+             <input type="checkbox" class="toggle toggle-xs toggle-primary" ${p.enabled?"checked":""}
+               onchange="platToggle('${p.id}',this.checked)"><span class="${p.enabled?"":"opacity-40"}">投递</span></label>`;
+      const cnt = `<span class="text-[11px] text-base-content/45">发稿 <b>${p.ok_count}</b>` +
+        (p.fail_count ? ` · <span class="text-error">失败 ${p.fail_count}</span>` : "") + `</span>`;
       const hint = p.enabled && !p.logged_in
-        ? `<div class="text-[10px] text-warning mt-1">cli.py login-extra ${p.id}</div>`
-        : (!p.enabled ? `<div class="text-[10px] text-base-content/35 mt-1">extra_platforms 启用后投递</div>` : "");
-      return `<div class="border border-base-300 rounded-lg p-2.5 ${p.enabled?"":"opacity-55"}">` +
-        `<div class="flex items-center gap-1.5"><span>${p.icon}</span>` +
-        `<span class="font-medium text-[13px]">${esc(p.name)}</span>${st}<div class="flex-1"></div>${cnt}</div>` +
-        `<div class="flex gap-1 mt-1.5">${links}</div>${hint}</div>`;
+        ? `<div class="text-[10px] text-warning">⚠ 启用但未登录, 投递会失败</div>` : "";
+      return `<div class="card bg-base-100 border border-base-300 ${p.enabled?"":"opacity-60"}">
+        <div class="card-body p-4 gap-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-[22px]">${p.icon}</span>
+            <span class="font-bold text-[14px]">${esc(p.name)}</span>
+            ${p.custom?'<span class="badge badge-xs badge-ghost">自定义</span>':""}
+            <div class="flex-1"></div>${st}${cnt}
+          </div>
+          <div class="flex gap-1 flex-wrap">${links}</div>
+          <div class="flex items-center gap-1.5 pt-2 mt-0.5 border-t border-base-300/50">${ops}</div>
+          ${hint}
+        </div></div>`;
     }).join("");
-    document.getElementById("platModal").showModal();
+  } catch(e){ toast(e.message,"err"); }
+}
+async function platLogin(pid) {
+  try {
+    await api(`/api/platforms/${pid}/login`, "POST");
+    toast("登录浏览器已弹出, 请扫码", "ok");
+  } catch(e){ toast(e.message,"err"); }
+}
+async function platToggle(pid, on) {
+  try {
+    await api("/api/settings", "PUT", {extra_platforms: {[pid]: {enabled: on}}});
+    toast(`${pid} 已${on?"启用":"停用"}`, "ok");
+    platsReady = false;
+    renderPlatPage();
   } catch(e){ toast(e.message,"err"); }
 }
 async function doCleanup() {

@@ -243,6 +243,20 @@ def platform_open(pid: str, body: dict = Body(default={})):
     return {"ok": True, "url": msg}
 
 
+@app.post("/api/platforms/{pid}/login")
+def platform_login(pid: str):
+    """拉起 sau 扫码登录浏览器(B站走 /api/bili/qrcode 的 QR 通道)。"""
+    if pid == "bilibili":
+        raise HTTPException(400, "B站用扫码登录(B站APP)")
+    if pid not in get_platforms():
+        raise HTTPException(404, f"未知平台 {pid}")
+    cmd, cwd = multipub.login_cmd(pid, cfg)
+    import subprocess
+    subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+    return {"ok": True}
+
+
 @app.get("/api/bili/qrcode")
 def bili_qrcode():
     """B站扫码登录: 生成 TV 二维码(B站APP扫)。不依赖 biliup 二进制/终端,
