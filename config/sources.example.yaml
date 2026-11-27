@@ -99,6 +99,8 @@ missions:
 # tid:  B站分区号（见 config/tids.json）
 # ============================================================
 sources:
+  # 示例源默认关闭(enabled: false)——按需改成你的订阅再启用,
+  # 否则全新安装会拿示例源开抓。自建源直接把 - name 块复制改 url/line/tid 即可。
   - name: example_music
     line: music
     kind: channel
@@ -108,7 +110,7 @@ sources:
     tags: ["live", "音乐现场"]
     min_duration: 120
     max_duration: 3600
-    enabled: true
+    enabled: false   # 示例关着; 启用改成 true
 
   - name: example_relax
     line: relax
@@ -119,7 +121,7 @@ sources:
     tags: ["修蹄", "解压"]
     subtitle: "always"
     min_duration: 300
-    enabled: true
+    enabled: false   # 示例关着; 启用改成 true
 
   - name: example_adventure_search
     line: adventure
@@ -130,4 +132,4 @@ sources:
     category: "淘金实录"
     tags: ["淘金", "户外", "探险"]
     min_duration: 300
-    enabled: true
+    enabled: false   # 示例关着; 启用改成 true
