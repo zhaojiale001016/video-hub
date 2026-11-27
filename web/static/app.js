@@ -203,7 +203,7 @@ async function openDrawer(id) {
           <div class="font-bold text-[14.5px] leading-snug">${esc(it.title||it.orig_title||"")}</div>
           <div class="text-[11px] text-base-content/40 mt-3 mb-1">简介</div>
           <div class="text-[12.5px] text-base-content/70 whitespace-pre-line leading-relaxed">${esc(it.description||"")}</div>
-          <div class="text-[12px] text-base-content/45 mt-3">🏷 ${(it.tags||[]).map(t=>esc(t)).join(" · ")} · ${it.copyright===1?"自制":"转载"}</div>
+          <div class="text-[12px] text-base-content/45 mt-3">🏷 ${(it.tags||[]).map(t=>esc(t)).join(" · ")}${it.bvid?` · ${it.copyright===1?"自制":"转载"}`:""}</div>
         </div>` : `
         <div class="mt-4 space-y-3">
           <div>
@@ -412,9 +412,9 @@ const SGROUPS = [
   ["settings.auto_poll_interval_min","轮询间隔(分钟)","int","默认 360"],
   ["settings.auto_workdays_only","仅工作日自动","bool","周末暂停自动轮询/下载"],
   ["settings.auto_download_after_poll","轮询后自动下载","bool"],
-  ["settings.precheck_before_download","下载前撞检","bool","先搜B站, 撞稿不下载"],
+  ["settings.precheck_before_download","下载前撞检","bool","按目标平台搜(B站/YouTube可搜), 撞稿不下载"],
   ["settings.delete_after_publish","发布后删文件","bool","全平台成功才删"],
-  ["settings.default_copyright","默认版权","copy","转载禁参加活动"],
+  ["settings.default_copyright","默认版权(仅B站腿)","copy","转载禁参加活动"],
   ["settings.publish_slots","定时档位","csv","逗号分隔, 如 12:00,18:00,21:00"],
   ["settings.publish_slot_gap_h","定时间隔下限(h)","int","默认 4, B站要求≥4h后"],
   ["settings.stale_days","积压老化天数","int","默认 14, 超时自动跳过"],

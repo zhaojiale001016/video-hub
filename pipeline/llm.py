@@ -16,8 +16,8 @@ log = logging.getLogger("llm")
 META_SCHEMA = {
     "type": "object",
     "properties": {
-        "title": {"type": "string", "description": "B站投稿标题,全中文为主,含标点≤55字"},
-        "desc": {"type": "string", "description": "B站投稿简介,80~200字"},
+        "title": {"type": "string", "description": "短视频投稿标题,全中文为主,含标点≤55字"},
+        "desc": {"type": "string", "description": "投稿简介,80~200字"},
         "tags": {"type": "array", "items": {"type": "string"},
                  "description": "5~8个标签,优先中文"},
     },
