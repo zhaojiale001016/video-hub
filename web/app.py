@@ -201,6 +201,31 @@ def stats():
             "proxy": C.proxy(cfg) or ""}
 
 
+@app.get("/api/platforms")
+def platforms():
+    """平台中枢: 全部可投平台的启用态/登录态/发稿量/创作中心直达链接。"""
+    enabled = set(multipub.enabled_platforms(cfg)) | {"bilibili"}
+    counts = db.platform_pub_counts()
+    out = []
+    for pid in ["bilibili"] + multipub.SAU_PLATFORMS:
+        ok, fail = counts.get(pid, [0, 0])
+        meta = multipub.PLATFORM_META.get(pid) or {}
+        logged_in = (_login_ok() if pid == "bilibili"
+                     else multipub.logged_in(cfg, pid))
+        out.append({
+            "id": pid,
+            "name": "B站" if pid == "bilibili"
+                    else multipub.PLATFORMS.get(pid, pid),
+            "icon": meta.get("icon", "🌐"),
+            "enabled": pid in enabled,
+            "logged_in": logged_in,
+            "ok_count": ok, "fail_count": fail,
+            "links": {k: meta[k] for k in ("home", "manage", "publish")
+                      if meta.get(k)},
+        })
+    return {"platforms": out}
+
+
 @app.get("/api/bili/qrcode")
 def bili_qrcode():
     """B站扫码登录: 生成 TV 二维码(B站APP扫)。不依赖 biliup 二进制/终端,

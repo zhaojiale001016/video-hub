@@ -54,6 +54,53 @@ _NO_SCHEDULE = {"weibo", "instagram", "hupu",
                 "baijiahao", "alipay"}   # 不支持 --schedule
 LOGIN_CMD = {"kuaishou": "ks", "tencent": "sph"}   # 便捷别名; 通用命令 login-extra <platform>
 
+# 各平台创作者中心直达链接(平台中枢面板用; 创作平台均禁 iframe 只能新开页)
+# home=创作中心 manage=作品管理 publish=发布页
+PLATFORM_META = {
+    "bilibili":     {"icon": "📺", "home": "https://member.bilibili.com/york/home",
+                     "manage": "https://member.bilibili.com/v2#/home",
+                     "publish": "https://member.bilibili.com/platform/upload/video/frame"},
+    "kuaishou":     {"icon": "⚡", "home": "https://cp.kuaishou.com/",
+                     "manage": "https://cp.kuaishou.com/profile/publish/works",
+                     "publish": "https://cp.kuaishou.com/article/publish/video"},
+    "tencent":      {"icon": "💬", "home": "https://channels.weixin.qq.com/platform",
+                     "manage": "https://channels.weixin.qq.com/platform/post/list",
+                     "publish": "https://channels.weixin.qq.com/platform/post/create"},
+    "douyin":       {"icon": "🎵", "home": "https://creator.douyin.com/",
+                     "manage": "https://creator.douyin.com/creator-micro/content/manage",
+                     "publish": "https://creator.douyin.com/creator-micro/content/upload"},
+    "xiaohongshu":  {"icon": "📕", "home": "https://creator.xiaohongshu.com/",
+                     "manage": "https://creator.xiaohongshu.com/creator/notemanage",
+                     "publish": "https://creator.xiaohongshu.com/publish/publish"},
+    "baijiahao":    {"icon": "🅱️", "home": "https://baijiahao.baidu.com/builder/rc/home",
+                     "manage": "https://baijiahao.baidu.com/builder/rc/manage",
+                     "publish": "https://baijiahao.baidu.com/builder/rc/edit"},
+    "weibo":        {"icon": "🔥", "home": "https://weibo.com/",
+                     "manage": "https://me.weibo.com/",
+                     "publish": "https://weibo.com/"},
+    "youtube":      {"icon": "▶️", "home": "https://studio.youtube.com/",
+                     "manage": "https://studio.youtube.com/",
+                     "publish": "https://www.youtube.com/upload"},
+    "facebook-page": {"icon": "📘", "home": "https://business.facebook.com/",
+                      "manage": "https://business.facebook.com/latest/home",
+                      "publish": "https://business.facebook.com/latest/composer"},
+    "instagram":    {"icon": "📸", "home": "https://business.facebook.com/",
+                     "manage": "https://business.facebook.com/latest/home",
+                     "publish": "https://business.facebook.com/latest/composer"},
+    "alipay":       {"icon": "💙", "home": "https://c.alipay.com/page/portal/home",
+                     "manage": "https://c.alipay.com/page/content-creation/posts",
+                     "publish": "https://c.alipay.com/page/content-creation/posts"},
+    "hupu":         {"icon": "🏀", "home": "https://www.hupu.com/",
+                     "manage": "https://www.hupu.com/",
+                     "publish": "https://bbs.hupu.com/newpost"},
+    "dayu":         {"icon": "🐟", "home": "https://mp.dayu.com/",
+                     "manage": "https://mp.dayu.com/",
+                     "publish": "https://mp.dayu.com/"},
+    "zhihu":        {"icon": "💭", "home": "https://www.zhihu.com/creator",
+                     "manage": "https://www.zhihu.com/creator/manage/creation/all",
+                     "publish": "https://www.zhihu.com/creator"},
+}
+
 # 各平台字段上限(超了被截/失败); 未列出的走默认
 _DEFAULT_LIMIT = {"title": 30, "desc": 1000, "tags": 5}
 _LIMITS = {"kuaishou": {"title": 30, "desc": 1000, "tags": 5},

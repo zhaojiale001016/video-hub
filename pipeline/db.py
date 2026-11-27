@@ -150,6 +150,27 @@ class DB:
             "SELECT status, COUNT(*) c FROM items GROUP BY status").fetchall()
         return {r["status"]: r["c"] for r in rows}
 
+    def platform_pub_counts(self) -> dict:
+        """每平台投递成败数: {platform: [ok_count, fail_count]}。
+        B站以 bvid 为准, 其余平台扫 extra_pub JSON。"""
+        rows = self.conn.execute(
+            "SELECT bvid, extra_pub FROM items "
+            "WHERE bvid!='' OR extra_pub!=''").fetchall()
+        out: dict[str, list[int]] = {}
+        for r in rows:
+            if r["bvid"]:
+                out.setdefault("bilibili", [0, 0])[0] += 1
+            try:
+                res = json.loads(r["extra_pub"] or "{}")
+            except Exception:
+                continue
+            for p, v in res.items():
+                if not isinstance(v, dict):
+                    continue
+                slot = out.setdefault(p, [0, 0])
+                slot[0 if v.get("ok") else 1] += 1
+        return out
+
     def published_today(self) -> int:
         start = int(time.mktime(time.strptime(time.strftime("%Y-%m-%d"), "%Y-%m-%d")))
         return self.conn.execute(
