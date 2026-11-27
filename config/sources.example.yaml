@@ -15,7 +15,7 @@ settings:
   cookies_file: ""
   max_height: 1080               # 清晰度上限
   poll_limit: 15                 # 每源每轮最多发现的新视频数
-  daily_upload_limit: 5          # 每日投稿上限（养号期建议 1-3）
+  daily_upload_limit: 3          # 每日投稿上限: 条目级全局+每平台限额同值; 养号期 2-3, 成熟后可至 5
   default_copyright: 1           # 1=自制(可参加活动) 2=转载(需source,禁活动)
   daily_download_limit: 5        # 每日自动下载+生成上限；手动单条下载不受限
   download_mix_lines: true       # 按内容线轮转下载: 每日额度跨线均摊, 不被单一线吃满

@@ -152,7 +152,7 @@ cd vendor/sau && python3 -m venv .venv && .venv/bin/pip install -e . \
 
 ## 养号守则
 
-- 新号每日 1-3 条，`daily_upload_limit` 控制上限；短时间连投会触发B站限流(code 21566)，用「错峰定时发布」
+- 新号每日 2-3 条，`daily_upload_limit` 控制上限（条目级全局闸——每平台实际发帖量同值）；短时间连投触发限流(各平台风控规则不同)，用「错峰定时发布」+ `offset_min` 平台间错峰
 - 被退稿/下架是常态，`failed` 里看原因，高危源就 disable
 - cookies 几个月会过期：`cli.py renew` / `login-ks` / `login-sph` 重新登录
 - YouTube 风控出验证码 → 导出 cookies.txt 填 `cookies_file`
@@ -242,14 +242,14 @@ docker compose up -d --build          # 镜像内含 ffmpeg/CJK字体/双venv/sa
 
 **额度**：
 - `daily_download_limit: 5` —— 批量下载/自动调度每天最多处理 5 条，额度用完自动停，明天继续
-- `daily_upload_limit: 5` —— 每日投稿上限
+- `daily_upload_limit: 3` —— 每日投稿上限(条目级=每平台限额; 5 平台全开时全站合计≤15帖/天, 养号期 2-3 成熟后≤5)
 - `download_mix_lines: true` —— 每日下载额度按内容线轮转均摊（每线轮流一条，耗尽让位），避免单条内容线吃满全天配额
 - 手动触发不受影响：**卡片上的「下载」按钮** / `cli.py download --id <id>` 想下哪条下哪条，不占额度
 
 **手动 vs 自动的区别**（仅此两点）：
 | | 自动(调度器/批量按钮) | 手动(卡片下载按钮/--id) |
 |---|---|---|
-| 每日额度 | 受 5 条/天限制 | 不受限 |
+| 每日额度 | 受 3 条/天限制(可调) | 不受限 |
 | 处理范围 | 按队列顺序取 new | 指定单条 |
 | 流水线 | 完全相同：下载→字幕判定→LLM标题→ready | 相同 |
 
