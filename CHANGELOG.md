@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.8.1 (2025-06)
+### Fixed
+- `extra_platforms` 示例全部默认关闭——全新安装只投 B站（原默认开快手/视频号会致未登录必失败、且造成"仅三平台"错觉）；启用路径：login-extra 扫码→enabled
+- README/仓库描述标语改为全平台定位：B站内置 + sau 13 平台可选，不再框死三平台
+- `dsh-index.json` 工具计数修正 19→20（hub_import 漏更）；dsh-video-hub 0.2.1
+
 ## v1.8.0 (2025-06)
 ### Added
 - **Web 端 B站扫码登录**：顶栏「🔐 B站登录」弹二维码，B站APP 扫码确认即完成——复刻 BiliTV 登录流程，产出的 cookies.json 含完整 token_info，与 biliup login 格式完全兼容。**不依赖 biliup 二进制/终端**，Windows/服务器等无终端环境可登录
