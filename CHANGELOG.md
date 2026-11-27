@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.1.1 (2025-11) — Agent 工具补齐 + 前端拆分
+
+- **hub_* 工具 20→23**：新增 `hub_platform_login`(拉起 sau 扫码登录) / `hub_platform_open`(登录态直达创作中心) / `hub_verify_code`(投喂验证码)——三个端点此前只通裸 API/前端，mcp+dsh 双端同步，dsh 插件发 0.3.0
+- **前端拆分**：index.html(标记)/app.js/style.css 三件套——单文件技术债清偿
+- **文档**：全站工具计数同步、官网 docker 部署行+错误归类、目录表对齐、AGENTS 技术债→设计约束
+
 ## v2.1.0 (2025-11) — 工程化补强
 
 - **Docker 化**：Dockerfile(ffmpeg+CJK字体+双venv+sau chromium) / docker-compose.yml / .dockerignore；数据全卷挂载、端口绑回环、`cli.py serve --host`
