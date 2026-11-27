@@ -76,6 +76,7 @@
     <button class="btn btn-sm btn-ghost" onclick="doPoll()">↻ 轮询源</button>
     <button class="btn btn-sm btn-ghost" onclick="doDownload()">⬇ 下载全部</button>
     <button class="btn btn-sm btn-ghost" onclick="document.getElementById('impModal').showModal()" title="本地视频文件导入流水线">📁 导入本地</button>
+    <button class="btn btn-sm btn-ghost" onclick="openBiliLogin()" title="B站APP扫码登录(无需终端)">🔐 B站登录</button>
     <div class="w-px h-5 bg-base-300"></div>
     <button class="btn btn-sm btn-primary" onclick="doPublishAll(false)">▶ 发布全部</button>
     <button class="btn btn-sm btn-outline" onclick="doPublishAll(true)" title="按 publish_slots 错峰定时">⏱ 错峰定时</button>
@@ -163,6 +164,21 @@
     <div class="modal-action">
       <button class="btn btn-sm btn-primary" onclick="doImport(this)">导入</button>
       <form method="dialog"><button class="btn btn-sm">取消</button></form>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- B站扫码登录 -->
+<dialog id="biliModal" class="modal">
+  <div class="modal-box max-w-xs text-center">
+    <div class="font-bold text-sm mb-1">🔐 B站扫码登录</div>
+    <div class="text-[11px] text-base-content/50 mb-3">用<b>B站APP</b>扫一扫, 确认后自动写 cookies.json<br>不依赖终端/二进制; 过期了点下方重新生成</div>
+    <img id="biliQr" class="w-56 h-56 mx-auto rounded-lg border border-base-300" src="">
+    <div id="biliQrStatus" class="text-xs mt-3 text-base-content/60">生成中…</div>
+    <div class="modal-action justify-center">
+      <button class="btn btn-sm btn-ghost" onclick="openBiliLogin()">重新生成</button>
+      <form method="dialog"><button class="btn btn-sm">关闭</button></form>
     </div>
   </div>
   <form method="dialog" class="modal-backdrop"><button>close</button></form>
@@ -868,6 +884,40 @@ async function doImport(btn) {
   } catch(e) { toast(e.message, "err"); }
   busy(btn, false);
 }
+let _biliAuth = "", _biliTimer = null;
+async function openBiliLogin() {
+  const st = document.getElementById("biliQrStatus");
+  document.getElementById("biliModal").showModal();
+  st.textContent = "生成中…"; document.getElementById("biliQr").src = "";
+  if (_biliTimer) { clearInterval(_biliTimer); _biliTimer = null; }
+  try {
+    const r = await api("/api/bili/qrcode");
+    _biliAuth = r.auth_code;
+    document.getElementById("biliQr").src = r.img;
+    st.textContent = "等待扫码…";
+    _biliTimer = setInterval(async () => {
+      try {
+        const p = await api("/api/bili/qrcode/poll?auth_code=" + _biliAuth);
+        const s = p.status;
+        if (s === "done") {
+          clearInterval(_biliTimer); _biliTimer = null;
+          st.textContent = "✅ 登录成功";
+          toast("B站登录成功", "ok");
+          setTimeout(() => { document.getElementById("biliModal").close(); loadStats(); }, 800);
+        } else if (s === "scanned") { st.textContent = "已扫码, 请在APP上确认"; }
+        else if (s === "expired") {
+          clearInterval(_biliTimer); _biliTimer = null;
+          st.textContent = "二维码已过期, 点「重新生成」";
+        } else if (s === "error") {
+          clearInterval(_biliTimer); _biliTimer = null;
+          st.textContent = "登录失败: " + (p.msg || "");
+        }
+      } catch(e) {}
+    }, 2000);
+  } catch(e) { st.textContent = "生成失败: " + e.message; }
+}
+document.getElementById("biliModal").addEventListener("close",
+  () => { if (_biliTimer) { clearInterval(_biliTimer); _biliTimer = null; } });
 async function doDownload() { try { await api("/api/download","POST"); toast("批量下载已启动","ok"); } catch(e){ toast(e.message, "err"); } }
 async function doPublishAll(schedule) {
   if (!confirm(schedule ? "按错峰档位批量定时发布全部 ready 条目？" : "立即批量发布全部 ready 条目？")) return;

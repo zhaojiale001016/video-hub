@@ -49,7 +49,9 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.videohub.pipeline.pl
 .venv/bin/python3 cli.py import ~/V/x.mp4 --line music --no-process   # 指定内容线/只入库
 
 # ── 登录态 ──
-.venv/bin/python3 cli.py login         # B站扫码
+# B站首选: Web 管理台顶栏「🔐 B站登录」弹二维码, B站APP扫(无需终端/二进制,
+# Windows/服务器也能登; 写 cookies.json 与 biliup 格式完全兼容)
+.venv/bin/python3 cli.py login         # B站扫码(终端版, 需已装 biliup)
 .venv/bin/python3 cli.py renew         # B站 cookie 刷新
 .venv/bin/python3 cli.py login-ks      # 快手扫码(浏览器弹窗)
 .venv/bin/python3 cli.py login-sph     # 视频号扫码
@@ -72,7 +74,8 @@ cp config/sources.example.yaml config/sources.yaml   # 首启缺省时也会自�
 
 # 3. 安装 biliup（B站投稿器, 第三方二进制不入库）
 #   https://github.com/biliup/biliup-rs/releases → 下载对应平台二进制
-#   放到 bin/biliup 并 chmod +x（路径可在设置里改）
+#   放到 bin/ 下: bin/biliup (mac/Linux, chmod +x) 或 bin/biliup.exe (Windows)
+#   也会自动找 PATH 里的 biliup; 自定义路径可在设置 biliup_bin 里改
 
 # 4. sau 投递引擎（快手/抖音/视频号等13平台; 只用B站可跳过）
 cd vendor/sau && python3 -m venv .venv && .venv/bin/pip install -e . \

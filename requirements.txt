@@ -7,6 +7,7 @@ bilibili-api-python>=17.4.2
 faster-whisper>=1.2.1
 
 pillow
+qrcode>=8.0
 
 # 开发/测试
 pytest

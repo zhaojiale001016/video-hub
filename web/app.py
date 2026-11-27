@@ -201,6 +201,30 @@ def stats():
             "proxy": C.proxy(cfg) or ""}
 
 
+@app.get("/api/bili/qrcode")
+def bili_qrcode():
+    """B站扫码登录: 生成 TV 二维码(B站APP扫)。不依赖 biliup 二进制/终端,
+    Windows/服务器等无终端环境也能登录。"""
+    import base64
+    import io
+
+    import qrcode
+    st = uploader.qr_login_start(cfg)
+    buf = io.BytesIO()
+    qrcode.make(st["url"]).save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode()
+    return {"auth_code": st["auth_code"],
+            "img": f"data:image/png;base64,{b64}"}
+
+
+@app.get("/api/bili/qrcode/poll")
+def bili_qrcode_poll(auth_code: str = ""):
+    r = uploader.qr_login_poll(cfg, auth_code)
+    if r.get("status") == "done":
+        _login_cache["ok"] = None            # 登录态缓存立即失效重查
+    return r
+
+
 _sched = {"next_poll": 0}
 
 

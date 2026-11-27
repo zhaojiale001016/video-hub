@@ -1,9 +1,15 @@
 """biliup-rs 投稿封装：转载投稿(copyright=2 + source链接)。"""
+import hashlib
 import json
 import logging
 import re
+import shutil
 import subprocess
+import time
+import urllib.parse
 from pathlib import Path
+
+import httpx
 
 from . import config as C
 from .db import DB
@@ -16,7 +22,14 @@ class PublishError(Exception):
 
 
 def _bin(cfg: dict) -> str:
-    return C.abs_path(cfg, C.get_setting(cfg, "biliup_bin", "bin/biliup"))
+    """biliup 二进制: 配置项 > bin/biliup|biliup.exe(Windows) > PATH。"""
+    if p := C.get_setting(cfg, "biliup_bin"):
+        return C.abs_path(cfg, p)
+    for c in ("bin/biliup", "bin/biliup.exe"):
+        f = C.abs_path(cfg, c)
+        if Path(f).exists():
+            return f
+    return shutil.which("biliup") or C.abs_path(cfg, "bin/biliup")
 
 
 def _cookie(cfg: dict) -> str:
@@ -358,3 +371,50 @@ def verify_published(cfg: dict, db: DB, max_age: int = 86400) -> list[dict]:
 def login(cfg: dict):
     """交互式扫码登录（在终端跑），写 cookies.json。"""
     subprocess.call([_bin(cfg), "-u", _cookie(cfg), "login"])
+
+
+# ── B站 TV 扫码登录(Web 版, 不依赖 biliup 二进制/终端) ──
+# 与 biliup-rs 登录同一套 BiliTV 接口, 产出的 cookies.json 格式完全兼容
+_TV_APPKEY = "4409e2ce8ffd12b8"
+_TV_SECKEY = "59b43e04ad6965f34319062b478f83dd"
+_TV_UA = {"User-Agent": "Mozilla/5.0 BiliTV/1.0"}
+
+
+def _tv_sign(p: dict) -> str:
+    return hashlib.md5(
+        (urllib.parse.urlencode(sorted(p.items())) + _TV_SECKEY).encode()
+    ).hexdigest()
+
+
+def qr_login_start(cfg: dict) -> dict:
+    """生成登录二维码: 返回 {url(二维码内容), auth_code}。"""
+    body = {"appkey": _TV_APPKEY, "local_id": "0", "ts": int(time.time())}
+    body["sign"] = _tv_sign(body)
+    d = httpx.post(
+        "https://passport.bilibili.com/x/passport-tv-login/qrcode/auth_code",
+        data=body, headers=_TV_UA, timeout=10).json()
+    if d.get("code") != 0 or not (d.get("data") or {}).get("auth_code"):
+        raise RuntimeError(f"二维码生成失败: {d.get('message', d)}")
+    return {"url": d["data"]["url"], "auth_code": d["data"]["auth_code"]}
+
+
+def qr_login_poll(cfg: dict, auth_code: str) -> dict:
+    """轮询扫码结果: waiting|scanned|expired|done|error。成功即写 cookies.json。"""
+    body = {"appkey": _TV_APPKEY, "local_id": "0", "ts": int(time.time()),
+            "auth_code": auth_code}
+    body["sign"] = _tv_sign(body)
+    d = httpx.post(
+        "https://passport.bilibili.com/x/passport-tv-login/qrcode/poll",
+        data=body, headers=_TV_UA, timeout=10).json()
+    code = d.get("code")
+    if code == 0:
+        data = d["data"]
+        data["platform"] = "BiliTV"            # biliup cookies.json 必填字段
+        cp = Path(C.abs_path(cfg, C.get_setting(cfg, "biliup_cookie",
+                                                "data/cookies.json")))
+        cp.parent.mkdir(parents=True, exist_ok=True)
+        cp.write_text(json.dumps(data))
+        return {"status": "done"}
+    return {"status": {86090: "scanned", 86038: "expired",
+                       86039: "waiting"}.get(code, "error"),
+            "msg": d.get("message") or str(code)}
