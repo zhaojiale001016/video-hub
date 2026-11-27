@@ -12,6 +12,7 @@ from pathlib import Path
 import httpx
 
 from . import config as C
+from . import errfmt
 from .db import DB
 
 log = logging.getLogger("uploader")
@@ -318,7 +319,7 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
             results["bilibili"] = {"ok": True, "name": "B站", "bvid": bvid}
         else:
             results["bilibili"] = {"ok": False, "name": "B站",
-                                   "msg": out[-200:].replace("\r", " ")}
+                                   "msg": errfmt.summarize(out[-1500:])}
 
     # 多平台投递: 无论B站成败, 剩余勾选平台照常执行
     extra = []

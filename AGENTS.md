@@ -41,3 +41,10 @@ curl -s http://127.0.0.1:8600/api/stats        # 服务在跑时
 - 改 `vendor/sau/` 必须同步登记 `vendor/sau/PATCHES.md`
 - 涉及新平台: 改 `multipub.SAU_PLATFORMS/PLATFORMS` + 能力矩阵 + 跑 `test_multipub`
 - 配置项进 UI: `SETTINGS_SCHEMA` + SGROUPS(前端) + example.yaml 注释三处同步
+
+## 已知技术债(不做精度误判)
+
+- **前端单文件**: `web/static/index.html` 约千行原生 JS, 无组件体系/状态管理; 继续加复杂视图前先评估拆模块(现状可控, 重写收益低于风险)
+- **sau 上传器异构**: 每平台浏览器自动化特征各异, 风控改版即碎——以"投递结果记账+补投"兜底而非预判全部风控
+- **Docker 场景受限**: 容器内跑不了有头浏览器(扫码登录需宿主机先 login-extra 生成 cookie 再挂载); B站 QR 登录走 API 不受限
+- **历史泄漏已清**: v1.8.11 清理过公共仓库私有线名; git 历史旧提交仍含 `music/relax` 等词(品类 slug 非密钥, 不重写历史)

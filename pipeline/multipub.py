@@ -12,6 +12,7 @@ import subprocess
 from pathlib import Path
 
 from . import config as C
+from . import errfmt
 
 log = logging.getLogger("multipub")
 
@@ -248,13 +249,16 @@ def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dic
         r = subprocess.run(cmd, capture_output=True, text=True,
                            encoding="utf-8", errors="replace",
                            cwd=str(sau), timeout=timeout, env=env)
-        out = ((r.stdout or "") + "\n" + (r.stderr or ""))[-800:]
+        out = ((r.stdout or "") + "\n" + (r.stderr or ""))[-2000:]
         ok = r.returncode == 0
-        log.info("multipub %s rc=%s: %s", platform, r.returncode, out[-300:])
-        return {"platform": platform, "name": name, "ok": ok, "msg": out}
+        log.info("multipub %s rc=%s: %s", platform, r.returncode, out[-400:])
+        # UI/记账只给归类后的单行原因, 原始输出留在日志里排查
+        msg = "ok" if ok else errfmt.summarize(out)
+        return {"platform": platform, "name": name, "ok": ok, "msg": msg}
     except Exception as e:
         log.warning("multipub %s failed: %s", platform, e)
-        return {"platform": platform, "name": name, "ok": False, "msg": str(e)[:400]}
+        return {"platform": platform, "name": name, "ok": False,
+                "msg": errfmt.summarize(e)}
     finally:
         progress.set_stage(iid, "收尾中")
 

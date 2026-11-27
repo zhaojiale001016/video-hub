@@ -11,6 +11,7 @@ from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 
 from . import config as C
+from . import errfmt
 from .db import DB
 
 log = logging.getLogger("downloader")
@@ -408,7 +409,8 @@ def process_new_items(cfg: dict, db: DB, metagen=None, limit: int | None = None,
             msg = f"#{item['id']} 完成 → {meta['title'][:45]}"
             results.append({"id": item["id"], "ok": True, "title": meta["title"]})
         except Exception as e:
-            db.set_status(item["id"], "failed", fail_reason=str(e)[:500])
+            db.set_status(item["id"], "failed",
+                          fail_reason=errfmt.summarize(e, 300))
             msg = f"#{item['id']} 失败: {str(e)[:120]}"
             results.append({"id": item["id"], "ok": False, "error": str(e)[:300]})
         finally:

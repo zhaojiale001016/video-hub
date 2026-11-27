@@ -1,0 +1,30 @@
+services:
+  video-hub:
+    build: .
+    container_name: video-hub
+    restart: unless-stopped
+    ports:
+      # 只绑回环口: 管理台无鉴权, 公网暴露需自行加反代+鉴权
+      - "127.0.0.1:8600:8600"
+    volumes:
+      - ./config:/app/config                  # sources.yaml 私有源清单(不入镜像)
+      - ./data:/app/data                      # pipeline.db / B站cookies / 下载件
+      - ./vendor/sau/cookies:/app/vendor/sau/cookies   # sau 各平台登录态
+      - ./vendor/sau/logs:/app/vendor/sau/logs         # 投递日志+证据截图
+      - ./bin:/app/bin                        # biliup 二进制(宿主机放好对应架构版本)
+    environment:
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_BASE_URL=${LLM_BASE_URL:-}
+      - LLM_MODEL=${LLM_MODEL:-}
+      - https_proxy=${https_proxy:-}
+      - http_proxy=${http_proxy:-}
+      - TZ=Asia/Shanghai
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8600/api/stats"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # 容器内跑不了有头浏览器: sau 扫码登录(B站QR登录可API内完成)
+    # 需先在宿主机 cli.py login-extra <pid> 生成 cookie 再挂载进来,
+    # 或临时加 entrypoint 覆盖 + xvfb/x11 forwarding

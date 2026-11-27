@@ -213,6 +213,18 @@ subtitles:
 - **墙钟到点调度**：启动 ~2 分钟先补一轮；按 wall-clock deadline 走表——系统睡眠唤醒后错过的轮次立即补跑，不推迟整个间隔
 - `auto_workdays_only: true` — **仅工作日自动执行**，周末整 tick 跳过（手动按钮不受影响）
 - `whisper_device: mps` — Apple Silicon GPU 转写（约2x速，初始化失败自动回退 cpu）
+
+## Docker 部署（可选）
+
+```bash
+docker compose up -d --build          # 镜像内含 ffmpeg/CJK字体/双venv/sau chromium
+# 宿主机先放好 bin/biliup(对应架构) 与 config/sources.yaml
+```
+
+- 数据全走卷：`config/`(私有源) `data/`(db/下载件) `vendor/sau/cookies/` `vendor/sau/logs/` `bin/`
+- 端口只绑 `127.0.0.1:8600`（管理台无鉴权，公网需自加反代+鉴权）
+- **容器内跑不了有头浏览器**：sau 平台扫码登录先在宿主机 `cli.py login-extra <pid>` 生成 cookie 再挂载；B站 QR 登录走 API 不受限
+- 备选常驻方式仍是 macOS `launchd` / Linux `deploy/video-hub.service.example` systemd
 - `delete_after_publish` — **全部勾选平台投递成功**才删本地视频；部分成功保留文件供补投，也可在抽屉里手动「🗑 清理文件」（跳过条目总是删文件、留去重记录）
 - `cli.py doctor` — 体检：cookie/登录态/活动数/队列/今日已投
 

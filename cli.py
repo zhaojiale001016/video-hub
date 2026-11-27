@@ -94,6 +94,7 @@ def main():
     p.add_argument("--status", default="ready")
     sub.add_parser("stats", help="统计")
     p = sub.add_parser("serve", help="启动Web管理台")
+    p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8600)
     sub.add_parser("mcp", help="启动 MCP stdio server(接 Claude/Cursor/Devin 等 AI 工具)")
 
@@ -238,8 +239,8 @@ def main():
                          ensure_ascii=False))
     elif args.cmd == "serve":
         from web.app import serve
-        print(f"管理台: http://127.0.0.1:{args.port}")
-        serve(port=args.port)
+        print(f"管理台: http://{args.host}:{args.port}")
+        serve(host=args.host, port=args.port)
     elif args.cmd == "mcp":
         import mcp_server
         mcp_server.main()
