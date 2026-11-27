@@ -141,3 +141,13 @@ def test_delete_files_guard(tmp_path):
     f = parent / "v.mp4"; f.write_text("x")
     uploader._delete_files({"id": 1, "file_path": str(f)})
     assert parent.exists() and not f.exists()
+
+def test_cmd_submit_defaults_app(cfg):
+    cmd = uploader.build_upload_cmd(_item(), cfg)
+    assert cmd[cmd.index("--submit") + 1] == "app"
+
+
+def test_cmd_submit_override(cfg):
+    cfg = dict(cfg); cfg.setdefault("settings", {})["submit_api"] = "web"
+    cmd = uploader.build_upload_cmd(_item(), cfg)
+    assert cmd[cmd.index("--submit") + 1] == "web"

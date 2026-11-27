@@ -20,6 +20,7 @@ settings:
   archive_file: "data/downloaded.archive"
   biliup_bin: "bin/biliup"       # B站投稿器, 见 README「安装 biliup」
   biliup_cookie: "data/cookies.json"
+  submit_api: "app"               # B站投稿提交接口: app(荐)/web(客户端接口已被B站废弃)
   # 无人值守: 按间隔自动轮询(+自动下载)。0=手动
   auto_poll_interval_min: 360
   auto_workdays_only: true       # 周六日不自动执行, 手动不受影响

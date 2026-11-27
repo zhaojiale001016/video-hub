@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.1 (2025-06)
+### Changed
+- **B站投稿默认走 `app` 接口**：B站已废弃客户端(web)提交接口，biliup 每次都先吃 WARN 再降级；新增 `submit_api` 设置项（默认 `app`，可改回 `web`）——实测 `app` 接口直接成功
+- 前端错误 toast 解析 FastAPI `detail` 字段，不再显示裸 JSON
+
 ## v1.7.0 (2025-06)
 ### Added
 - **本地文件导入发布**：`downloader.import_local_file()` 把本机视频复制进 `download_dir/<id>/`（`video.<ext>` 归一化，可选封面同步导入 `.webp→.jpg`），`(platform=local, source_id=sha256)` 去重防重复导入；不占每日下载额度

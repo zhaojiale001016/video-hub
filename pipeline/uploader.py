@@ -70,7 +70,7 @@ def build_upload_cmd(item: dict, cfg: dict) -> list[str]:
            "--title", (item.get("title") or "")[:80],
            "--desc", (item.get("description") or "")[:1500],
            "--tag", ",".join(tags[:12]),
-           "--submit", "web"]
+           "--submit", C.get_setting(cfg, "submit_api", "app")]
     if cr == 2:
         cmd += ["--source", item.get("source_url") or ""]
     if item.get("cover_path"):
