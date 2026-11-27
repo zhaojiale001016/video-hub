@@ -838,15 +838,19 @@ def api_reconcile():
 
 def _scheduler():
     """常驻调度器：按配置间隔自动轮询(可选连带下载)，实现无人值守。
-    每 tick 重读配置, 设置面板改动即时生效免重启。"""
+    每 tick 重读配置, 设置面板改动即时生效免重启。
+    启动后 2 分钟先补一轮(否则重启把首轮推迟一整个间隔)。"""
+    first = True
     while True:
         interval = int(C.get_setting(cfg, "auto_poll_interval_min", 0) or 0)
         if interval <= 0:
             _sched["next_poll"] = 0
             time.sleep(60)
             continue
-        _sched["next_poll"] = time.time() + interval * 60
-        time.sleep(interval * 60)
+        wait = 120 if first else interval * 60
+        _sched["next_poll"] = time.time() + wait
+        first = False
+        time.sleep(wait)
         try:
             # 工作日限制: 周六日(5,6)整 tick 跳过,手动操作不受影响
             if (C.get_setting(cfg, "auto_workdays_only", True)
