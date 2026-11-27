@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.8.0 (2025-06)
+### Added
+- **Web 端 B站扫码登录**：顶栏「🔐 B站登录」弹二维码，B站APP 扫码确认即完成——复刻 BiliTV 登录流程，产出的 cookies.json 含完整 token_info，与 biliup login 格式完全兼容。**不依赖 biliup 二进制/终端**，Windows/服务器等无终端环境可登录
+- `settings.line_icons` 配置项：内容线图标/显示名/徽标配色全部配置驱动 `{slug: ["emoji","名称","badge样式(可选)"]}`，`/api/stats` 下发；未配置线名 🏷+哈希配色兜底
+- `cli.py doctor` 新增二进制体检：biliup/ffmpeg/ffprobe/sau venv python 解析结果逐项报告
+
+### Fixed
+- **Windows 兼容性全局修复**：`cli renew` 绕过 `_bin()` 兜底（未配置时 `Path(None)` 崩）；子进程输出统一 utf-8+errors（防中文 Windows GBK 解码炸）；`/media` URL `.as_posix()`（反斜杠致预览 404）；全部文件读写显式 utf-8；`abs_path` 支持 `~/`；`_bin` 补 `biliup.exe`+PATH 查找链
+- **本地文件预览**：`download_dir` 指到 `data/` 外时预览 URL 为空——新增 `/api/items/{id}/file` 条目作用域文件端点（FileResponse 支持 Range 拖动），data/ 外路径自动回退
+- **开源版隐私净化**：example sources 整段注释化（无真实频道 URL/搜索词）、missions.match/字幕注释关键词中性化、metagen 内置 LINE_STYLE 通用化（个人风格走私有 `llm.line_styles`）、前端不再内置线名预设（幽灵选项清除）、官网演示文案去真实稿件号/品类词
+- 示例源 `enabled: true`→注释模板：全新安装不再自动抓示例内容
+- 官网 0-1 重做：浅色工程文档风，内容按真实功能重写
+
+### Changed
+- README：B站登录首选 Web 扫码；Windows 完整运行指引（exe/PATH/ffmpeg/任务计划程序）
+- `requirements.txt` 补 `qrcode>=8.0`
+
 ## v1.7.4 (2025-06)
 ### Fixed
 - `submit_api`/`tencent_content_label` 补进 SETTINGS_SCHEMA——之前设置面板 PUT 会静默丢弃这两个键
