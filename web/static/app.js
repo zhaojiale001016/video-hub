@@ -665,7 +665,13 @@ async function renderPlatPage() {
       const ops = p.id === "bilibili"
         ? `<button class="btn btn-xs btn-ghost" onclick="openBiliLogin()">📱 扫码登录</button>`
         : `<button class="btn btn-xs btn-ghost" onclick="platLogin('${p.id}')" title="拉起扫码登录浏览器">🔐 ${p.logged_in?"重新登录":"扫码登录"}</button>` +
-          `<label class="flex items-center gap-1 text-[11px] cursor-pointer ml-auto" title="启用后进入投递矩阵">
+          (p.cover !== undefined
+            ? `<select class="select select-xs select-ghost text-[11px] ml-auto"
+                 title="auto=用平台自带推荐封面(抖音推荐帧/快手自动封面等); file=上传本机智能抽帧封面"
+                 onchange="platCover('${p.id}',this.value)">
+                 <option value="file" ${p.cover!=="auto"?"selected":""}>封面: 自抽</option>
+                 <option value="auto" ${p.cover==="auto"?"selected":""}>封面: 平台推荐</option></select>` : "") +
+          `<label class="flex items-center gap-1 text-[11px] cursor-pointer ${p.cover===undefined?"ml-auto":""}" title="启用后进入投递矩阵">
              <input type="checkbox" class="toggle toggle-xs toggle-primary" ${p.enabled?"checked":""}
                onchange="platToggle('${p.id}',this.checked)"><span class="${p.enabled?"":"opacity-40"}">投递</span></label>`;
       const cnt = `<span class="text-[11px] text-base-content/45">发稿 <b>${p.ok_count}</b>` +
@@ -699,6 +705,12 @@ async function platToggle(pid, on) {
     toast(`${pid} 已${on?"启用":"停用"}`, "ok");
     platsReady = false;
     renderPlatPage();
+  } catch(e){ toast(e.message,"err"); }
+}
+async function platCover(pid, mode) {
+  try {
+    await api("/api/settings", "PUT", {extra_platforms: {[pid]: {cover: mode}}});
+    toast(`${pid} 封面策略 → ${mode==="auto"?"平台推荐":"自抽"}`, "ok");
   } catch(e){ toast(e.message,"err"); }
 }
 async function doCleanup() {

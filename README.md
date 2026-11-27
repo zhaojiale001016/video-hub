@@ -211,6 +211,7 @@ subtitles:
 
 - 服务由 **launchd 常驻托管**（`~/Library/LaunchAgents/com.videohub.pipeline.plist`）：登录自启 + 崩溃自愈；重启前先确认页面无在跑任务
 - `publish_slots: ["12:00","18:00","19:30","21:00","22:30"]` — 「错峰定时发布」自动分稿到 ≥4h 的档位（快手/视频号同步对齐该时刻）
+- `extra_platforms.<pid>.cover` — 封面策略：`file`(默认)=上传本机智能抽帧封面；`auto`=不传文件, 用平台自带推荐封面系统（抖音推荐帧/快手自动封面/视频号推荐帧/小红书自选帧）。平台页卡片下拉即切，B站固定文件封面
 - `auto_poll_interval_min: 360` + `auto_download_after_poll: true` — 每 6h 自动拉新+下载+处理
 - **墙钟到点调度**：启动 ~2 分钟先补一轮；按 wall-clock deadline 走表——系统睡眠唤醒后错过的轮次立即补跑，不推迟整个间隔
 - `auto_workdays_only: true` — **仅工作日自动执行**，周末整 tick 跳过（手动按钮不受影响）

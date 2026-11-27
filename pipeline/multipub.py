@@ -212,7 +212,11 @@ def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dic
     decl = ((cfg.get("extra_platforms") or {}).get(platform) or {}).get("declaration")
     if decl:
         cmd += ["--declaration", str(decl)]
-    if platform not in _NO_THUMB:
+    p_cfg = (cfg.get("extra_platforms") or {}).get(platform) or {}
+    # cover="auto": 不传封面文件, 平台自带推荐封面系统接管
+    # (抖音推荐帧/快手自动封面/视频号推荐帧/小红书自选帧)
+    cover_mode = str(p_cfg.get("cover") or "file")
+    if platform not in _NO_THUMB and cover_mode != "auto":
         cover = item.get("cover_path") or ""
         portrait = item.get("cover_portrait_path") or ""
         has_portrait = bool(portrait) and Path(portrait).exists()

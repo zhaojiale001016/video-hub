@@ -207,3 +207,23 @@ def test_douyin_no_portrait_no_param():
 
 def test_portrait_matrix_subset():
     assert multipub._PORTRAIT_THUMB <= set(multipub.SAU_PLATFORMS)
+
+
+def test_cover_auto_skips_thumbnails(cfg):
+    """cover=auto: 平台推荐封面接管, 不传任何封面参数。"""
+    c = dict(cfg)
+    c["extra_platforms"] = {"douyin": {"enabled": True, "cover": "auto"},
+                            "kuaishou": {"enabled": True, "cover": "auto"}}
+    for p in ("douyin", "kuaishou"):
+        cmd = _cmd_for(p, cfg=c)
+        assert "--thumbnail" not in cmd, f"{p} 不该传封面参数"
+        assert "--thumbnail-landscape" not in cmd
+        assert "--thumbnail-portrait" not in cmd
+
+
+def test_cover_file_default_keeps_thumbnails(cfg):
+    """默认/显式 file: 维持上传自抽封面。"""
+    c = dict(cfg)
+    c["extra_platforms"] = {"douyin": {"enabled": True, "cover": "file"}}
+    cmd = _cmd_for("douyin", cfg=c)
+    assert "--thumbnail-landscape" in cmd

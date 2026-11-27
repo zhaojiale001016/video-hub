@@ -90,6 +90,8 @@ extra_platforms:
   # douyin: {enabled: false, account: "main", headed: true, offset_min: 15}
   #   headed=弹真实浏览器(风控验证码可人工过); offset_min=预约发布时间相对B站后移N分钟, 防矩阵画像
   #   declaration="内容由AI生成" 显式标注自主声明(默认不标)
+  #   cover="auto" 不传封面文件→平台自带推荐封面系统接管(抖音推荐帧/快手自动封面等);
+  #          默认 "file"=上传本机智能抽帧封面。B站固定走文件封面(投稿必须上传)
   # douyin: {enabled: false, account: "main"}   # 抖音(示例, 登录后开启)
 
 # 自动参加B站投稿活动(投稿页"参与活动"，需已登录)

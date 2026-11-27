@@ -20,7 +20,7 @@
 
 - **多平台独立**: `extra_pub` 记每平台成败; 已成功平台重试时跳过; 全平台成功才自动删文件
 - **保留平台id**: `bilibili`(内置 biliup 通道)/`article`; extra_platforms 键必须 slug
-- **sau 能力矩阵**: `_NO_THUMB/_NO_TAGS/_NO_SCHEDULE/_LAND_THUMB` —— 加平台先查 sau_commands/*.py 的 argparse
+- **sau 能力矩阵**: `_NO_THUMB/_NO_TAGS/_NO_SCHEDULE/_LAND_THUMB` —— 加平台先查 sau_commands/*.py 的 argparse; `extra_platforms.<pid>.cover="auto"`=平台推荐封面接管
 - **内容线自由**: `line` 任意小写 slug, 字幕策略/missions.match/llm.line_styles 同名 key 联动
 - **B站域失败不阻断**: B站环节失败只记 extra_pub.bilibili, 其余平台照常; 但撞稿/同名/限额是条目级——命中直接拦全部平台腿
 - **published 不可 PATCH**(与线上稿件脱节), publish() 对 published 放行是为补投(去重保护)

@@ -222,13 +222,18 @@ def get_platforms():
     out = {"bilibili": _row("bilibili", "B站", True, _login_ok(),
                             {"builtin": True})}
     for p in multipub.SAU_PLATFORMS:
+        extra = {}
+        if p not in multipub._NO_THUMB:      # 支持封面的平台才有封面策略
+            extra["cover"] = str((ep.get(p) or {}).get("cover") or "file")
         out[p] = _row(p, multipub.PLATFORMS.get(p, p),
                       bool((ep.get(p) or {}).get("enabled")),
-                      multipub.logged_in(cfg, p))
+                      multipub.logged_in(cfg, p), extra)
     for p, c in ep.items():                      # 自定义 id 也回显
         if p not in out and p not in multipub._RESERVED:
             out[p] = _row(p, p, bool((c or {}).get("enabled")),
-                          multipub.logged_in(cfg, p), {"custom": True})
+                          multipub.logged_in(cfg, p),
+                          {"custom": True,
+                           "cover": str((c or {}).get("cover") or "file")})
     return out
 
 
