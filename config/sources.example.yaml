@@ -6,6 +6,9 @@
 # ============================================================
 
 settings:
+  # 可选：前端内容线图标/显示名/徽标配色 {slug: ["emoji","名称","badge样式(可选)"]}
+  # line_icons:
+  #   my_line: ["🏷", "我的线", "background:#eef;color:#336"]
   # 外网代理（下载 YouTube/TikTok 必需）。留空则读环境变量 https_proxy
   proxy: ""                      # 例: "http://127.0.0.1:7890"
   # 可选：yt-dlp cookies 文件（YouTube 触发人机验证时导出 cookies.txt 填这里）

@@ -197,6 +197,7 @@ def stats():
                             for p in multipub.enabled_platforms(cfg)},
             "next_poll_in": (max(0, int(_sched["next_poll"] - time.time()))
                              if _sched["next_poll"] else None),
+            "line_icons": (cfg.get("settings") or {}).get("line_icons") or {},
             "proxy": C.proxy(cfg) or ""}
 
 
@@ -650,7 +651,8 @@ SETTINGS_SCHEMA = {
         "biliup_cookie": str, "download_dir": str, "archive_file": str,
         "stale_days": int, "publish_slot_gap_h": int,
         "precheck_threshold": float, "precheck_autoskip": float,
-        "submit_api": str, "tencent_content_label": str},
+        "submit_api": str, "tencent_content_label": str,
+        "line_icons": dict},                 # {线slug: ["emoji","显示名"]}, 前端图标映射
     "extra_platforms": {"*": dict},   # 任意 sau 平台: {平台id: {enabled,account}}
     "missions": {"enabled": bool, "match": dict},
     "subtitles": {

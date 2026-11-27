@@ -202,14 +202,14 @@
 
 <script>
 const TABS = [["new","待下载","#00a1d6"],["ready","待发布","#22c55e"],["published","已发布","#a78bfa"],["failed","失败","#f43f5e"],["skipped","已跳过","#94a3b8"]];
-// 内容线: 内置三线仅作显示预设; 任意自定义 slug 线名同样工作(哈希配色)
-const LINE_PRESET = {music:["🎵","音乐"],relax:["🧼","解压"],adventure:["⛏️","探险"]};
-const LINE_COLOR = {music:"background:#e8f5e9;color:#2e7d32",relax:"background:#fff3e0;color:#e65100",adventure:"background:#e3f2fd;color:#1565c0"};
-function lineIcon(l){return (LINE_PRESET[l]||["🏷",l||""])[0]}
-function lineName(l){return (LINE_PRESET[l]||["🏷",l||""])[1]}
-const linesSeen = new Set(Object.keys(LINE_PRESET));
-function lineBadge(l){  // 自定义线名按哈希给柔和底色
-  if (LINE_COLOR[l]) return LINE_COLOR[l];
+// 内容线图标/配色: 全部由 settings.line_icons 配置 {slug:["emoji","显示名","badge样式(可选)"]},
+// stats 下发; 未配置的线名 🏷兜底, 颜色按哈希
+const lineIcons = {};
+function lineIcon(l){return (lineIcons[l]||["🏷",l||""])[0]}
+function lineName(l){return (lineIcons[l]||["🏷",l||""])[1]}
+const linesSeen = new Set();   // 只收真实数据里出现过的线名, 不预置示例名
+function lineBadge(l){  // 线名哈希给柔和底色(line_icons 第三元素可覆盖)
+  if (lineIcons[l] && lineIcons[l][2]) return lineIcons[l][2];
   let h=0; for (const c of String(l||"")) h=(h*31+c.charCodeAt(0))%360;
   return `background:hsl(${h} 65% 92%);color:hsl(${h} 45% 30%)`;
 }
@@ -240,6 +240,7 @@ function fmtDtime(t) { return new Date(t*1000).toLocaleString("zh-CN",{month:"nu
 async function loadStats() {
   const s = await api("/api/stats");
   counts = s.counts || {};
+  Object.assign(lineIcons, s.line_icons || {});
   renderNav();
   const stat = (icon, label, val, color, bar) =>
     `<div class="flex items-center gap-2.5 bg-base-100 border border-base-300 rounded-lg px-3.5 py-2 min-w-[118px]">
