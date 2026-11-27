@@ -29,6 +29,7 @@ DSH 插件安装: `dsh plugin --profile <p> add <仓库>/plugins/dsh-video-hub`(
 | 改标题/简介/标签/定时 | `hub_edit(id, ...)` —— **published 不可改** |
 | 补投失败平台 | published 稿件直接 `hub_publish(id)`, 已成功平台自动跳过 |
 | 本地文件入库 | `hub_import(path, line, process)` 复制进流水线 |
+| 平台登录态 | `hub_platforms` 全平台矩阵 / `hub_platform_login(pid)` 拉扫码 / `hub_platform_open(pid,target)` 登录态直达 / `hub_verify_code(code)` 投喂验证码 |
 | 失败重来 | `hub_retry(id)`(文件在→ready, 不在→重新下载) |
 | 不要了 | `hub_skip(id)`(会删文件) / `hub_skip(id, undo=true)` 撤回 |
 | 加源 | `hub_add_source(name,url,line)`, line 任意小写 slug 自定 |

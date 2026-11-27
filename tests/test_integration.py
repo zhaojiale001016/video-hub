@@ -30,6 +30,26 @@ def _ins(db, **kw):
 
 # ---------- 端点冒烟 ----------
 
+def test_index_shell_integrity(app_client):
+    """回归: 页面外壳完好——无孤儿 <style>/<script> 开标签吞文档, 外部资源引用在。"""
+    c, _ = app_client
+    r = c.get("/")
+    assert r.status_code == 200
+    h = r.text
+    for t in ("style", "script", "body", "html"):
+        assert h.count("<" + t) <= h.count("</" + t + ">") or h.count(f"<{t} ") == 0, \
+            f"孤儿 <{t}> 开标签(会把后续 HTML 吞成文本导致页面空白)"
+    assert 'src="/static/app.js"' in h
+    assert 'href="/static/style.css"' in h
+
+
+def test_static_assets_served(app_client):
+    """拆分后的 css/js 可访问且非空。"""
+    c, _ = app_client
+    for u in ("/static/app.js", "/static/style.css"):
+        r = c.get(u)
+        assert r.status_code == 200 and len(r.content) > 1000, u
+
 def test_api_stats_shape(app_client):
     c, db = app_client
     _ins(db)
