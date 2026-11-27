@@ -45,7 +45,7 @@ async function loadStats() {
       <div class="min-w-[52px]">
         <div class="text-[10px] text-base-content/45 leading-none">${label}</div>
         <div class="text-[13.5px] font-bold mt-1 leading-none" ${color?`style="color:${color}"`:""}>${val}</div>
-        ${bar?`<div class="h-[3px] rounded-full bg-base-300 mt-1.5 overflow-hidden"><div class="h-full rounded-full" style="width:${Math.min(100,bar)}%;background:${bar>=100?"#fb7299":"#00a1d6"}"></div></div>`:""}
+        ${bar?`<div class="h-[3px] rounded-full bg-base-300 mt-1.5 overflow-hidden"><div class="h-full rounded-full" style="width:${Math.min(100,bar)}%;background:${bar>=100?"#f43f5e":"#00a1d6"}"></div></div>`:""}
       </div>
     </div>`;
   const logins = [["bilibili", s.login_ok], ...Object.entries(s.extra_login || {})];
@@ -66,9 +66,9 @@ async function loadStats() {
       </div>
     </div>`,
     stat("📤", "今日发布", `${s.published_today}/${s.daily_limit||"∞"}`,
-         s.published_today>=s.daily_limit?"#fb7299":null, pubPct),
+         s.published_today>=s.daily_limit?"#f43f5e":null, pubPct),
     stat("⬇️", "今日下载", `${s.downloaded_today}/${s.daily_download_limit||"∞"}`,
-         s.downloaded_today>=s.daily_download_limit?"#fb7299":null, dlPct),
+         s.downloaded_today>=s.daily_download_limit?"#f43f5e":null, dlPct),
     stat("⏰", "下轮轮询", fmtPoll(s.next_poll_in)),
     stat("💾", "磁盘可用", `${s.disk_free_gb}G`, s.disk_free_gb<15?"#f59e0b":null),
     stat("🤖", "LLM", s.llm_enabled?"开启":"关闭", s.llm_enabled?"#22c55e":"#94a3b8"),
@@ -84,7 +84,7 @@ function renderNav() {
       onclick="switchTab('${k}')">
       <span class="w-1.5 h-1.5 rounded-full" style="background:${c}"></span>
       <span class="flex-1">${n}</span>
-      ${cnt?`<span class="badge badge-xs ${k===cur?"":"badge-ghost"}" ${k===cur?'style="background:#fb7299;color:#fff;border:0"':""}>${cnt}</span>`:""}
+      ${cnt?`<span class="badge badge-xs ${k===cur?"":"badge-ghost"}" ${k===cur?'style="background:#111;color:#fff;border:0"':""}>${cnt}</span>`:""}
     </div>`;
   }).join("");
   const lineOpts = [["","全部"], ...[...linesSeen].sort().map(l => [l, `${lineIcon(l)} ${lineName(l)}`])];
@@ -359,7 +359,7 @@ async function regen(id) {
 async function publish(id, force, btn) {
   if (btn) busy(btn, true);
   try {
-    await save(id);
+    if (document.getElementById("dwt")) await save(id);   // published 抽屉只读无表单
     await api(`/api/items/${id}/publish${force?"?force=1":""}`, "POST");
     toast("投稿任务已提交");
   } catch(e) { toast(e.message, "err"); }
@@ -665,6 +665,9 @@ async function renderPlatPage() {
       const ops = p.id === "bilibili"
         ? `<button class="btn btn-xs btn-ghost" onclick="openBiliLogin()">📱 扫码登录</button>`
         : `<button class="btn btn-xs btn-ghost" onclick="platLogin('${p.id}')" title="拉起扫码登录浏览器">🔐 ${p.logged_in?"重新登录":"扫码登录"}</button>` +
+          `<button class="btn btn-xs btn-ghost btn-square" onclick="platOpen('${p.id}')" title="带 sau 登录态在本机浏览器打开创作中心">🖥</button>` +
+          `<button class="btn btn-xs btn-ghost btn-square" title="分平台参数: 错峰/有头/声明/账号"
+             onclick="document.getElementById('pcfg-${p.id}').classList.toggle('hidden')">⚙</button>` +
           (p.cover !== undefined
             ? `<select class="select select-xs select-ghost text-[11px] ml-auto"
                  title="auto=用平台自带推荐封面(抖音推荐帧/快手自动封面等); file=上传本机智能抽帧封面"
@@ -674,6 +677,21 @@ async function renderPlatPage() {
           `<label class="flex items-center gap-1 text-[11px] cursor-pointer ${p.cover===undefined?"ml-auto":""}" title="启用后进入投递矩阵">
              <input type="checkbox" class="toggle toggle-xs toggle-primary" ${p.enabled?"checked":""}
                onchange="platToggle('${p.id}',this.checked)"><span class="${p.enabled?"":"opacity-40"}">投递</span></label>`;
+      const cfgRow = p.id === "bilibili" ? "" :
+        `<div id="pcfg-${p.id}" class="hidden pt-2 mt-0.5 border-t border-base-300/50 grid grid-cols-2 gap-x-3 gap-y-1.5">
+          <label class="flex items-center gap-1.5 text-[11px]" title="该平台预约时间相对条目定时整体后移分钟数">错峰(min)
+            <input type="number" min="0" class="input input-xs input-bordered w-14" value="${p.offset_min||0}"
+              onchange="platSet('${p.id}','offset_min',+this.value)"></label>
+          <label class="flex items-center gap-1.5 text-[11px] cursor-pointer" title="有头模式: 浏览器可见, 可人工过风控验证码">
+            <input type="checkbox" class="toggle toggle-xs" ${p.headed?"checked":""}
+              onchange="platSet('${p.id}','headed',this.checked)">有头</label>
+          <label class="flex items-center gap-1.5 text-[11px] col-span-2">声明
+            <input type="text" class="input input-xs input-bordered flex-1" value="${esc(p.declaration||"")}"
+              placeholder="如: 内容由AI生成" onchange="platSet('${p.id}','declaration',this.value.trim())"></label>
+          <label class="flex items-center gap-1.5 text-[11px] col-span-2">账号
+            <input type="text" class="input input-xs input-bordered w-24" value="${esc(p.account||"main")}"
+              title="cookie 文件名后缀, 换账号需重新扫码" onchange="platSet('${p.id}','account',this.value.trim())"></label>
+        </div>`;
       const cnt = `<span class="text-[11px] text-base-content/45">发稿 <b>${p.ok_count}</b>` +
         (p.fail_count ? ` · <span class="text-error">失败 ${p.fail_count}</span>` : "") + `</span>`;
       const hint = p.enabled && !p.logged_in
@@ -688,6 +706,7 @@ async function renderPlatPage() {
           </div>
           <div class="flex gap-1 flex-wrap">${links}</div>
           <div class="flex items-center gap-1.5 pt-2 mt-0.5 border-t border-base-300/50">${ops}</div>
+          ${cfgRow}
           ${hint}
         </div></div>`;
     }).join("");
@@ -708,9 +727,18 @@ async function platToggle(pid, on) {
   } catch(e){ toast(e.message,"err"); }
 }
 async function platCover(pid, mode) {
+  await platSet(pid, "cover", mode, `封面策略 → ${mode==="auto"?"平台推荐":"自抽"}`);
+}
+async function platSet(pid, key, val, msg) {
   try {
-    await api("/api/settings", "PUT", {extra_platforms: {[pid]: {cover: mode}}});
-    toast(`${pid} 封面策略 → ${mode==="auto"?"平台推荐":"自抽"}`, "ok");
+    await api("/api/settings", "PUT", {extra_platforms: {[pid]: {[key]: val}}});
+    toast(`${pid} ${msg || `${key} 已保存`}`, "ok");
+  } catch(e){ toast(e.message,"err"); renderPlatPage(); }
+}
+async function platOpen(pid) {
+  try {
+    const r = await api(`/api/platforms/${pid}/open`, "POST", {target: "home"});
+    toast(`已在本机浏览器打开 ${r.url || pid} 创作中心`, "ok");
   } catch(e){ toast(e.message,"err"); }
 }
 async function doCleanup() {
@@ -750,12 +778,20 @@ async function doImport(btn) {
 }
 let _biliAuth = "", _biliTimer = null;
 
-async function doVerifyCode() {
-  const code = prompt('输入平台发来的短信验证码（抖音投递触发验证时使用）:');
-  if (!code) return;
-  const r = await api('POST', '/api/verify-code', {code: code.trim()});
-  if (r.ok) toast('验证码已送达投递进程');
-  else toast(r.error || '验证码格式不对', 'err');
+function doVerifyCode() {
+  document.getElementById("vcCode").value = "";
+  document.getElementById("vcModal").showModal();
+  setTimeout(() => document.getElementById("vcCode").focus(), 80);
+}
+async function submitVerifyCode() {
+  const code = document.getElementById("vcCode").value.trim();
+  try {
+    const r = await api("/api/verify-code", "POST", {code});
+    if (r.ok) {
+      document.getElementById("vcModal").close();
+      toast("验证码已送达投递进程", "ok");
+    } else toast(r.error || "验证码格式不对", "err");
+  } catch(e) { toast(e.message, "err"); }
 }
 
 async function openBiliLogin() {

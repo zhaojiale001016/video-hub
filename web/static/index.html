@@ -14,7 +14,7 @@
 <div class="navbar bg-base-100 border-b border-base-300 px-5 gap-3 min-h-14">
   <div class="flex items-center gap-2">
     <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[15px]"
-          style="background:linear-gradient(135deg,#fb7299,#ff8fab)">📺</span>
+          style="background:#111">📺</span>
     <span class="font-bold text-[15px] tracking-tight">Video Hub</span>
     <span class="text-[10px] text-base-content/40 mt-0.5" id="platSub">视频搬运中台 · 多平台投递</span>
   </div>
@@ -143,6 +143,22 @@
     <div class="modal-action justify-center">
       <button class="btn btn-sm btn-ghost" onclick="openBiliLogin()">重新生成</button>
       <form method="dialog"><button class="btn btn-sm">关闭</button></form>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- 验证码投喂 -->
+<dialog id="vcModal" class="modal">
+  <div class="modal-box max-w-xs">
+    <div class="font-bold text-sm mb-1">📱 投喂验证码</div>
+    <div class="text-[11px] text-base-content/50 mb-3">抖音等平台投递触发短信验证时, 把收到的验证码喂给等待中的 sau 投递进程</div>
+    <input id="vcCode" class="input input-sm input-bordered w-full text-center tracking-[0.3em] font-mono"
+           maxlength="8" placeholder="4-8 位数字"
+           onkeydown="if(event.key==='Enter')submitVerifyCode()">
+    <div class="modal-action justify-center">
+      <button class="btn btn-sm btn-primary" onclick="submitVerifyCode()">送达投递进程</button>
+      <form method="dialog"><button class="btn btn-sm">取消</button></form>
     </div>
   </div>
   <form method="dialog" class="modal-backdrop"><button>close</button></form>

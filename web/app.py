@@ -221,18 +221,27 @@ def get_platforms():
 
     out = {"bilibili": _row("bilibili", "B站", True, _login_ok(),
                             {"builtin": True})}
+    def _plat_cfg(c):
+        """平台卡可编辑字段回显: 错峰/有头/声明/账号(封面策略另按能力给)。"""
+        c = c or {}
+        return {"account": c.get("account") or "main",
+                "offset_min": c.get("offset_min") or 0,
+                "headed": bool(c.get("headed")),
+                "declaration": c.get("declaration") or ""}
+
     for p in multipub.SAU_PLATFORMS:
-        extra = {}
+        c = ep.get(p) or {}
+        extra = _plat_cfg(c)
         if p not in multipub._NO_THUMB:      # 支持封面的平台才有封面策略
-            extra["cover"] = str((ep.get(p) or {}).get("cover") or "file")
+            extra["cover"] = str(c.get("cover") or "file")
         out[p] = _row(p, multipub.PLATFORMS.get(p, p),
-                      bool((ep.get(p) or {}).get("enabled")),
+                      bool(c.get("enabled")),
                       multipub.logged_in(cfg, p), extra)
     for p, c in ep.items():                      # 自定义 id 也回显
         if p not in out and p not in multipub._RESERVED:
             out[p] = _row(p, p, bool((c or {}).get("enabled")),
                           multipub.logged_in(cfg, p),
-                          {"custom": True,
+                          {**_plat_cfg(c), "custom": True,
                            "cover": str((c or {}).get("cover") or "file")})
     return out
 
@@ -767,7 +776,7 @@ SETTINGS_SCHEMA = {
         "precheck_threshold": float, "precheck_autoskip": float,
         "submit_api": str, "tencent_content_label": str,
         "line_icons": dict},                 # {线slug: ["emoji","显示名"]}, 前端图标映射
-    "extra_platforms": {"*": dict},   # 任意 sau 平台: {平台id: {enabled,account}}
+    "extra_platforms": {"*": dict},   # 任意 sau 平台: {平台id: {enabled,account,cover,offset_min,headed,declaration}}
     "missions": {"enabled": bool, "match": dict},
     "subtitles": {
         "enabled": bool, "whisper_model": str, "whisper_device": str,
@@ -842,15 +851,27 @@ def put_settings(body: dict = Body(...)):
                     if not isinstance(cur, dict):
                         cur = cfg[sec][k] = {}
                     if sec == "extra_platforms":
-                        # v 是该平台的字段字典 {enabled?, account?};
+                        # v 是该平台的字段字典 {enabled?, account?, cover?,
+                        # offset_min?, headed?, declaration?};
                         # account 拼进 cookie 文件名 → 校验 slug
                         acct = v.get("account")
                         if acct is not None and not re.fullmatch(
                                 r"[a-zA-Z0-9_-]{1,30}", str(acct)):
                             raise HTTPException(
                                 400, f"extra_platforms.{k}.account 非法: {acct!r}")
-                        cur.update({kk: v[kk] for kk in ("enabled", "account")
-                                    if kk in v})
+                        if v.get("cover") is not None and \
+                                v["cover"] not in ("file", "auto"):
+                            raise HTTPException(
+                                400, f"extra_platforms.{k}.cover 非法: {v['cover']!r}")
+                        if v.get("offset_min") is not None:
+                            try:
+                                v["offset_min"] = max(0, int(v["offset_min"]))
+                            except (TypeError, ValueError):
+                                raise HTTPException(
+                                    400, f"extra_platforms.{k}.offset_min 非法")
+                        cur.update({kk: v[kk] for kk in (
+                            "enabled", "account", "cover", "offset_min",
+                            "headed", "declaration") if kk in v})
                     elif sec == "subtitles" and k == "policy":
                         for pk, pv in v.items():
                             if pv in ("always", "auto", "subs_only", "never"):

@@ -74,6 +74,28 @@ def test_api_platform_open_rejects_unknown(app_client):
     assert c.post("/api/platforms/not-a-platform/open").status_code == 404
 
 
+def test_put_settings_extra_platform_fields_persist(app_client, monkeypatch):
+    """回归: cover/offset_min/headed/declaration 不再被 enabled/account 白名单吞掉。
+    PUT 时 overrides 持久化写文件——stub 掉, 只看内存热更新与回显。"""
+    c, _ = app_client
+    import web.app as webapp
+    monkeypatch.setattr(webapp.C, "update_overrides", lambda f: None)
+    r = c.put("/api/settings", json={
+        "extra_platforms": {"douyin": {"cover": "auto", "offset_min": 30,
+                                       "headed": True, "declaration": "AI生成"}}})
+    assert r.status_code == 200
+    ep = webapp.cfg.get("extra_platforms", {}).get("douyin", {})
+    assert ep["cover"] == "auto" and ep["offset_min"] == 30
+    assert ep["headed"] is True and ep["declaration"] == "AI生成"
+    # 非法值应被 400 拦住
+    assert c.put("/api/settings", json={
+        "extra_platforms": {"douyin": {"cover": "bogus"}}}).status_code == 400
+    # 平台接口回显这些字段, 前端平台卡依赖
+    row = c.get("/api/platforms").json()["douyin"]
+    for k in ("account", "offset_min", "headed", "declaration", "cover"):
+        assert k in row
+
+
 def test_api_items_list_and_patch(app_client):
     c, db = app_client
     iid = _ins(db)
