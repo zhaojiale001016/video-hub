@@ -138,13 +138,14 @@ def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dic
         dtime += int(float(off) * 60)
     if dtime and dtime > _t.time() + 600 and platform not in _NO_SCHEDULE:
         cmd += ["--schedule", _t.strftime("%Y-%m-%d %H:%M", _t.localtime(dtime))]
-    env = None
+    import os
+    env = dict(os.environ)
+    # 封面设置等关键步骤的证据截图落这里(item目录发布成功后会被清理)
+    env["SAU_DEBUG_DIR"] = str(C.abs_path(cfg, "data/debug"))
     if platform == "tencent":
         # 视频号「视频标注」: 搬运内容默认不勾AI标注; 设置 tencent_content_label 可指定文案
-        import os
-        env = dict(os.environ,
-                   SAU_TENCENT_CONTENT_LABEL=C.get_setting(
-                       cfg, "tencent_content_label", "none") or "none")
+        env["SAU_TENCENT_CONTENT_LABEL"] = C.get_setting(
+            cfg, "tencent_content_label", "none") or "none"
     try:
         progress.set_stage(iid, f"{name}投递中", None, "浏览器自动化投稿")
         r = subprocess.run(cmd, capture_output=True, text=True,

@@ -607,37 +607,65 @@ class KSVideo(KSBaseUploader):
         await file_input.wait_for(state="attached", timeout=30000)
         await file_input.set_input_files(self.thumbnail_path)
 
-        # 等封面上传真正完成再确认: 预览图出现 + 上传中指示消失。
+        # 等封面上传真正受理: 快手把上传图渲成「裁剪画布」(裁剪比例面板+
+        # 清空上传按钮出现 = 图已加载), 不是 antd upload-list 结构。
         # 原先固定 sleep(1) 有竞态——大图还在传就点确认, 封面被静默丢弃,
         # 发布后平台回落到视频首帧(黑屏开场→黑封面)
-        preview = modal.locator('.ant-upload-list-item img, .ant-upload-list img, [class*="upload-list"] img')
-        uploading = modal.locator('.ant-upload-list-item-uploading, [class*="loading"], [class*="spinning"], [class*="progress"]')
+        crop_ui = modal.locator('text=裁剪比例, text=清空上传').first
+        uploading = modal.locator('[class*="uploading"], [class*="loading"], [class*="spinning"], [class*="progress"]')
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 25
         ready = False
         while loop.time() < deadline:
-            if await preview.count() > 0 and await uploading.count() == 0:
+            if await crop_ui.count() > 0 and await uploading.count() == 0:
                 ready = True
                 break
             await asyncio.sleep(0.5)
         if ready:
-            kuaishou_logger.info(_msg("🖼️", "封面预览出来了, 小人确认"))
+            kuaishou_logger.info(_msg("🖼️", "封面裁剪面板出来了, 小人确认"))
         else:
-            kuaishou_logger.warning(_msg("😐", "封面预览没等到, 可能还在传, 小人再等一会"))
+            kuaishou_logger.warning(_msg("😐", "封面裁剪面板没等到, 可能还在传, 小人再等一会"))
             await asyncio.sleep(4)
+
+        # 确认前给弹窗内部留一张: 上传槽到底受理没(空槽/转圈/预览)一看便知
+        try:
+            import os as _os
+            from pathlib import Path as _P
+            _dbg_dir = _P(_os.environ.get("SAU_DEBUG_DIR",
+                          _P(__file__).parent.parent.parent / "logs"))
+            _dbg_dir.mkdir(parents=True, exist_ok=True)
+            _dbg = _dbg_dir / f"ks_cover_modal_{int(__import__('time').time())}.png"
+            await modal.screenshot(path=str(_dbg))
+        except Exception:
+            pass
 
         confirm_button = modal.get_by_role("button", name="确认", exact=True)
         await confirm_button.wait_for(state="visible", timeout=10000)
+        # 确认键解禁再点(图片处理中置灰, 置灰点击=没设上)
+        for _ in range(20):
+            cls = await confirm_button.get_attribute("class") or ""
+            if await confirm_button.get_attribute("disabled") is None and "disabled" not in cls:
+                break
+            await asyncio.sleep(0.5)
         await confirm_button.click()
 
-        await modal.wait_for(state="hidden", timeout=30000)
-        kuaishou_logger.success(_msg("🥳", "封面已经设置完成"))
-
-        # 留证据: 封面区截图, 便于事后核对封面是否真正生效
         try:
+            await modal.wait_for(state="hidden", timeout=30000)
+            kuaishou_logger.success(_msg("🥳", "封面已经设置完成"))
+        except Exception:
+            kuaishou_logger.warning(_msg("🖼️", "封面弹窗没关上, 可能没设上, 平台回落首帧"))
+
+        # 留证据: 封面预览图截图存 SAU_DEBUG_DIR/日志旁(item目录发布会后会被清理)
+        try:
+            import os as _os
             from pathlib import Path as _P
-            dbg = _P(self.thumbnail_path).parent / "ks_cover_debug.png"
-            await cover_label.locator("xpath=..").screenshot(path=str(dbg))
+            dbg_dir = _P(_os.environ.get("SAU_DEBUG_DIR",
+                        _P(__file__).parent.parent.parent / "logs"))
+            dbg_dir.mkdir(parents=True, exist_ok=True)
+            dbg = dbg_dir / f"ks_cover_{int(__import__('time').time())}.png"
+            cover_img = page.locator('[class*="cover"] img').first
+            target = cover_img if await cover_img.count() else cover_label.locator("xpath=..")
+            await target.screenshot(path=str(dbg))
             kuaishou_logger.info(_msg("📸", f"封面区截图: {dbg}"))
         except Exception as exc:
             kuaishou_logger.warning(_msg("😐", f"封面截图没截上(不影响发布): {exc}"))
