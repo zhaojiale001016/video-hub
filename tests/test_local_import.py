@@ -51,6 +51,21 @@ def test_import_dedup(env, tmp_path):
     assert not r2["ok"] and "已导入" in r2["error"]
 
 
+def test_import_dedup_by_content(env, tmp_path):
+    """内容指纹判重: 同内容换路径/改名照样挡; 内容不同才放行(治重复发布)。"""
+    cfg, db = env
+    v1 = _vid(tmp_path, "a.mp4")
+    assert downloader.import_local_file(v1, cfg, db)["ok"]
+    sub = tmp_path / "sub"; sub.mkdir()                    # 同内容改路径+改名
+    v2 = sub / "renamed.mp4"
+    v2.write_bytes(Path(v1).read_bytes())
+    r = downloader.import_local_file(str(v2), cfg, db)
+    assert not r["ok"] and "已导入" in r["error"]
+    v3 = _vid(tmp_path, "b.mp4")                           # 不同内容→放行
+    Path(v3).write_bytes(b"\x01" * 2048)
+    assert downloader.import_local_file(v3, cfg, db)["ok"]
+
+
 def test_import_rejects(env, tmp_path):
     cfg, db = env
     with pytest.raises(ValueError, match="不存在"):

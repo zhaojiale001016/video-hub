@@ -293,7 +293,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
 <header class="hero">
   <div class="hero-bg"><span class="beam b1"></span><span class="beam b2"></span><span class="beam b3"></span></div>
   <div class="wrap">
-    <div class="eyebrow rv in"><i></i>LOCAL-FIRST · OPEN SOURCE · v1.8.8</div>
+    <div class="eyebrow rv in"><i></i>LOCAL-FIRST · OPEN SOURCE · v1.8.9</div>
     <h1 class="rv in" style="--d:.06s">订阅源进。<br><span class="dim">各平台的稿件出。</span></h1>
     <p class="sub rv in" style="--d:.12s">video-hub 把你选的外网订阅源，跑成一条显式流水线：下载、字幕、中文元数据、审核、逐平台投递。<em>每一步可观察、可干预、可补投</em>——全部跑在你自己的机器上。</p>
     <div class="ctas rv in" style="--d:.18s">
@@ -347,13 +347,13 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
         <p>本地 kscc 或任意 OpenAI 兼容后端，按内容线风格生成：标题 ≤80 字、标签 ≤12 个、简介 ≤1500 字，并给出 B站分区建议。随时「重生成」。</p></div>
       <div class="step rv"><div class="no">06</div>
         <h3>人工审核<code>管理台</code></h3>
-        <p>FastAPI 单页管理台：五态队列、封面预览、抽屉里改标题/简介/标签、勾发布平台、设定时。published 之后锁死只读——不与线上稿件脱节。</p></div>
+        <p>FastAPI 单页管理台：五态队列、封面预览、抽屉里改标题/简介/标签、勾发布平台、设定时；平台中枢页收齐全平台登录态/启用开关/创作中心直达。published 之后锁死只读——不与线上稿件脱节。</p></div>
       <div class="step rv"><div class="no">07</div>
         <h3>逐平台投递<code>publish</code></h3>
         <p>B站走 biliup-rs（分区/活动/版权/定时），其余 13 平台走浏览器自动化。<b>每平台独立记账 extra_pub</b>，失败不阻断；补投自动跳过已成功平台。</p></div>
     </div>
     <div class="guard rv">
-      <div><div class="g-no">GUARD 01</div><b>DB 唯一键</b><p>UNIQUE(platform, source_id)——同一视频只入队一次，频道源和搜索源命中也合并</p></div>
+      <div><div class="g-no">GUARD 01</div><b>DB 唯一键</b><p>UNIQUE(platform, source_id)——同一视频只入队一次，频道源和搜索源命中也合并；本地导入按内容指纹去重，改路径/改名挡不住</p></div>
       <div><div class="g-no">GUARD 02</div><b>下载 archive</b><p>yt-dlp download_archive 兜底，状态重置也不重下</p></div>
       <div><div class="g-no">GUARD 03</div><b>published 免入</b><p>已发布条目永远不再进入下载/发布流程</p></div>
       <div><div class="g-no">GUARD 04</div><b>撞稿预检</b><p>相似度 ≥72% 拦截，防搬别人搬过的稿</p></div>

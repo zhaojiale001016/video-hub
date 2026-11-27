@@ -455,11 +455,27 @@ def _probe_duration(p: Path) -> int:
         return 0
 
 
+def _local_fingerprint(p: Path) -> str:
+    """本地文件内容指纹: 大小+头/中/尾各2MB采样。
+    按内容判重——改路径/改名/mtime变化/多副本都挡不住, 治重复导入→重复发布。"""
+    st = p.stat()
+    h = hashlib.md5(str(st.st_size).encode())
+    chunk = 2 * 1024 * 1024
+    with open(p, "rb") as f:
+        h.update(f.read(chunk))
+        if st.st_size > chunk * 2:
+            f.seek(st.st_size // 2)
+            h.update(f.read(chunk))
+            f.seek(max(0, st.st_size - chunk))
+            h.update(f.read(chunk))
+    return h.hexdigest()[:12]
+
+
 def import_local_file(path: str, cfg: dict, db: DB, line: str = "local",
                       title: str = "", source_name: str = "本地导入") -> dict:
     """把本地视频文件收进流水线: 复制进 download_dir/<id>/ 约定布局 + ffmpeg 抽封面。
     入库 status=new 但 file_path 已就位——process_new_items 会跳过下载直接
-    字幕+元数据→ready。source_id=路径|大小|mtime 的哈希, 重复导入被唯一键挡住。"""
+    字幕+元数据→ready。source_id=内容指纹, 同内容重复导入被唯一键挡住。"""
     import re
     p = Path(path).expanduser().resolve()
     if not p.is_file():
@@ -468,9 +484,7 @@ def import_local_file(path: str, cfg: dict, db: DB, line: str = "local",
         raise ValueError(f"不支持的类型 {p.suffix}(支持: {', '.join(sorted(LOCAL_EXTS))})")
     if line and not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,19}", line):
         raise ValueError("line 须为小写字母/数字/_/- 的内容线名, ≤20字符")
-    st = p.stat()
-    sid = "local-" + hashlib.md5(
-        f"{p}|{st.st_size}|{int(st.st_mtime)}".encode()).hexdigest()[:12]
+    sid = "local-" + _local_fingerprint(p)
     item_id = db.insert_item({
         "source_name": source_name, "line": line or "local", "platform": "local",
         "source_id": sid, "source_url": "",
@@ -478,7 +492,7 @@ def import_local_file(path: str, cfg: dict, db: DB, line: str = "local",
         "duration": _probe_duration(p), "upload_date": "", "tid": 0,
     })
     if item_id is None:
-        return {"ok": False, "error": "该文件已导入过(同路径/大小/修改时间)"}
+        return {"ok": False, "error": "该视频内容已导入过(同文件内容指纹)"}
     item_dir = Path(C.abs_path(cfg, C.get_setting(cfg, "download_dir"))) / str(item_id)
     item_dir.mkdir(parents=True, exist_ok=True)
     dst = item_dir / ("video" + p.suffix.lower())
