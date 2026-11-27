@@ -80,8 +80,11 @@ llm:
 # 再在设置面板或此处把 enabled 打开。
 # 注意能力差异: 知乎/FB主页不支持封面; 微博/小红书/百家号等不支持定时发布。
 extra_platforms:
-  kuaishou: {enabled: true, account: "main"}    # 快手
-  tencent:  {enabled: true, account: "main"}    # 微信视频号
+  # ⚠️ 全部默认关闭——B站是内置唯一默认投递端。
+  # 要用哪个平台: 先 cli.py login-extra <平台id> 扫码登录, 再把 enabled 改 true。
+  # sau 支持的平台: kuaishou/tencent/douyin/xiaohongshu/weibo/baijiahao/tiktok 等
+  kuaishou: {enabled: false, account: "main"}    # 快手
+  tencent:  {enabled: false, account: "main"}    # 微信视频号
   # douyin: {enabled: false, account: "main"}   # 抖音(示例, 登录后开启)
 
 # 自动参加B站投稿活动(投稿页"参与活动"，需已登录)
