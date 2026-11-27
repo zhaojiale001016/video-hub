@@ -223,15 +223,31 @@ def items(status: str | None = None, line: str | None = None,
             r["tags"] = []
         if not r.get("copyright"):
             r["copyright"] = default_cr   # 空值=跟随全局默认,前端显示生效值
-        # 转 /media URL
-        for k in ("file_path", "cover_path"):
+        # 转可预览 URL: data/ 内走 /media 静态目录; download_dir 指到 data/ 外时
+        # relative_to 失败——回退到条目作用域的文件端点, 任意位置都能预览
+        for k, kind in (("file_path", "video"), ("cover_path", "cover")):
             p = r.get(k) or ""
+            url = ""
             if p:
                 try:
-                    r[k + "_url"] = "/media/" + str(Path(p).relative_to(DATA_DIR))
+                    url = "/media/" + str(Path(p).relative_to(DATA_DIR))
                 except ValueError:
-                    r[k + "_url"] = ""
+                    url = f"/api/items/{r['id']}/file?kind={kind}"
+            r[k + "_url"] = url
     return {"items": rows}
+
+
+@app.get("/api/items/{item_id}/file")
+def item_file(item_id: int, kind: str = "video"):
+    """条目文件流(file_path/cover_path)——download_dir 不在 data/ 下时也能预览。"""
+    it = db.get(item_id)
+    if not it:
+        raise HTTPException(404, "条目不存在")
+    p = it.get("cover_path" if kind == "cover" else "file_path") or ""
+    fp = Path(p)
+    if not p or not fp.is_file():
+        raise HTTPException(404, "文件不存在")
+    return FileResponse(str(fp))
 
 
 class ItemPatch(BaseModel):
