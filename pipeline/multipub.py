@@ -57,11 +57,11 @@ LOGIN_CMD = {"kuaishou": "ks", "tencent": "sph"}   # 便捷别名; 通用命令 
 # 各平台创作者中心直达链接(平台中枢面板用; 创作平台均禁 iframe 只能新开页)
 # home=创作中心 manage=作品管理 publish=发布页
 PLATFORM_META = {
-    "bilibili":     {"icon": "📺", "home": "https://member.bilibili.com/york/home",
-                     "manage": "https://member.bilibili.com/v2#/home",
+    "bilibili":     {"icon": "📺", "home": "https://member.bilibili.com/platform/home",
+                     "manage": "https://member.bilibili.com/platform/upload-manager/video",
                      "publish": "https://member.bilibili.com/platform/upload/video/frame"},
     "kuaishou":     {"icon": "⚡", "home": "https://cp.kuaishou.com/",
-                     "manage": "https://cp.kuaishou.com/profile/publish/works",
+                     "manage": "https://cp.kuaishou.com/article/manage/video?status=2&from=publish",
                      "publish": "https://cp.kuaishou.com/article/publish/video"},
     "tencent":      {"icon": "💬", "home": "https://channels.weixin.qq.com/platform",
                      "manage": "https://channels.weixin.qq.com/platform/post/list",
@@ -70,8 +70,8 @@ PLATFORM_META = {
                      "manage": "https://creator.douyin.com/creator-micro/content/manage",
                      "publish": "https://creator.douyin.com/creator-micro/content/upload"},
     "xiaohongshu":  {"icon": "📕", "home": "https://creator.xiaohongshu.com/",
-                     "manage": "https://creator.xiaohongshu.com/creator/notemanage",
-                     "publish": "https://creator.xiaohongshu.com/publish/publish"},
+                     "manage": "https://creator.xiaohongshu.com/new/note-manager",
+                     "publish": "https://creator.xiaohongshu.com/publish/publish?from=homepage&target=video"},
     "baijiahao":    {"icon": "🅱️", "home": "https://baijiahao.baidu.com/builder/rc/home",
                      "manage": "https://baijiahao.baidu.com/builder/rc/manage",
                      "publish": "https://baijiahao.baidu.com/builder/rc/edit"},

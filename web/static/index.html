@@ -128,7 +128,7 @@
     <div class="flex items-center gap-3 mb-4">
       <div>
         <div class="font-bold text-[15px]">🌐 平台中枢</div>
-        <div class="text-[11px] text-base-content/45 mt-0.5">投递矩阵 · 登录态管理 · 创作中心直达(🔑拉起带登录态浏览器)</div>
+        <div class="text-[11px] text-base-content/45 mt-0.5">投递矩阵 · 登录态管理 · 创作中心直达(链接在当前浏览器新开标签)</div>
       </div>
       <div class="flex-1"></div>
       <button class="btn btn-sm btn-ghost" onclick="renderPlatPage()" title="刷新状态">⟳</button>
@@ -897,9 +897,7 @@ async function renderPlatPage() {
                        : `<span class="badge badge-xs badge-error">未登录</span>`)
         : `<span class="badge badge-xs badge-ghost">未启用</span>`;
       const links = LINK_LABELS.filter(([k]) => p.links[k]).map(([k,l]) =>
-        p.logged_in
-          ? `<button class="btn btn-xs btn-outline" onclick="openCreator('${p.id}','${k}')" title="带登录态拉起真实浏览器直达">${l} 🔑</button>`
-          : `<a class="btn btn-xs btn-ghost" href="${p.links[k]}" target="_blank" rel="noopener">${l} ↗</a>`).join("");
+        `<a class="btn btn-xs btn-ghost" href="${p.links[k]}" target="_blank" rel="noopener">${l} ↗</a>`).join("");
       const ops = p.id === "bilibili"
         ? `<button class="btn btn-xs btn-ghost" onclick="openBiliLogin()">📱 扫码登录</button>`
         : `<button class="btn btn-xs btn-ghost" onclick="platLogin('${p.id}')" title="拉起扫码登录浏览器">🔐 ${p.logged_in?"重新登录":"扫码登录"}</button>` +
@@ -975,12 +973,6 @@ async function doImport(btn) {
   busy(btn, false);
 }
 let _biliAuth = "", _biliTimer = null;
-async function openCreator(pid, target) {
-  try {
-    const r = await api(`/api/platforms/${pid}/open`, "POST", {target});
-    toast("已拉起登录态浏览器 → " + r.url, "ok");
-  } catch(e) { toast(e.message, "err"); }
-}
 
 async function doVerifyCode() {
   const code = prompt('输入平台发来的短信验证码（抖音投递触发验证时使用）:');
