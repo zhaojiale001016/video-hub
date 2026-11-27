@@ -529,6 +529,19 @@ def _next_slot_ts(used: set) -> int | None:
     return None
 
 
+@app.post("/api/verify-code")
+def verify_code(payload: dict):
+    """抖音等平台投递触发短信验证时, 把收到的验证码喂给等待中的 sau 进程。
+    sau douyin 轮询 vendor/sau/verify_code.txt, 写入后下一轮自动拾取提交。"""
+    code = str((payload or {}).get("code") or "").strip()
+    if not code.isdigit() or not (4 <= len(code) <= 8):
+        return {"ok": False, "error": "验证码应为 4-8 位数字"}
+    from pipeline import multipub
+    f = Path(C.abs_path(cfg, multipub.SAU_DIR)) / "verify_code.txt"
+    f.write_text(code, encoding="utf-8")
+    return {"ok": True, "path": str(f)}
+
+
 @app.post("/api/publish-all")
 def publish_all(schedule: bool = False):
     """按每日限额把 ready 队列发完，自动匹配活动。

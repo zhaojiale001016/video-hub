@@ -131,6 +131,11 @@ def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dic
     # B站定时发布→其他平台也定时, 避免一边预约一边先发了;
     # 不支持 --schedule 的平台直接即时发
     dtime = item.get("dtime") or 0
+    # 分平台错峰: offset_min>0 时该平台的预约时间整体后移,
+    # 防同一稿件多平台同刻发布被风控画像成矩阵号
+    off = ((cfg.get("extra_platforms") or {}).get(platform) or {}).get("offset_min") or 0
+    if off and dtime:
+        dtime += int(float(off) * 60)
     if dtime and dtime > _t.time() + 600 and platform not in _NO_SCHEDULE:
         cmd += ["--schedule", _t.strftime("%Y-%m-%d %H:%M", _t.localtime(dtime))]
     env = None

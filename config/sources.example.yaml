@@ -87,7 +87,9 @@ extra_platforms:
   # sau 支持的平台: kuaishou/tencent/douyin/xiaohongshu/weibo/baijiahao/tiktok 等
   kuaishou: {enabled: false, account: "main"}    # 快手
   tencent:  {enabled: false, account: "main"}    # 微信视频号
-  # douyin: {enabled: false, account: "main", headed: true}  # headed=弹真实浏览器, 风控验证码可人工过
+  # douyin: {enabled: false, account: "main", headed: true, offset_min: 15}
+  #   headed=弹真实浏览器(风控验证码可人工过); offset_min=预约发布时间相对B站后移N分钟, 防矩阵画像
+  #   declaration="内容由AI生成" 显式标注自主声明(默认不标)
   # douyin: {enabled: false, account: "main"}   # 抖音(示例, 登录后开启)
 
 # 自动参加B站投稿活动(投稿页"参与活动"，需已登录)
