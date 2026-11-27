@@ -143,7 +143,7 @@ def _tid_name(tid: int) -> str:
 
 def pick_mission(cfg: dict, line: str, item: dict | None = None) -> dict | None:
     """给条目挑活动：关键词必须同时出现在活动名和条目上下文里，
-    避免"洗地毯视频跑去参加美食活动"这种错配。"""
+    避免"A类视频跑去参加B类活动"这种错配。"""
     mc = cfg.get("missions", {})   # missions 是顶级配置，不在 settings 下
     if not mc.get("enabled", True):
         return None

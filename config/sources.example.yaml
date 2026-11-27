@@ -41,9 +41,9 @@ subtitles:
   font_size: 0             # 0=按高度自适应(1080p≈60, 720p≈40)
   margin_v: 0              # 0=自适应(画面高7.5%)
   policy:                  # 按内容线(line)配默认策略; 源上可写 subtitle: 覆盖
-    music: "subs_only"     # music: 只翻官方字幕(歌词转写不可靠)
-    relax: "auto"          # relax: 官方字幕→翻译, 没有→探测有语音才转写
-    adventure: "auto"      # adventure: 旁白型为主, 探测到解说就配中字
+    music: "subs_only"     # 示例: 只翻官方字幕(无语音/转写不可靠的线)
+    relax: "auto"          # 示例: 官方字幕→翻译, 没有→探测有语音才转写
+    adventure: "auto"      # 示例: 探测到解说/旁白就配中字
     # 自定义内容线直接在下面加一行即可, 如: gaming: "always"
   # 策略取值: always(强制转写) | auto(探测) | subs_only(仅翻官方) | never(不配)
 
@@ -86,9 +86,9 @@ missions:
   enabled: true
   # match 键=内容线名, 值=B站活动名里的匹配关键词。自定义线名直接加即可
   match:
-    music: ["音乐", "翻唱", "演奏", "现场", "MV", "音乐节"]
-    relax: ["解压", "生活", "手工", "修复", "治愈", "美食"]
-    adventure: ["探险", "户外", "淘金", "寻宝", "自然"]
+    music: ["音乐", "现场", "演出"]        # 示例: 按活动名/稿件上下文双向匹配
+    relax: ["生活", "手工", "记录"]
+    adventure: ["户外", "自然", "纪实"]
 
 # ============================================================
 # 订阅源 —— 以下为示例, 按需增删(UI「⚙ 设置」底部可加源)
@@ -99,37 +99,21 @@ missions:
 # tid:  B站分区号（见 config/tids.json）
 # ============================================================
 sources:
-  # 示例源默认关闭(enabled: false)——按需改成你的订阅再启用,
-  # 否则全新安装会拿示例源开抓。自建源直接把 - name 块复制改 url/line/tid 即可。
-  - name: example_music
-    line: music
-    kind: channel
-    url: "https://www.youtube.com/@kexp/videos"
-    tid: 29                      # 音乐现场
-    category: "电台Live现场"
-    tags: ["live", "音乐现场"]
-    min_duration: 120
-    max_duration: 3600
-    enabled: false   # 示例关着; 启用改成 true
-
-  - name: example_relax
-    line: relax
-    kind: channel
-    url: "https://www.youtube.com/@TheHoofGP/videos"
-    tid: 75                      # 动物综合
-    category: "修牛蹄"
-    tags: ["修蹄", "解压"]
-    subtitle: "always"
-    min_duration: 300
-    enabled: false   # 示例关着; 启用改成 true
-
-  - name: example_adventure_search
-    line: adventure
-    kind: search
-    url: "ytsearch5:gold panning sluice nugget found"
-    limit: 5
-    tid: 21                      # 日常
-    category: "淘金实录"
-    tags: ["淘金", "户外", "探险"]
-    min_duration: 300
-    enabled: false   # 示例关着; 启用改成 true
+  # ⚠️ 示例块整段注释——真实源请自己配, 不会自动抓任何东西。
+  # 每条源结构如下(复制改 url/line/tid 即可):
+  #
+  # - name: my_source_1            # 源标识(唯一)
+  #   line: music                  # 内容线 slug(自定义, 关联下面字幕/活动/风格配置)
+  #   kind: channel                # channel=频道videos | playlist | search=关键词搜
+  #   url: "https://www.youtube.com/@SOMEONE/videos"
+  #   tid: 29                      # B站分区号(见 config/tids.json)
+  #   category: "投稿分类文案"      # 可选, 进LLM上下文
+  #   tags: ["标签1", "标签2"]      # 可选, 合并进稿件tags
+  #   subtitle: "always"           # 可选, 覆盖线级字幕策略
+  #   min_duration: 60             # 可选, 秒, 过短跳过
+  #   max_duration: 3600           # 可选
+  #   limit: 5                     # search 源: 每次发现上限
+  #   min_height: 720 / max_height: 2160   # 可选, 清晰度窗口
+  #   enabled: true
+  #
+  # search 源 url 写法: "ytsearch5:你的搜索关键词"  (5=每次拉取量)

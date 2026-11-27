@@ -177,7 +177,7 @@ subtitles:
 
 - 策略取值：`always` 强制whisper转写 | `auto` 探测有语音才配 | `subs_only` 仅翻译官方字幕 | `never` 不配
 - 探测逻辑：whisper 对前3分钟试转写（VAD 过滤幻觉），字符/分钟 ≥60 判定有解说才全片转写
-- 典型配置：纯ASMR源(洗地毯/切肥皂)`subtitle: "never"`；全程旁白(修蹄)`"always"`
+- 典型配置：纯ASMR/无解说源 `subtitle: "never"`；全程旁白解说的源 `"always"`
 - 烧录样式：底部居中白字黑边，字幕组惯例字号≈画面高1/18、距底≈7.5%高度，`margin_v`/`font_size` 可覆盖
 - 注意：硬字幕不可逆；whisper 对唱歌/纯音乐不可靠（音乐线默认只翻官方字幕）
 
