@@ -3,399 +3,478 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>video-hub · 多平台视频搬运中台</title>
-<meta name="description" content="本地视频搬运中台：订阅源 → 下载 → 字幕翻译烧录 → LLM 中文标题 → 审核 → 投递到 B站/快手/抖音等 14 个平台。附 DSH 插件/MCP/Skill/REST API 四种 agent 接入，本地私有运行。">
+<title>video-hub · 视频搬运流水线</title>
+<meta name="description" content="开源、本地私有的视频搬运流水线：订阅源 → 下载 → 字幕翻译烧录 → LLM 中文元数据 → 审核 → B站/快手/抖音等 14 平台投递。五层防重，逐平台记账，agent 四种方式接管。">
+<meta property="og:title" content="video-hub · 视频搬运流水线">
+<meta property="og:description" content="订阅源进，各平台稿件出。本地跑的一条显式、可干预、可补投的视频流水线。">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ffffff'/%3E%3Crect x='9' y='9' width='14' height='14' rx='2' fill='none' stroke='%23111114' stroke-width='2'/%3E%3Cpath d='M14 13l6 3-6 3z' fill='%23111114'/%3E%3C/svg%3E">
 <style>
+/* ══ tokens ══ */
 :root{
-  --bg:#f7f8fc; --bg2:#eff2f8; --card:#ffffff; --line:#e4e9f2;
-  --tx:#1a2130; --tx2:#5b6880; --tx3:#93a0b6;
-  --ac:#fb7299; --ac2:#00a1d6; --gr:#10b981; --yl:#d97706; --pu:#8a5cf6;
-  --grad:linear-gradient(135deg,#fb7299,#00a1d6);
-  --sh:0 4px 24px rgba(26,33,48,.07);
-  --sh-lg:0 20px 60px rgba(26,33,48,.13);
+  --bg:#ffffff;
+  --bg2:#fafafa;
+  --card:#fbfbfc;
+  --line:rgba(0,0,0,.08);
+  --line2:rgba(0,0,0,.14);
+  --tx:#111114;
+  --tx2:#5c5c66;
+  --tx3:#9a9aa3;
+  --tx4:#c8c8cf;
+  --ok:#16a34a;
+  --warn:#b45309;
+  --bad:#dc2626;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --r:10px;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --sh:0 1px 2px rgba(0,0,0,.04);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;-webkit-font-smoothing:antialiased}
-a{color:inherit;text-decoration:none}
-.wrap{max-width:1060px;margin:0 auto;padding:0 24px}
-
-.rv{opacity:0;transform:translateY(20px);transition:opacity .55s ease,transform .55s cubic-bezier(.16,1,.3,1)}
-.rv.in{opacity:1;transform:none}
-@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
-
-nav{position:fixed;top:0;left:0;right:0;z-index:99;background:rgba(255,255,255,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-nav .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
-.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px}
-.logo .mark{width:25px;height:25px;border-radius:8px;background:var(--grad);display:grid;place-items:center;font-size:12px;color:#fff}
-.nav-links{display:flex;gap:26px;font-size:14px;color:var(--tx2)}
-.nav-links a:hover{color:var(--tx)}
-.nav-gh{font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 14px;color:var(--tx2);background:var(--card)}
-.nav-gh:hover{color:var(--ac);border-color:var(--ac)}
-
-.hero{padding:132px 0 70px;text-align:center;position:relative;overflow:hidden}
-.hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(26,33,48,.05) 1px,transparent 1px);background-size:26px 26px;-webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 30%,transparent 75%);mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 30%,transparent 75%);pointer-events:none}
-.hero .blob{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
-.hero .b1{width:500px;height:500px;background:rgba(251,114,153,.16);top:-150px;left:-110px}
-.hero .b2{width:460px;height:460px;background:rgba(0,161,214,.13);top:-90px;right:-120px}
-.badge{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--tx2);border:1px solid var(--line);border-radius:999px;padding:6px 16px;margin-bottom:24px;background:var(--card);box-shadow:var(--sh);position:relative}
-.badge .dot{width:7px;height:7px;border-radius:50%;background:var(--gr)}
-.badge .dsh{font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-h1{font-size:clamp(32px,5.5vw,52px);font-weight:800;line-height:1.14;letter-spacing:-.5px;position:relative}
-h1 .gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero p.sub{max-width:680px;margin:18px auto 0;font-size:16px;color:var(--tx2);position:relative}
-.ctas{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap;position:relative}
-.btn{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;border-radius:11px;padding:12px 26px;border:1px solid var(--line);background:var(--card);transition:.18s;box-shadow:var(--sh)}
-.btn:hover{transform:translateY(-2px);box-shadow:var(--sh-lg)}
-.btn.primary{background:var(--grad);border:none;color:#fff;box-shadow:0 8px 24px rgba(251,114,153,.35)}
-
-.band{display:flex;justify-content:center;margin-top:46px;position:relative;flex-wrap:wrap}
-.band>div{padding:4px 26px;text-align:center;border-right:1px solid var(--line)}
-.band>div:last-child{border-right:none}
-.band b{font-size:23px;font-weight:800;display:block;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.band span{font-size:12px;color:var(--tx2)}
-
-/* ── 管理台 mockup ── */
-.mock{max-width:900px;margin:56px auto 0;border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden;box-shadow:var(--sh-lg);text-align:left;position:relative}
-.mock-bar{display:flex;align-items:center;gap:8px;padding:11px 15px;border-bottom:1px solid var(--line);background:#fbfbfd}
-.mock-bar i{width:10px;height:10px;border-radius:50%}
-.mock-bar i:nth-child(1){background:#ff5f57}.mock-bar i:nth-child(2){background:#febc2e}.mock-bar i:nth-child(3){background:#28c840}
-.mock-bar .url{margin-left:10px;font-size:12px;color:var(--tx3);background:var(--bg);border-radius:6px;padding:3px 11px;border:1px solid var(--line)}
-.mock-body{display:flex;min-height:300px}
-.mock-side{width:140px;border-right:1px solid var(--line);padding:14px 9px;font-size:12px;color:var(--tx2);background:#fbfbfd;flex-shrink:0}
-.mock-side div{padding:7px 10px;border-radius:7px;margin-bottom:3px}
-.mock-side .on{background:rgba(251,114,153,.1);color:var(--ac);font-weight:600}
-.mock-main{flex:1;padding:16px;min-width:0}
-.mock-stats{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap}
-.mock-stats>div{flex:1;min-width:104px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
-.mock-stats b{font-size:14px;display:block}
-.mock-stats span{font-size:11px;color:var(--tx2)}
-.mock-stats .dots{margin-top:3px}
-.mock-stats .dots i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gr);margin-right:3px}
-.mock-stats .dots em{font-style:normal;font-size:10.5px;color:var(--tx2);margin-right:7px}
-.mock-stats .bar{height:3px;border-radius:99px;background:var(--line);margin-top:6px;overflow:hidden}
-.mock-stats .bar i{display:block;height:100%;border-radius:99px;background:var(--ac2)}
-.mock-cards{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-.mock-card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.mock-card .th{height:74px;background:linear-gradient(120deg,#dfe8f5,#e8e0f0);position:relative}
-.mock-card:nth-child(2) .th{background:linear-gradient(120deg,#f0dfe8,#dfe8f5)}
-.mock-card:nth-child(3) .th{background:linear-gradient(120deg,#e0f0e8,#dce8f0)}
-.mock-card:nth-child(4) .th{background:linear-gradient(120deg,#f0e8dc,#e8dcf0)}
-.mock-card .th em{position:absolute;right:7px;bottom:6px;font-style:normal;font-size:10px;background:rgba(26,33,48,.72);border-radius:4px;padding:2px 6px;color:#fff}
-.mock-card .th .pb{position:absolute;left:0;bottom:0;height:3px;background:var(--grad);animation:fill 3s ease-in-out infinite alternate}
-@keyframes fill{from{width:18%}to{width:78%}}
-.mock-card .bd{padding:9px 11px}
-.mock-card .bd .t{font-size:12px;font-weight:600;height:30px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.mock-card .ft{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
-.mock-card .ft s{text-decoration:none;font-size:10px;border-radius:4px;padding:2px 7px;border:1px solid var(--line);color:var(--tx2);background:var(--bg)}
-.mock-card .ft s.ok{color:#0a9668;border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.07)}
-.mock-card .ft s.warm{color:#0284b8;border-color:rgba(0,161,214,.4);background:rgba(0,161,214,.07)}
-.mock-card .ft s.bad{color:#e11d48;border-color:rgba(225,29,72,.35);background:rgba(225,29,72,.06)}
-
-section{padding:64px 0}
-.sec-tag{display:inline-block;font-size:12px;font-weight:700;color:var(--ac);letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(251,114,153,.3);background:rgba(251,114,153,.06);border-radius:999px;padding:4px 14px}
-h2{font-size:clamp(22px,3.5vw,30px);font-weight:800;margin-top:12px;letter-spacing:-.3px}
-.sec-sub{font-size:14px;color:var(--tx2);margin-top:8px;max-width:760px}
-
-/* ── Agent 对话演示 ── */
-.agent-demo{display:grid;grid-template-columns:1.25fr 1fr;gap:22px;margin-top:36px;align-items:start}
-.chat{background:#141b2c;border-radius:14px;overflow:hidden;box-shadow:var(--sh-lg);font-size:13px}
-.chat-bar{display:flex;align-items:center;gap:8px;padding:11px 15px;border-bottom:1px solid rgba(255,255,255,.08);color:#8b96ad;font-size:12px}
-.chat-bar .dsh-badge{margin-left:auto;font-size:10px;border:1px solid rgba(138,92,246,.5);color:#b39dfa;border-radius:5px;padding:2px 8px}
-.chat-body{padding:16px 16px 18px;display:flex;flex-direction:column;gap:11px}
-.msg{max-width:88%;border-radius:11px;padding:9px 13px;line-height:1.55}
-.msg.u{align-self:flex-end;background:rgba(0,161,214,.16);border:1px solid rgba(0,161,214,.3);color:#cfe8f5}
-.msg.a{align-self:flex-start;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);color:#d6deeb}
-.msg.a b{color:#7ee0b8}
-.tc{align-self:flex-start;font-family:"SF Mono",Menlo,monospace;font-size:11px;color:#b39dfa;background:rgba(138,92,246,.12);border:1px solid rgba(138,92,246,.3);border-radius:7px;padding:5px 10px}
-.tc .ar{color:#637088}
-.tc .rs{color:#7ee0b8}
-.path-list{display:flex;flex-direction:column;gap:10px}
-.path{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;transition:.18s}
-.path:hover{transform:translateY(-2px);box-shadow:var(--sh)}
-.path.top{border-color:rgba(138,92,246,.45);background:linear-gradient(135deg,rgba(138,92,246,.05),rgba(251,114,153,.03))}
-.path h4{font-size:13.5px;display:flex;align-items:center;gap:8px}
-.path h4 .tag{margin-left:auto;font-size:10px;font-weight:700;color:var(--pu);border:1px solid rgba(138,92,246,.4);border-radius:5px;padding:2px 8px}
-.path p{font-size:12px;color:var(--tx2);margin-top:5px;line-height:1.55}
-.path code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:11px;color:var(--ac)}
-.acc-req{margin-top:22px;font-size:12.5px;color:var(--tx2);background:#eefbf3;border:1px solid #c8ecd8;border-radius:10px;padding:12px 18px}
-.acc-req code{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:11px;color:#0a9668}
-.acc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
-.acc{background:#141b2c;border-radius:12px;overflow:hidden;box-shadow:var(--sh)}
-.acc-hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px;font-weight:700;color:#cfd8e8}
-.acc-hd .cp{cursor:pointer;border:1px solid rgba(255,255,255,.16);border-radius:6px;padding:2px 10px;color:#b6c0d4;font-size:11px;font-weight:400;transition:.15s}
-.acc-hd .cp:hover{background:rgba(255,255,255,.08);color:#fff}
-.acc pre{padding:13px 15px;overflow-x:auto;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11.5px;line-height:1.75;color:#d6deeb}
-.acc .c{color:#5d6a84}
-.toolset{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;box-shadow:var(--sh)}
-.toolset-hd{font-size:13px;font-weight:800;margin-bottom:13px}
-.toolset-g{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.toolset-g b{font-size:11.5px;color:var(--tx3);font-weight:700;letter-spacing:.5px;display:block;margin-bottom:6px}
-.tchips{display:flex;flex-wrap:wrap;gap:5px}
-.tchips s{text-decoration:none;font-family:"SF Mono",Menlo,monospace;font-size:10.5px;border:1px solid var(--line);border-radius:5px;padding:2px 8px;color:var(--tx2);background:var(--bg)}
-.toolset-note{margin-top:14px;font-size:11.5px;color:var(--tx2);border-top:1px solid var(--line);padding-top:12px}
-
-/* ── 状态机 ── */
-.sm{margin-top:36px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px 26px;box-shadow:var(--sh);overflow-x:auto}
-.sm-row{display:flex;align-items:stretch;min-width:760px}
-.sm-st{flex:1;text-align:center;position:relative;padding:0 6px}
-.sm-st .box{border:2px solid var(--line);border-radius:12px;padding:13px 8px;background:var(--bg);transition:.2s}
-.sm-st .box:hover{transform:translateY(-3px);box-shadow:var(--sh)}
-.sm-st.main .box{border-color:rgba(0,161,214,.5);background:rgba(0,161,214,.05)}
-.sm-st.side .box{border-style:dashed;border-color:rgba(217,119,6,.5);background:rgba(217,119,6,.04)}
-.sm-st.done .box{border-color:rgba(16,185,129,.5);background:rgba(16,185,129,.05)}
-.sm-st b{font-size:13.5px;display:block}
-.sm-st small{font-size:10.5px;color:var(--tx3);display:block;margin-top:3px;line-height:1.4}
-.sm-arrow{display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:64px;color:var(--tx3);font-size:15px;position:relative}
-.sm-arrow em{font-style:normal;font-size:9.5px;color:var(--tx2);position:absolute;top:calc(50% - 22px);white-space:nowrap}
-.sm-side{display:flex;justify-content:flex-end;gap:14px;margin-top:14px;min-width:760px;padding-right:8px}
-.sm-side .br{font-size:11px;color:var(--tx2);border:1px dashed rgba(217,119,6,.5);border-radius:8px;padding:5px 12px;background:rgba(217,119,6,.04)}
-.sm-legend{display:flex;gap:16px;margin-top:18px;font-size:11.5px;color:var(--tx2);flex-wrap:wrap}
-.sm-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
-
-/* ── 能力卡 ── */
-.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:36px}
-.feat{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:22px 20px;transition:.18s;box-shadow:0 2px 10px rgba(26,33,48,.04)}
-.feat:hover{transform:translateY(-3px);box-shadow:var(--sh)}
-.feat .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:15px;margin-bottom:13px;font-weight:800}
-.feat:nth-child(3n+1) .ic{background:rgba(251,114,153,.1);color:var(--ac)}
-.feat:nth-child(3n+2) .ic{background:rgba(0,161,214,.1);color:var(--ac2)}
-.feat:nth-child(3n) .ic{background:rgba(16,185,129,.1);color:var(--gr)}
-.feat h3{font-size:15px;margin-bottom:6px}
-.feat p{font-size:12.5px;color:var(--tx2);line-height:1.6}
-.feat code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:11px;color:var(--ac)}
-
-/* ── 投递留痕演示 ── */
-.receipt{margin-top:30px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--sh)}
-.receipt-hd{padding:13px 18px;border-bottom:1px solid var(--line);font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px}
-.receipt-hd small{font-weight:400;color:var(--tx3)}
-.receipt-bd{display:grid;grid-template-columns:repeat(4,1fr)}
-.receipt-bd>div{padding:14px 16px;border-right:1px solid var(--line);font-size:12px}
-.receipt-bd>div:last-child{border-right:none}
-.receipt-bd b{display:flex;align-items:center;gap:6px;font-size:12.5px;margin-bottom:5px}
-.receipt-bd p{color:var(--tx2);font-size:11.5px;line-height:1.5}
-.dot-ok,.dot-bad,.dot-wait{display:inline-block;width:8px;height:8px;border-radius:50%}
-.dot-ok{background:var(--gr)}.dot-bad{background:#e11d48}.dot-wait{background:var(--yl)}
-
-/* ── 平台 ── */
-.plat-engines{display:grid;grid-template-columns:1fr 1.6fr;gap:14px;margin-top:36px}
-.engine{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:22px}
-.engine h3{display:flex;align-items:center;gap:10px;font-size:15px}
-.engine h3 .pm{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
-.pm.b{background:#00a1d6}.pm.s{background:#8a5cf6}
-.engine>p{font-size:12.5px;color:var(--tx2);margin-top:9px}
-.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
-.chips s{text-decoration:none;font-size:12px;border:1px solid var(--line);border-radius:7px;padding:5px 11px;color:var(--tx2);background:var(--bg);transition:.15s}
-.chips s:hover{border-color:var(--ac);color:var(--ac)}
-.chips s b{font-weight:600;color:var(--tx)}
-.chips s small{font-size:9.5px;opacity:.55;margin-left:4px}
-.legal{margin-top:20px;font-size:12.5px;color:var(--tx2);background:#fffcf3;border:1px solid #f0e4c8;border-radius:10px;padding:14px 18px}
-.legal b{color:var(--yl)}
-
-/* ── quickstart ── */
-.qs{margin-top:32px;background:#1a2130;border-radius:13px;overflow:hidden;box-shadow:var(--sh-lg)}
-.qs-bar{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px;color:#8b96ad}
-.qs-bar .cp{cursor:pointer;border:1px solid rgba(255,255,255,.16);border-radius:6px;padding:3px 10px;color:#b6c0d4;transition:.15s}
-.qs-bar .cp:hover{background:rgba(255,255,255,.08);color:#fff}
-.qs pre{padding:22px;overflow-x:auto;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.8;color:#d6deeb}
-.qs .c{color:#637088}
-
-footer{border-top:1px solid var(--line);padding:36px 0;background:var(--card)}
-footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
-footer .l{font-size:13px;color:var(--tx2)}
-footer .r{display:flex;gap:20px;font-size:13px;color:var(--tx2)}
-footer .r a:hover{color:var(--ac)}
-
-@media(max-width:880px){
-  .agent-demo{grid-template-columns:1fr}
-  .acc-grid{grid-template-columns:1fr}
-  .toolset-g{grid-template-columns:1fr}
-  .feat-grid{grid-template-columns:1fr 1fr}
-  .plat-engines{grid-template-columns:1fr}
-  .receipt-bd{grid-template-columns:1fr 1fr}
-  .receipt-bd>div:nth-child(2){border-right:none}
-  .receipt-bd>div:nth-child(-n+2){border-bottom:1px solid var(--line)}
-  .mock-cards{grid-template-columns:1fr}
-  .mock-side{display:none}
-  .nav-links{display:none}
-  .band>div{padding:4px 16px}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--tx);line-height:1.6;-webkit-font-smoothing:antialiased;
 }
-@media(max-width:560px){.feat-grid{grid-template-columns:1fr}.receipt-bd{grid-template-columns:1fr}.receipt-bd>div{border-right:none;border-bottom:1px solid var(--line)}.receipt-bd>div:last-child{border-bottom:none}}
+::selection{background:#111114;color:#fff}
+::-webkit-scrollbar{width:9px}
+::-webkit-scrollbar-thumb{background:#d4d4d8;border-radius:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+a{color:inherit;text-decoration:none}
+code,.mono{font-family:var(--mono)}
+button{font-family:inherit;cursor:pointer}
+
+/* 骨架网格: 容器两侧发丝线贯穿全页 */
+.frame{max-width:1152px;margin:0 auto;border-left:1px solid var(--line);border-right:1px solid var(--line);position:relative}
+.wrap{padding-left:40px;padding-right:40px;position:relative}
+
+/* 入场 */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s var(--ease);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1!important;transform:none!important;transition:none!important}
+  .mq-track{animation:none!important}}
+
+/* ══ nav ══ */
+nav{position:fixed;inset:0 0 auto;z-index:100;background:rgba(255,255,255,.8);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+nav .in{max-width:1152px;margin:0 auto;height:58px;display:flex;align-items:center;gap:26px;padding:0 40px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;letter-spacing:-.2px}
+.logo svg{display:block}
+.nav-links{display:flex;gap:2px;font-size:13px;margin-left:auto}
+.nav-links a{color:var(--tx2);padding:6px 12px;border-radius:7px;transition:.15s}
+.nav-links a:hover{color:var(--tx);background:rgba(0,0,0,.05)}
+.nav-gh{font-family:var(--mono);font-size:12px;color:var(--tx);border:1px solid var(--line2);border-radius:7px;padding:6px 13px;display:flex;align-items:center;gap:7px;transition:.15s;background:#fff}
+.nav-gh:hover{border-color:#111}
+.nav-gh:focus-visible,.nav-links a:focus-visible,.btn:focus-visible,.cp:focus-visible{outline:1.5px solid #111;outline-offset:2px}
+
+/* ══ hero ══ */
+.hero{padding:158px 0 0;position:relative}
+.hero-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.hero-bg::before{content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(0,0,0,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.035) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 10%,transparent 75%);
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 10%,transparent 75%)}
+.hero-bg .beam{position:absolute;top:0;bottom:0;width:1px;background:linear-gradient(180deg,rgba(0,0,0,.18),transparent 60%)}
+.hero-bg .b1{left:25%}.hero-bg .b2{left:50%}.hero-bg .b3{left:75%}
+.hero .wrap{text-align:center;position:relative}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11.5px;color:var(--tx2);
+  border:1px solid var(--line2);border-radius:999px;padding:6px 15px;background:#fff;box-shadow:var(--sh)}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+h1{font-size:clamp(40px,6vw,68px);font-weight:750;line-height:1.08;letter-spacing:-2px;margin-top:30px}
+h1 .dim{color:var(--tx3)}
+.hero .sub{max-width:640px;margin:24px auto 0;font-size:15.5px;color:var(--tx2);line-height:1.8}
+.hero .sub em{font-style:normal;color:var(--tx)}
+.ctas{display:flex;gap:10px;justify-content:center;margin-top:36px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;border-radius:9px;padding:12px 22px;transition:.18s var(--ease);border:1px solid var(--line2);color:var(--tx);background:#fff}
+.btn:hover{border-color:#111;transform:translateY(-1px)}
+.btn.primary{background:#111114;color:#fff;border-color:#111114}
+.btn.primary:hover{background:#2c2c31;transform:translateY(-1px)}
+.btn .mono{font-size:12px;font-weight:400}
+
+/* 数据条: 发丝线表格 */
+.statline{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:56px}
+.statline>div{padding:20px 12px;border-right:1px solid var(--line);text-align:center}
+.statline>div:last-child{border-right:none}
+.statline b{font-family:var(--mono);font-size:22px;font-weight:600;display:block;letter-spacing:-.5px}
+.statline span{font-size:11px;color:var(--tx3);letter-spacing:.3px}
+
+/* 平台跑马灯 */
+.mq{border-bottom:1px solid var(--line);overflow:hidden;padding:16px 0;position:relative;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.mq-track{display:flex;gap:44px;width:max-content;animation:mq 36s linear infinite;white-space:nowrap}
+.mq-track span{font-family:var(--mono);font-size:12px;color:var(--tx3);letter-spacing:.5px}
+.mq-track span::before{content:"·";margin-right:44px;color:var(--tx4)}
+.mq-track span:first-child::before{content:""}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* ══ section 骨架 ══ */
+.sec{padding:104px 0;border-top:1px solid var(--line);position:relative}
+.sec-head{display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:start;margin-bottom:52px}
+.sec-num{font-family:var(--mono);font-size:12px;color:var(--tx2);border:1px solid var(--line2);border-radius:6px;padding:4px 10px;margin-top:8px;white-space:nowrap;background:#fff}
+.sec-num::before{content:"§ "}
+h2{font-size:clamp(26px,3.4vw,38px);font-weight:750;letter-spacing:-1px;line-height:1.15}
+.sec-sub{font-size:14.5px;color:var(--tx2);margin-top:12px;max-width:680px;line-height:1.8}
+.sec-sub code{background:rgba(0,0,0,.05);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:12px;color:var(--tx)}
+
+/* ══ 流水线步骤 ══ */
+.steps{border-top:1px solid var(--line)}
+.step{display:grid;grid-template-columns:64px 1fr 1.1fr;gap:24px;padding:26px 0;border-bottom:1px solid var(--line);align-items:start}
+.step .no{font-family:var(--mono);font-size:13px;color:var(--tx3);padding-top:3px}
+.step .no::before{content:"";display:block;width:8px;height:8px;border:1.5px solid var(--tx3);border-radius:50%;margin-bottom:10px}
+.step h3{font-size:15.5px;font-weight:650;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.step h3 code{font-size:11.5px;font-weight:400;color:var(--tx3)}
+.step p{font-size:13px;color:var(--tx2);line-height:1.75}
+.step p b{color:var(--tx);font-weight:600}
+.step p code{background:rgba(0,0,0,.05);border:1px solid var(--line);border-radius:4px;padding:0 6px;font-size:11px;color:var(--tx)}
+
+/* 五层防重 */
+.guard{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:40px}
+.guard>div{padding:18px 18px 20px;border-right:1px solid var(--line);background:var(--card)}
+.guard>div:last-child{border-right:none}
+.guard .g-no{font-family:var(--mono);font-size:10px;color:var(--tx3);letter-spacing:1px}
+.guard b{display:block;font-size:13px;margin-top:8px;font-weight:650}
+.guard p{font-size:11.5px;color:var(--tx3);margin-top:5px;line-height:1.6}
+
+/* ══ 投递矩阵 ══ */
+.dlv{display:grid;grid-template-columns:1fr 1.5fr;gap:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px}
+.panel h3{font-size:14.5px;font-weight:650;display:flex;align-items:center;gap:10px}
+.panel h3 .tag{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--tx3);border:1px solid var(--line);border-radius:5px;padding:2px 8px;font-weight:400;background:#fff}
+.panel>p{font-size:12.5px;color:var(--tx2);margin-top:10px;line-height:1.7}
+.plist{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.plist>div{background:#fff;padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px}
+.plist .id{font-family:var(--mono);font-size:10.5px;color:var(--tx3);margin-left:auto}
+.matrix{margin-top:16px;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:11.5px}
+.matrix table{width:100%;border-collapse:collapse}
+.matrix th{font-family:var(--mono);font-size:10px;color:var(--tx3);font-weight:500;text-align:left;padding:8px 14px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.02)}
+.matrix td{padding:7px 14px;border-bottom:1px solid var(--line);color:var(--tx2);background:#fff}
+.matrix tr:last-child td{border-bottom:none}
+.matrix td.y{color:var(--ok)}.matrix td.n{color:var(--tx4)}
+.matrix td:first-child{color:var(--tx)}
+
+/* extra_pub 账本 */
+.ledger{margin-top:14px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--card)}
+.ledger-hd{padding:13px 18px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--tx3);display:flex;gap:10px;align-items:center}
+.ledger-hd b{color:var(--tx);font-weight:600}
+.ledger table{width:100%;border-collapse:collapse;font-size:12px}
+.ledger td{padding:11px 18px;border-bottom:1px solid var(--line);vertical-align:top;background:#fff}
+.ledger tr:last-child td{border-bottom:none}
+.ledger td.p{font-family:var(--mono);color:var(--tx);white-space:nowrap;width:1%}
+.ledger td.s{width:1%;white-space:nowrap}
+.ledger td.d{color:var(--tx3);font-size:11.5px;line-height:1.6}
+.pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;border-radius:5px;padding:2px 8px;border:1px solid}
+.pill.ok{color:#15803d;border-color:rgba(22,163,74,.35);background:rgba(22,163,74,.06)}
+.pill.bad{color:#b91c1c;border-color:rgba(220,38,38,.35);background:rgba(220,38,38,.06)}
+.pill.wait{color:#a16207;border-color:rgba(180,83,9,.35);background:rgba(180,83,9,.07)}
+
+/* ══ 值守 bento ══ */
+.bento{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.bc{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;transition:.2s var(--ease);position:relative;overflow:hidden}
+.bc:hover{border-color:var(--line2);transform:translateY(-2px);box-shadow:var(--sh)}
+.bc.wide{grid-column:span 2}
+.bc .k{font-family:var(--mono);font-size:10px;color:var(--tx3);letter-spacing:1.5px;text-transform:uppercase}
+.bc h3{font-size:14px;font-weight:650;margin-top:10px}
+.bc p{font-size:12px;color:var(--tx2);margin-top:7px;line-height:1.7}
+.bc p code{background:rgba(0,0,0,.05);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:10.5px;color:var(--tx)}
+.bc .demo{margin-top:14px;font-family:var(--mono);font-size:10.5px;color:var(--tx3);border-top:1px solid var(--line);padding-top:12px;line-height:1.9}
+.bc .demo b{color:var(--tx);font-weight:500}
+
+/* ══ agent ══ */
+.agent{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;align-items:stretch}
+.chat{background:#fff;border:1px solid var(--line2);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--sh)}
+.chat-bar{display:flex;align-items:center;gap:8px;padding:11px 15px;border-bottom:1px solid var(--line);color:var(--tx3);font-size:11px;font-family:var(--mono);background:var(--bg2)}
+.chat-body{padding:18px 16px;display:flex;flex-direction:column;gap:11px;font-size:12.5px;flex:1}
+.msg{max-width:88%;border-radius:10px;padding:9px 13px;line-height:1.65}
+.msg.u{align-self:flex-end;background:#111114;color:#f4f4f5;border-radius:10px 10px 3px 10px}
+.msg.a{align-self:flex-start;background:var(--bg2);border:1px solid var(--line);color:#3f3f46;border-radius:10px 10px 10px 3px}
+.msg.a b{color:var(--ok)}
+.tc{align-self:flex-start;font-family:var(--mono);font-size:10.5px;color:#4f46e5;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.25);border-radius:6px;padding:5px 10px}
+.tc .ar{color:var(--tx4)}.tc .rs{color:var(--ok)}
+.paths{display:grid;grid-template-rows:repeat(4,1fr);gap:10px}
+.path{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px 18px;transition:.18s var(--ease);display:flex;flex-direction:column;justify-content:center}
+.path:hover{border-color:var(--line2)}
+.path.top{border-color:rgba(0,0,0,.35);background:#fff;box-shadow:var(--sh)}
+.path h4{font-size:13px;display:flex;align-items:center;gap:8px;font-weight:650}
+.path h4 .tag{margin-left:auto;font-family:var(--mono);font-size:9.5px;color:var(--tx);border:1px solid var(--line2);border-radius:5px;padding:2px 8px;font-weight:400}
+.path p{font-size:11.5px;color:var(--tx2);margin-top:5px;line-height:1.6}
+.path code{background:rgba(0,0,0,.05);border-radius:4px;padding:0 5px;font-size:10.5px}
+.acc-req{margin-top:14px;font-size:12px;color:var(--tx2);border:1px solid var(--line);border-radius:var(--r);padding:13px 18px;line-height:1.7;background:var(--card)}
+.acc-req code{background:rgba(0,0,0,.05);border:1px solid var(--line);border-radius:4px;padding:0 6px;font-size:11px;color:var(--tx)}
+.acc-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:14px}
+.acc{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;transition:.2s}
+.acc:hover{border-color:var(--line2)}
+.acc-hd{display:flex;justify-content:space-between;align-items:center;padding:10px 15px;border-bottom:1px solid var(--line);font-size:12px;font-weight:650;background:#fff}
+.cp{background:#fff;border:1px solid var(--line2);border-radius:6px;padding:3px 11px;color:var(--tx3);font-size:10.5px;transition:.15s;font-family:var(--mono)}
+.cp:hover{color:var(--tx);border-color:#111}
+.acc pre{padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:11px;line-height:1.8;color:#3f3f46}
+.acc .c{color:#a1a1aa}
+.acc .u{color:#52525b;text-decoration:underline;text-decoration-color:#d4d4d8;text-underline-offset:3px}
+.toolset{margin-top:14px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--card)}
+.toolset table{width:100%;border-collapse:collapse;font-size:12px}
+.toolset th{font-family:var(--mono);font-size:10px;color:var(--tx3);font-weight:500;letter-spacing:1px;text-align:left;padding:11px 16px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.02)}
+.toolset td{padding:13px 16px;vertical-align:top;background:#fff}
+.toolset td.cat{font-family:var(--mono);font-size:10.5px;color:var(--tx3);white-space:nowrap;width:1%}
+.tchips{display:flex;flex-wrap:wrap;gap:5px}
+.tchips s{text-decoration:none;font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);border-radius:5px;padding:2px 8px;color:var(--tx2);background:var(--bg2);transition:.15s}
+.tchips s:hover{color:var(--tx);border-color:var(--line2)}
+.toolset-note{border-top:1px solid var(--line);padding:12px 16px;font-size:11px;color:var(--tx3);background:#fff}
+
+/* ══ 快速开始 ══ */
+.qs{border:1px solid var(--line2);border-radius:var(--r);overflow:hidden;background:var(--card);margin-top:6px;box-shadow:var(--sh)}
+.qs-bar{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--tx3);background:#fff}
+.qs pre{padding:24px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.9;color:#3f3f46}
+.qs .c{color:#a1a1aa}
+
+/* ══ footer ══ */
+footer{border-top:1px solid var(--line);background:var(--bg2)}
+.foot-note{font-size:12px;color:var(--tx3);line-height:1.8;max-width:760px}
+.foot-note b{color:var(--tx2)}
+.foot-note code{background:rgba(0,0,0,.05);border-radius:4px;padding:0 5px;font-size:11px}
+.foot-row{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;padding:36px 0 24px}
+.foot-links{display:flex;gap:20px;font-size:12.5px;color:var(--tx2)}
+.foot-links a:hover{color:var(--tx)}
+.wordmark{font-size:clamp(72px,14vw,170px);font-weight:800;letter-spacing:-6px;line-height:.95;color:transparent;
+  -webkit-text-stroke:1px rgba(0,0,0,.14);text-align:center;padding:20px 0 10px;user-select:none}
+.foot-base{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding:18px 0 26px;font-family:var(--mono);font-size:10.5px;color:var(--tx4);flex-wrap:wrap;gap:8px}
+
+/* ══ 响应式 ══ */
+@media(max-width:960px){
+  .wrap{padding-left:24px;padding-right:24px}
+  nav .in{padding:0 24px}
+  .nav-links{display:none}
+  .sec{padding:80px 0}
+  .step{grid-template-columns:40px 1fr;gap:16px}
+  .step p{grid-column:2}
+  .guard{grid-template-columns:1fr 1fr}
+  .guard>div{border-bottom:1px solid var(--line)}
+  .guard>div:nth-child(odd){border-right:1px solid var(--line)}
+  .guard>div:nth-child(even){border-right:none}
+  .guard>div:last-child{grid-column:span 2;border-bottom:none}
+  .dlv,.agent,.acc-grid{grid-template-columns:1fr}
+  .paths{grid-template-rows:none;grid-template-columns:1fr}
+  .bento{grid-template-columns:1fr 1fr}
+  .statline{grid-template-columns:repeat(3,1fr)}
+  .statline>div:nth-child(3){border-right:none}
+  .statline>div:nth-child(-n+3){border-bottom:1px solid var(--line)}
+}
+@media(max-width:600px){
+  .statline{grid-template-columns:1fr 1fr}
+  .statline>div{border-bottom:1px solid var(--line)}
+  .statline>div:nth-child(odd){border-right:1px solid var(--line)}
+  .statline>div:nth-child(even){border-right:none}
+  .statline>div:last-child{border-bottom:none}
+  .guard,.bento{grid-template-columns:1fr}
+  .bc.wide{grid-column:span 1}
+  .sec-head{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 
 <nav>
-  <div class="wrap">
-    <a class="logo" href="#"><span class="mark">▶</span>video-hub</a>
+  <div class="in">
+    <a class="logo" href="#" aria-label="video-hub">
+      <svg width="19" height="19" viewBox="0 0 32 32" fill="none"><rect x="3" y="3" width="26" height="26" rx="6" stroke="#111114" stroke-width="2.4"/><path d="M13 11l9 5-9 5z" fill="#111114"/></svg>
+      video-hub
+    </a>
     <div class="nav-links">
-      <a href="#flow">工作流</a><a href="#feat">能力</a><a href="#plat">平台</a><a href="#ai">AI 接入</a><a href="#start">快速开始</a>
+      <a href="#pipeline">流水线</a><a href="#deliver">投递</a><a href="#ops">值守</a><a href="#agent">Agent</a><a href="#setup">上手</a>
     </div>
-    <a class="nav-gh" href="https://github.com/zhaojiale001016/video-hub">GitHub →</a>
+    <a class="nav-gh" href="https://github.com/zhaojiale001016/video-hub">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
   </div>
 </nav>
 
+<div class="frame">
+
+<!-- ══════════ HERO ══════════ -->
 <header class="hero">
-  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="hero-bg"><span class="beam b1"></span><span class="beam b2"></span><span class="beam b3"></span></div>
   <div class="wrap">
-    <div class="badge rv in"><span class="dot"></span>v1.7.3 · MIT 开源 · 本地运行</div>
-    <h1 class="rv in">视频搬运中台<br>什么内容，<span class="gt">搬到哪个平台，你说了算</span></h1>
-    <p class="sub rv in">订阅源轮询 → yt-dlp 下载 → whisper 字幕翻译烧录 → LLM 中文标题 → 管理台审核 → 独立投递到你勾选的所有平台。不内置内容类型，不写死发布目标——顺手把整条流水线也开给了 AI agent。</p>
-    <div class="ctas rv in">
-      <a class="btn primary" href="https://github.com/zhaojiale001016/video-hub">⭐ GitHub</a>
-      <a class="btn" href="https://github.com/zhaojiale001016/video-hub/releases">Releases</a>
-      <a class="btn" href="#start">快速开始</a>
-    </div>
-    <div class="band rv in">
-      <div><b>14</b><span>可接发布平台</span></div>
-      <div><b>5</b><span>层防重</span></div>
-      <div><b>∞</b><span>内容线自定义</span></div>
-      <div><b>20</b><span>个 agent 工具</span></div>
-      <div><b>100%</b><span>本地私有</span></div>
+    <div class="eyebrow rv in"><i></i>LOCAL-FIRST · OPEN SOURCE · v1.7.4</div>
+    <h1 class="rv in" style="--d:.06s">订阅源进。<br><span class="dim">各平台的稿件出。</span></h1>
+    <p class="sub rv in" style="--d:.12s">video-hub 把你选的外网订阅源，跑成一条显式流水线：下载、字幕、中文元数据、审核、逐平台投递。<em>每一步可观察、可干预、可补投</em>——全部跑在你自己的机器上。</p>
+    <div class="ctas rv in" style="--d:.18s">
+      <a class="btn primary" href="https://github.com/zhaojiale001016/video-hub">GitHub<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 10L10 2M10 2H4M10 2v6"/></svg></a>
+      <a class="btn" href="#setup"><span class="mono">$</span> cli.py serve</a>
+      <a class="btn" href="https://github.com/zhaojiale001016/video-hub/blob/main/README.md">README</a>
     </div>
   </div>
   <div class="wrap">
-    <div class="mock rv">
-      <div class="mock-bar"><i></i><i></i><i></i><span class="url">http://127.0.0.1:8600 — 本地管理台，同步被 agent 驱动</span></div>
-      <div class="mock-body">
-        <div class="mock-side">
-          <div class="on">待发布 2</div><div>待下载 467</div><div>已发布 6</div><div>失败 1</div><div>已跳过 45</div>
-          <div style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;opacity:.65">全部 / 探险 / 音乐 / 解压</div>
-        </div>
-        <div class="mock-main">
-          <div class="mock-stats">
-            <div><b>登录态</b><div class="dots"><em><i></i>B站</em><em><i></i>快手</em><em><i style="background:#f43f5e"></i>抖音</em></div></div>
-            <div><b>今日发布 0/5</b><div class="bar"><i style="width:0%"></i></div></div>
-            <div><b>今日下载 5/10</b><div class="bar"><i style="width:50%"></i></div></div>
-            <div><b>下轮轮询</b><span>5h55m</span></div>
-          </div>
-          <div class="mock-cards">
-            <div class="mock-card"><div class="th"><em>08:12</em></div><div class="bd"><div class="t">这条河里的金子比你想象的多得多！淘金实测</div><div class="ft"><s class="ok">✓B站</s><s class="ok">✓快手</s><s class="ok">✓抖音</s></div></div></div>
-            <div class="mock-card"><div class="th"><em>12:40</em></div><div class="bd"><div class="t">强迫症狂喜：高压水枪清洗地毯全过程</div><div class="ft"><s class="ok">✓视频号</s><s class="warm">错峰18:00</s></div></div></div>
-            <div class="mock-card"><div class="th"><em>03:55</em></div><div class="bd"><div class="t">THE FIRST TAKE 现场切片「熟肉」</div><div class="ft"><s class="bad">✗B站↻补投</s><s class="ok">✓快手</s><s class="ok">✓视频号</s></div></div></div>
-            <div class="mock-card"><div class="th"><span class="pb"></span><em>21:07</em></div><div class="bd"><div class="t">荒野建造 72 小时：丛林深处的庇护所</div><div class="ft"><s class="warm">处理中 62%</s></div></div></div>
-          </div>
-        </div>
-      </div>
+    <div class="statline rv in" style="--d:.24s">
+      <div><b>14</b><span>可投递平台</span></div>
+      <div><b>7</b><span>流水线环节</span></div>
+      <div><b>5</b><span>层防重复</span></div>
+      <div><b>20</b><span>agent 工具</span></div>
+      <div><b>0</b><span>云端依赖</span></div>
+    </div>
+  </div>
+  <div class="mq" aria-hidden="true">
+    <div class="mq-track">
+      <span>bilibili</span><span>kuaishou</span><span>tencent</span><span>douyin</span><span>xiaohongshu</span><span>baijiahao</span><span>weibo</span><span>youtube</span><span>facebook-page</span><span>instagram</span><span>alipay</span><span>hupu</span><span>dayu</span><span>zhihu</span>
+      <span>bilibili</span><span>kuaishou</span><span>tencent</span><span>douyin</span><span>xiaohongshu</span><span>baijiahao</span><span>weibo</span><span>youtube</span><span>facebook-page</span><span>instagram</span><span>alipay</span><span>hupu</span><span>dayu</span><span>zhihu</span>
     </div>
   </div>
 </header>
 
-
-
-<section id="flow" style="background:var(--bg2)">
+<!-- ══════════ 01 流水线 ══════════ -->
+<section class="sec" id="pipeline">
   <div class="wrap">
-    <span class="sec-tag rv">State Machine</span>
-    <h2 class="rv">每条视频一条状态机，走到哪一目了然</h2>
-    <p class="sec-sub rv">不是黑盒脚本——每个环节都是可观察、可干预、可重试的显式状态。</p>
-    <div class="sm rv">
-      <div class="sm-row">
-        <div class="sm-st"><div class="box"><b>new</b><small>订阅源拉入<br>撞稿预检已过滤</small></div></div>
-        <div class="sm-arrow"><em>yt-dlp + whisper + LLM</em>→</div>
-        <div class="sm-st main"><div class="box"><b>downloaded</b><small>字幕烧录完成<br>标题/简介/标签已生成</small></div></div>
-        <div class="sm-arrow"><em>过审/编辑/勾平台</em>→</div>
-        <div class="sm-st main"><div class="box"><b>ready</b><small>待发布<br>可编辑可定时</small></div></div>
-        <div class="sm-arrow"><em>逐平台投递</em>→</div>
-        <div class="sm-st done"><div class="box"><b>published</b><small>记录每平台成败<br>全成功才删文件</small></div></div>
-      </div>
-      <div class="sm-side">
-        <div class="br">✗ failed — 重试：文件在→ready，没了→回 new 重下</div>
-        <div class="br">⊘ skipped — 删文件腾磁盘，可撤销重新入队</div>
-      </div>
-      <div class="sm-legend">
-        <span><i style="background:var(--ac2)"></i>主链路状态</span>
-        <span><i style="background:var(--gr)"></i>终态</span>
-        <span><i style="background:var(--yl)"></i>旁路（可恢复）</span>
-        <span>每个迁移都有守卫：额度/磁盘/工作日/错峰档位</span>
+    <div class="sec-head">
+      <span class="sec-num rv">01</span>
+      <div>
+        <h2 class="rv">一条流水线，七个显式环节</h2>
+        <p class="sec-sub rv">每个环节都是独立模块，输入输出落进 sqlite 队列。哪一环出问题，状态就停在哪一环——不吞错，不黑盒。</p>
       </div>
     </div>
-    <div class="receipt rv">
-      <div class="receipt-hd">📋 投递留痕 — extra_pub 逐平台记账 <small>这就是"补投不重复"的来源</small></div>
-      <div class="receipt-bd">
-        <div><b><i class="dot-ok"></i>bilibili ✓</b><p>BV号已记录，重试时自动跳过——同稿绝不二次投递</p></div>
-        <div><b><i class="dot-bad"></i>kuaishou ✗ 403</b><p>失败原因留痕；文件保留=补投材料，cookie 续上后单点补投</p></div>
-        <div><b><i class="dot-ok"></i>tencent ✓</b><p>视频号成功，与快手失败互不干扰——平台间零阻断</p></div>
-        <div><b><i class="dot-wait"></i>douyin ⏰</b><p>错峰定时已占位（publish_slots 自动分配档位）</p></div>
-      </div>
+    <div class="steps">
+      <div class="step rv"><div class="no">01</div>
+        <h3>轮询发现<code>cli.py poll</code></h3>
+        <p>按 <code>sources.yaml</code> 轮询频道/搜索源，每源封顶 <code>per_source_poll_cap</code> 条。每次结果写进源健康档案 <code>source_health.json</code>，哪个源报错一眼看出。</p></div>
+      <div class="step rv"><div class="no">02</div>
+        <h3>撞稿预检<code>precheck</code></h3>
+        <p>下载前先拿标题搜 B站：相似度 <b>≥0.72</b> 拦截，<b>≥0.85</b> 直接跳过并清文件，自动排除自己已发的稿。两道阈值都可在设置里调。</p></div>
+      <div class="step rv"><div class="no">03</div>
+        <h3>下载入库<code>yt-dlp + archive</code></h3>
+        <p>清晰度上限、代理、每日额度 <code>daily_download_limit</code>、磁盘水位 <code>min_free_gb</code> 都是守卫。下载记录进 archive，重下永不重复拉流。</p></div>
+      <div class="step rv"><div class="no">04</div>
+        <h3>字幕：生肉 → 熟肉<code>whisper</code></h3>
+        <p>按内容线配策略：<code>always / auto / subs_only / never</code>。auto 模式先试转前 3 分钟、VAD 过滤幻觉、≥60字/分钟才判定有解说。字号随分辨率自适应，烧录或外挂可选。</p></div>
+      <div class="step rv"><div class="no">05</div>
+        <h3>中文元数据<code>LLM</code></h3>
+        <p>本地 kscc 或任意 OpenAI 兼容后端，按内容线风格生成：标题 ≤80 字、标签 ≤12 个、简介 ≤1500 字，并给出 B站分区建议。随时「重生成」。</p></div>
+      <div class="step rv"><div class="no">06</div>
+        <h3>人工审核<code>管理台</code></h3>
+        <p>FastAPI 单页管理台：五态队列、封面预览、抽屉里改标题/简介/标签、勾发布平台、设定时。published 之后锁死只读——不与线上稿件脱节。</p></div>
+      <div class="step rv"><div class="no">07</div>
+        <h3>逐平台投递<code>publish</code></h3>
+        <p>B站走 biliup-rs（分区/活动/版权/定时），其余 13 平台走浏览器自动化。<b>每平台独立记账 extra_pub</b>，失败不阻断；补投自动跳过已成功平台。</p></div>
     </div>
-  </div>
-</section>
-
-<section id="feat">
-  <div class="wrap">
-    <span class="sec-tag rv">Capabilities</span>
-    <h2 class="rv">工具能力，不设边界</h2>
-    <div class="feat-grid">
-      <div class="feat rv"><div class="ic">⧉</div><h3>平台可扩展</h3><p>B站走 biliup-rs；快手/视频号/抖音/小红书等 13 个平台走 social-auto-upload。设置面板勾选启用，<code>login-extra</code> 扫码即用，封面/定时参数按各平台能力自动适配。</p></div>
-      <div class="feat rv"><div class="ic">◈</div><h3>内容线自定义</h3><p><code>line</code> 任意小写 slug——音乐/解压/游戏/烹饪随你定。字幕策略、活动匹配、LLM 风格按同名 key 联动，徽标颜色自动分配。</p></div>
-      <div class="feat rv"><div class="ic">🛡</div><h3>五层防重复</h3><p>DB 唯一键、下载 archive、已发布免重入、撞稿预检（阈值可调）、同名拦截——同稿绝不二次处理。</p></div>
-      <div class="feat rv"><div class="ic">字</div><h3>生肉→熟肉</h3><p>官方字幕翻译 / whisper 转写 / 直接跳过，按内容线配策略；字号随分辨率自适应，可烧录可外挂。</p></div>
-      <div class="feat rv"><div class="ic">⚙</div><h3>配置全热更新</h3><p>限额/调度/阈值/字幕/LLM/屏蔽词/平台开关全部设置面板即改即生效，yaml 底包 + overrides 分层。</p></div>
-      <div class="feat rv"><div class="ic">🔒</div><h3>本地私有</h3><p>无鉴权但只监听 127.0.0.1（远端绑定直接拒绝启动）；cookie/数据全在 gitignore 的 data/；sqlite 每日备份留 7 份。</p></div>
+    <div class="guard rv">
+      <div><div class="g-no">GUARD 01</div><b>DB 唯一键</b><p>UNIQUE(platform, source_id)——同一视频只入队一次，频道源和搜索源命中也合并</p></div>
+      <div><div class="g-no">GUARD 02</div><b>下载 archive</b><p>yt-dlp download_archive 兜底，状态重置也不重下</p></div>
+      <div><div class="g-no">GUARD 03</div><b>published 免入</b><p>已发布条目永远不再进入下载/发布流程</p></div>
+      <div><div class="g-no">GUARD 04</div><b>撞稿预检</b><p>相似度 ≥72% 拦截，防搬别人搬过的稿</p></div>
+      <div><div class="g-no">GUARD 05</div><b>同名拦截</b><p>与已发布稿件同名的直接拒绝</p></div>
     </div>
   </div>
 </section>
 
-<section id="plat" style="background:var(--bg2)">
+<!-- ══════════ 02 投递 ══════════ -->
+<section class="sec" id="deliver">
   <div class="wrap">
-    <span class="sec-tag rv">Platforms</span>
-    <h2 class="rv">一次加工，投递到任何平台</h2>
-    <p class="sec-sub rv">B站为内置专业通道（分区/活动/版权/定时）；其余平台经 vendored social-auto-upload 浏览器自动化投递。</p>
-    <div class="plat-engines">
-      <div class="engine rv">
-        <h3><span class="pm b">B</span>哔哩哔哩 <small style="font-size:11px;color:var(--tx3);font-weight:400">内置 biliup-rs</small></h3>
-        <p>分区/投稿活动/版权类型/定时投稿/撞稿预检——B站域完整特性，失败不阻断其他平台。</p>
+    <div class="sec-head">
+      <span class="sec-num rv">02</span>
+      <div>
+        <h2 class="rv">一稿多投，平台之间互不相欠</h2>
+        <p class="sec-sub rv">每个平台是平等的投递目标：单稿勾选 <code>pub_platforms</code>（空=启用平台全发，<code>[]</code>=拒发）。投递结果逐平台记进 <code>extra_pub</code>——这是"补投不重复"的全部依据。</p>
       </div>
-      <div class="engine rv">
-        <h3><span class="pm s">S</span>social-auto-upload <small style="font-size:11px;color:var(--tx3);font-weight:400">13 平台 · 扫码登录</small></h3>
-        <p>逐平台独立账号 cookie，<code>cli.py login-extra &lt;id&gt;</code> 接入；无封面/定时能力的平台自动跳过对应参数。</p>
-        <div class="chips">
-          <s><b>快手</b><small>kuaishou</small></s><s><b>视频号</b><small>tencent</small></s>
-          <s><b>抖音</b><small>douyin</small></s><s><b>小红书</b><small>xiaohongshu</small></s>
-          <s><b>百家号</b><small>baijiahao</small></s><s><b>微博</b><small>weibo</small></s>
-          <s><b>YouTube</b><small>youtube</small></s><s><b>Facebook主页</b><small>facebook-page</small></s>
-          <s><b>Instagram</b><small>instagram</small></s><s><b>支付宝</b><small>alipay</small></s>
-          <s><b>虎扑</b><small>hupu</small></s><s><b>大鱼号</b><small>dayu</small></s>
-          <s><b>知乎</b><small>zhihu</small></s>
+    </div>
+    <div class="dlv">
+      <div class="panel rv">
+        <h3>哔哩哔哩<span class="tag">biliup-rs · 内建</span></h3>
+        <p>B站域完整特性：分区号映射、投稿活动匹配（仅自制稿）、版权类型（转载强制出处）、定时投稿 ≥4h。B站环节任何失败只记自己的账，不阻断其他平台。</p>
+        <div class="plist">
+          <div>分区 tid<span class="id">tids.json</span></div>
+          <div>投稿活动<span class="id">missions</span></div>
+          <div>自制 / 转载<span class="id">copyright</span></div>
+          <div>定时投稿<span class="id">dtime</span></div>
+        </div>
+      </div>
+      <div class="panel rv" style="--d:.08s">
+        <h3>social-auto-upload<span class="tag">13 平台 · 浏览器自动化</span></h3>
+        <p>vendored 副本独立 venv 隔离。各平台能力有差异——封面/标签/定时参数按能力矩阵自动适配，不支持的平台自动跳过对应参数。</p>
+        <div class="matrix">
+          <table>
+            <tr><th>PLATFORM</th><th>封面</th><th>定时</th><th>说明</th></tr>
+            <tr><td>kuaishou · 快手</td><td class="y">✓</td><td class="y">✓</td><td>上传超时调至 1500s</td></tr>
+            <tr><td>tencent · 视频号</td><td class="y">✓ 横竖版</td><td class="y">✓</td><td>可填内容标注</td></tr>
+            <tr><td>douyin · 抖音</td><td class="y">✓ 横竖版</td><td class="y">✓</td><td>—</td></tr>
+            <tr><td>weibo / xiaohongshu 等</td><td class="y">✓</td><td class="n">✗</td><td>定时参数自动略过</td></tr>
+            <tr><td>zhihu / facebook-page</td><td class="n">✗</td><td class="n">✗</td><td>纯视频正文投递</td></tr>
+          </table>
         </div>
       </div>
     </div>
-    <div class="legal rv"><b>⚠</b> 请确认对所搬内容拥有合法使用权，遵守源站与目标平台条款；转载如实填出处，「自制」构成原创声明。使用者对自身发布行为负全部责任。</div>
+    <div class="ledger rv">
+      <div class="ledger-hd">📒 <b>extra_pub</b> · 一张稿件的投递账本 <span style="margin-left:auto">#1372</span></div>
+      <table>
+        <tr><td class="p">bilibili</td><td class="s"><span class="pill ok">✓ ok</span></td><td class="d">BV1xx4y1w7Ky 已记录——重试时自动跳过，同稿绝不二次投递</td></tr>
+        <tr><td class="p">kuaishou</td><td class="s"><span class="pill bad">✗ 403</span></td><td class="d">cookie 过期。失败留痕，文件保留=补投材料，续上登录后单点补投</td></tr>
+        <tr><td class="p">tencent</td><td class="s"><span class="pill ok">✓ ok</span></td><td class="d">视频号成功，与快手失败互不干扰——平台间零阻断</td></tr>
+        <tr><td class="p">douyin</td><td class="s"><span class="pill wait">⏰ 18:00</span></td><td class="d">错峰定时已占位（publish_slots 自动分配档位）</td></tr>
+      </table>
+    </div>
   </div>
 </section>
 
-<section id="ai">
+<!-- ══════════ 03 值守 ══════════ -->
+<section class="sec" id="ops">
   <div class="wrap">
-    <span class="sec-tag rv">Bonus · Agent Access</span>
-    <h2 class="rv">不想点鼠标？装个插件给 agent 用</h2>
-    <p class="sec-sub rv">官方插件包装到你的 DeepSeek Harness / MCP 客户端后，agent 就能替你操作整条流水线——20 个 <code style="background:var(--bg2);border-radius:4px;padding:0 5px;font-size:12px;color:var(--ac)">hub_*</code> 工具覆盖查队列/改元数据/发布/补投/加源/追任务。附属能力，不装也完全不影响 Web 管理台。</p>
-    <div class="agent-demo">
+    <div class="sec-head">
+      <span class="sec-num rv">03</span>
+      <div>
+        <h2 class="rv">挂上常驻，它自己上班</h2>
+        <p class="sec-sub rv">调度器每 tick 重读配置，设置面板里改的任何值即时生效、免重启。你只负责审核，剩下的交给它。</p>
+      </div>
+    </div>
+    <div class="bento">
+      <div class="bc wide rv"><div class="k">Scheduler</div><h3>自动轮询 + 连带下载</h3>
+        <p><code>auto_poll_interval_min</code> 分钟一轮；<code>auto_download_after_poll</code> 开了就连带下载处理。<code>auto_workdays_only</code> 让周末整 tick 休息（手动按钮不受影响）。</p>
+        <div class="demo">tick → <b>poll</b> → backup_db → <b>prune_stale</b> → verify → (optional) <b>download</b></div></div>
+      <div class="bc rv"><div class="k">Quota</div><h3>每日额度</h3>
+        <p><code>daily_download_limit</code> / <code>daily_upload_limit</code> 用完自动停，明天继续。卡片手动下载不占额度。</p></div>
+      <div class="bc rv"><div class="k">Schedule</div><h3>错峰定时</h3>
+        <p><code>publish_slots</code> 档位自动分配，间隔下限 <code>publish_slot_gap_h</code>；支持定时的平台同步对齐。</p></div>
+      <div class="bc rv"><div class="k">Hygiene</div><h3>积压老化</h3>
+        <p><code>stale_days</code> 天没动过的待下载条目自动跳过（可恢复），队列保持新鲜。</p></div>
+      <div class="bc rv"><div class="k">Reconcile</div><h3>启动调和</h3>
+        <p>进程死在任务中途的残留：启动时清孤儿文件、清卡死进度登记、报告断档条目。</p></div>
+      <div class="bc rv"><div class="k">Verify</div><h3>存活巡检</h3>
+        <p><code>cli.py verify</code> 复核已发稿件，下架/退回标出并桌面通知。</p></div>
+      <div class="bc rv"><div class="k">Backup</div><h3>每日快照</h3>
+        <p>sqlite 队列每天一份进 <code>data/backups/</code>，保留最近 7 份；任务历史落盘 <code>jobs.log</code>。</p></div>
+      <div class="bc wide rv"><div class="k">Doctor</div><h3>一体检三命令</h3>
+        <p><code>cli.py doctor</code> 查登录态/活动/队列/额度；<code>cli.py reconcile</code> 手动调和；<code>cli.py jobs</code> 看跨重启的任务历史。</p>
+        <div class="demo">$ cli.py doctor &nbsp;→&nbsp; <b>cookie ✓ · 登录态 ✓ · 今日已投 2/5 · 磁盘 41G</b></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 04 AGENT ══════════ -->
+<section class="sec" id="agent">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num rv">04</span>
+      <div>
+        <h2 class="rv">不想点鼠标，就把流水线交给 agent</h2>
+        <p class="sec-sub rv">四种接入方式，同一组 <code>hub_*</code> 工具：查队列 / 改元数据 / 发布 / 补投 / 加源 / 追任务。纯附属能力——不装，Web 管理台照常工作。</p>
+      </div>
+    </div>
+    <div class="agent">
       <div class="chat rv">
-        <div class="chat-bar">DeepSeek Harness · 装好后的使用预览<span class="dsh-badge">dsh-video-hub 插件</span></div>
+        <div class="chat-bar">agent 会话实录 · dsh-video-hub</div>
         <div class="chat-body">
           <div class="msg u">ready 里淘金那条，B站定时今晚8点，快手现在就发，抖音明早错峰</div>
-          <div class="tc">hub_list<span class="ar">(status="ready")</span> <span class="rs">→ 2 条</span></div>
-          <div class="tc">hub_edit<span class="ar">(1372, pub_platforms="bilibili,kuaishou,douyin")</span></div>
-          <div class="tc">hub_publish<span class="ar">(1372, dtime=20:00)</span> <span class="rs">→ job a3f1</span></div>
-          <div class="tc">hub_wait_job<span class="ar">(a3f1)</span> <span class="rs">→ done</span></div>
           <div class="msg a">已安排：<b>#1372 淘金实测</b><br>B站 → 定时 20:00 · 快手 → 已投递 ✓ · 抖音 → 错峰明早 08:00。文件等三平台全成功后自动清理。</div>
           <div class="msg u">快手那条为啥没标完成？</div>
-          <div class="tc">hub_get<span class="ar">(1372)</span> <span class="rs">→ extra_pub.kuaishou.ok=false</span></div>
           <div class="msg a">快手 cookie 过期返回 403，已记入投递留痕。补登录后说一声"补投1372"即可——<b>已成功的 B站/抖音不会重投</b>。</div>
         </div>
       </div>
-      <div class="path-list">
-        <div class="path top rv"><h4>🧩 DSH 插件<span class="tag">推荐</span></h4><p>DeepSeek Harness 用户：Discover 市场或命令行装<b>官方插件包</b>，20 个工具进 dsh 原生工具系统；发新版时 Discover 显示 Update available 一键升级。</p></div>
-        <div class="path rv"><h4>🔌 MCP Server</h4><p>Claude Code / Cursor / Devin / Windsurf 等：内置零依赖 stdio server，配一段 JSON 即用。</p></div>
-        <div class="path rv"><h4>📎 Agent Skill</h4><p>不想配 MCP：软链 SKILL.md 进 agent skills 目录，教它用 REST/CLI 驱动，含语义红线。</p></div>
-        <div class="path rv"><h4>🌐 裸 API / CLI</h4><p>任何能发 HTTP 的 agent：OpenAPI 自举，或直接调 CLI。最底层兜底。</p></div>
+      <div class="paths">
+        <div class="path top rv"><h4>DSH 原生插件<span class="tag">推荐</span></h4><p>20 个 <code>hub_*</code> 工具进 DeepSeek Harness 原生工具系统；插件市场一键安装，发新版提示升级。</p></div>
+        <div class="path rv" style="--d:.06s"><h4>MCP Server</h4><p>零协议依赖 stdio server（只需 httpx）。Claude Code / Cursor / Devin / Windsurf，配一段 JSON 即用。</p></div>
+        <div class="path rv" style="--d:.12s"><h4>Agent Skill</h4><p>不想配 MCP：软链 <code>SKILL.md</code> 进 skills 目录，教 agent 用 REST/CLI 驱动，含语义红线。</p></div>
+        <div class="path rv" style="--d:.18s"><h4>裸 API / CLI</h4><p>任何能发 HTTP 的 agent：<code>/openapi.json</code> 自举；或直接调 CLI。最底层兜底。</p></div>
       </div>
     </div>
-    <div class="acc-req rv">前置：所有接入方式都要求 video-hub 管理服务在跑（<code>cli.py serve</code> / 常驻），统一连 <code>http://127.0.0.1:8600</code> —— 先 <code>curl /api/stats</code> 健康检查再接线。</div>
+    <div class="acc-req rv">前置：所有接入方式都要求管理服务在跑（<code>cli.py serve</code> / 常驻），统一连 <code>http://127.0.0.1:8600</code> —— 先 <code>curl /api/stats</code> 健康检查再接线。</div>
     <div class="acc-grid">
-      <div class="acc rv"><div class="acc-hd">🧩 DSH 插件安装<span class="cp" data-acc="dshy">复制</span></div><pre id="dshy"><span class="c"># 方式1 · 插件市场: Plugins → 开「Custom plugin indexes」</span>
+      <div class="acc rv"><div class="acc-hd">DSH 插件安装<button class="cp" data-acc="dshy">复制</button></div><pre id="dshy"><span class="c"># 方式1 · 插件市场: Plugins → 开「Custom plugin indexes」</span>
 <span class="c"># → Discover → Add index source 填:</span>
-https://zhaojiale001016.github.io/video-hub/dsh-index.json
+<span class="u">https://zhaojiale001016.github.io/video-hub/dsh-index.json</span>
 
 <span class="c"># 方式2 · 命令行(子目录包用 path: 参数)</span>
 dsh plugin --profile desktop add \
@@ -403,7 +482,7 @@ dsh plugin --profile desktop add \
 
 <span class="c"># 装完重启 DSH; 换 API 地址: 覆盖 video-hub 条目</span>
 <span class="c"># config.api 或设环境变量 VIDEOHUB_API</span></pre></div>
-      <div class="acc rv"><div class="acc-hd">🔌 MCP 客户端配置<span class="cp" data-acc="mcpy">复制</span></div><pre id="mcpy"><span class="c"># claude_desktop_config.json / .mcp.json / Cursor / Devin</span>
+      <div class="acc rv" style="--d:.06s"><div class="acc-hd">MCP 客户端配置<button class="cp" data-acc="mcpy">复制</button></div><pre id="mcpy"><span class="c"># claude_desktop_config.json / .mcp.json / Cursor / Devin</span>
 "mcpServers": {
   "video-hub": {
     "command": "/path/to/video-hub/.venv/bin/python3",
@@ -411,39 +490,45 @@ dsh plugin --profile desktop add \
   }
 }
 <span class="c"># 零协议依赖, 只需 httpx(装过 requirements 就有)</span></pre></div>
-      <div class="acc rv"><div class="acc-hd">📎 Skill 软链<span class="cp" data-acc="skl">复制</span></div><pre id="skl"><span class="c"># 按你的 agent 选一个目录</span>
+      <div class="acc rv"><div class="acc-hd">Skill 软链<button class="cp" data-acc="skl">复制</button></div><pre id="skl"><span class="c"># 按你的 agent 选一个目录</span>
 ln -s /path/to/video-hub/skills/video-hub \
   ~/.claude/skills/video-hub    <span class="c"># Claude Code</span>
 ln -s /path/to/video-hub/skills/video-hub \
   ~/.codex/skills/video-hub     <span class="c"># Codex</span>
 ln -s /path/to/video-hub/skills/video-hub \
   ~/.devin/skills/video-hub     <span class="c"># Devin</span></pre></div>
-      <div class="acc rv"><div class="acc-hd">🌐 裸 API<span class="cp" data-acc="apir">复制</span></div><pre id="apir"><span class="c"># 交互文档</span>
-http://127.0.0.1:8600/docs
+      <div class="acc rv" style="--d:.06s"><div class="acc-hd">裸 API<button class="cp" data-acc="apir">复制</button></div><pre id="apir"><span class="c"># 交互文档</span>
+<span class="u">http://127.0.0.1:8600/docs</span>
 <span class="c"># OpenAPI schema</span>
-http://127.0.0.1:8600/openapi.json
+<span class="u">http://127.0.0.1:8600/openapi.json</span>
 <span class="c"># 示例: 列出 ready 队列</span>
 curl -s 'http://127.0.0.1:8600/api/items?status=ready'</pre></div>
     </div>
     <div class="toolset rv">
-      <div class="toolset-hd">agent 拿到的 20 个工具</div>
-      <div class="toolset-g">
-        <div><b>队列</b><div class="tchips"><s>hub_stats</s><s>hub_list</s><s>hub_get</s><s>hub_progress</s></div></div>
-        <div><b>操作</b><div class="tchips"><s>hub_publish</s><s>hub_publish_all</s><s>hub_poll</s><s>hub_download</s><s>hub_edit</s><s>hub_import</s><s>hub_skip</s><s>hub_retry</s><s>hub_regen</s><s>hub_delete_files</s></div></div>
-        <div><b>平台/源</b><div class="tchips"><s>hub_platforms</s><s>hub_sources</s><s>hub_add_source</s></div></div>
-        <div><b>任务</b><div class="tchips"><s>hub_jobs</s><s>hub_job</s><s>hub_wait_job</s></div></div>
-      </div>
+      <table>
+        <tr><th style="width:170px">CATEGORY</th><th>TOOLS · 20</th></tr>
+        <tr><td class="cat">QUEUE</td><td><div class="tchips"><s>hub_stats</s><s>hub_list</s><s>hub_get</s><s>hub_progress</s></div></td></tr>
+        <tr><td class="cat">ACTIONS</td><td><div class="tchips"><s>hub_publish</s><s>hub_publish_all</s><s>hub_poll</s><s>hub_download</s><s>hub_edit</s><s>hub_import</s><s>hub_skip</s><s>hub_retry</s><s>hub_regen</s><s>hub_delete_files</s></div></td></tr>
+        <tr><td class="cat">PLATFORM / SOURCE</td><td><div class="tchips"><s>hub_platforms</s><s>hub_sources</s><s>hub_add_source</s></div></td></tr>
+        <tr><td class="cat">JOBS</td><td><div class="tchips"><s>hub_jobs</s><s>hub_job</s><s>hub_wait_job</s></div></td></tr>
+      </table>
       <div class="toolset-note">语义红线内置：已发布稿件不可改 · 已成功平台绝不重投 · 部分失败文件保留=补投材料 · 长任务返回 job_id 用 hub_wait_job 收尾</div>
     </div>
   </div>
 </section>
 
-<section id="start">
+<!-- ══════════ 05 上手 ══════════ -->
+<section class="sec" id="setup">
   <div class="wrap">
-    <span class="sec-tag rv">Quickstart</span>
-    <h2 class="rv">跑起来</h2>
+    <div class="sec-head">
+      <span class="sec-num rv">05</span>
+      <div>
+        <h2 class="rv">十条命令以内，跑起来</h2>
+        <p class="sec-sub rv">Python ≥3.11 + ffmpeg。biliup 二进制在 README 里下。sau 引擎可选——只用 B站的话整段跳过。</p>
+      </div>
+    </div>
     <div class="qs rv">
-      <div class="qs-bar"><span>bash · Python ≥3.11 + ffmpeg · biliup 下载见 README</span><span class="cp" id="copyBtn">复制</span></div>
+      <div class="qs-bar"><span>bash</span><button class="cp" id="copyBtn">复制</button></div>
       <pre id="qsPre"><span class="c"># 环境</span>
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
@@ -461,37 +546,52 @@ cp config/sources.example.yaml config/sources.yaml
 
 <span class="c"># 启动 → http://127.0.0.1:8600 (设置面板勾选启用平台)</span>
 .venv/bin/python3 cli.py serve
+.venv/bin/python3 cli.py doctor               <span class="c"># 体检</span>
 
-<span class="c"># ── 接 AI agent(四选一) ──</span>
-<span class="c"># DSH 原生插件:</span>
-dsh plugin --profile desktop add ./plugins/dsh-video-hub
-<span class="c"># MCP:        cli.py mcp   → 配进 Claude/Cursor/Devin</span>
-<span class="c"># Skill:      软链 skills/video-hub → .claude/.codex/.devin skills 目录</span>
-<span class="c"># 裸 API:     http://127.0.0.1:8600/docs</span></pre>
+<span class="c"># ── 常驻托管 ──</span>
+<span class="c"># macOS: deploy/com.videohub.pipeline.plist.example → launchd</span>
+<span class="c"># Linux: deploy/video-hub.service.example           → systemd</span></pre>
     </div>
   </div>
 </section>
 
+<!-- ══════════ footer ══════════ -->
 <footer>
   <div class="wrap">
-    <div class="l">video-hub · MIT License · 使用者对自身发布行为负全部责任</div>
-    <div class="r">
-      <a href="https://github.com/zhaojiale001016/video-hub">GitHub</a>
-      <a href="https://github.com/zhaojiale001016/video-hub/releases">Releases</a>
-      <a href="https://github.com/zhaojiale001016/video-hub/issues">Issues</a>
+    <div class="foot-row">
+      <div class="foot-note">
+        <b>本地私有</b> · 管理台无鉴权，只监听 127.0.0.1（远端绑定直接拒绝启动）；cookie / 队列 / 代理账密全部留在 gitignore 的 <code>data/</code> 里，API 回显自动打码。<br><br>
+        <b>免责</b> · 本项目是第三方内容的中转/发布工具：请确认拥有合法使用权并遵守各平台条款；转载如实填出处，「自制」构成原创声明。使用者对自身发布行为负全部责任。
+      </div>
+      <div class="foot-links">
+        <a href="https://github.com/zhaojiale001016/video-hub">GitHub</a>
+        <a href="https://github.com/zhaojiale001016/video-hub/releases">Releases</a>
+        <a href="https://github.com/zhaojiale001016/video-hub/issues">Issues</a>
+        <a href="https://zhaojiale001016.github.io/video-hub/llms.txt">llms.txt</a>
+      </div>
+    </div>
+  </div>
+  <div class="wordmark" aria-hidden="true">video-hub</div>
+  <div class="wrap">
+    <div class="foot-base">
+      <span>© video-hub · MIT LICENSE</span>
+      <span>BUILT FOR LOCAL PIPELINES · NO CLOUD REQUIRED</span>
     </div>
   </div>
 </footer>
 
+</div><!-- /frame -->
+
 <script>
-const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+/* 入场 */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});
 document.querySelectorAll('.rv').forEach(el=>io.observe(el));
-document.getElementById('copyBtn').addEventListener('click',function(){
-  navigator.clipboard.writeText(document.getElementById('qsPre').innerText).then(()=>{this.textContent='已复制 ✓';setTimeout(()=>this.textContent='复制',1600)});
-});
-document.querySelectorAll('[data-acc]').forEach(b=>b.addEventListener('click',function(){
-  navigator.clipboard.writeText(document.getElementById(this.dataset.acc).innerText).then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='复制',1600)});
-}));
+
+/* 复制 */
+const copy=(btn,el)=>{navigator.clipboard.writeText(el.innerText).then(()=>{
+  const t=btn.textContent;btn.textContent='✓';setTimeout(()=>btn.textContent=t,1600)})};
+document.getElementById('copyBtn').addEventListener('click',function(){copy(this,document.getElementById('qsPre'))});
+document.querySelectorAll('[data-acc]').forEach(b=>b.addEventListener('click',function(){copy(this,document.getElementById(this.dataset.acc))}));
 </script>
 </body>
 </html>
