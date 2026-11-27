@@ -167,6 +167,8 @@ class DB:
             for p, v in res.items():
                 if not isinstance(v, dict):
                     continue
+                if p == "bilibili" and r["bvid"]:
+                    continue            # bvid 已计成功, extra_pub 同腿不重复计
                 slot = out.setdefault(p, [0, 0])
                 slot[0 if v.get("ok") else 1] += 1
         return out

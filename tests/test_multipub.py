@@ -129,6 +129,36 @@ def test_tencent_label_env_default_skip():
     assert env and env["SAU_TENCENT_CONTENT_LABEL"] == "none"
 
 
+def test_platform_meta_all_have_home():
+    """中枢面板依赖: 全部平台(含 B站)至少要有 home 直达链接。"""
+    for pid in ["bilibili"] + multipub.SAU_PLATFORMS:
+        meta = multipub.PLATFORM_META.get(pid) or {}
+        assert meta.get("home"), f"{pid} 缺 home 链接"
+        assert meta.get("icon"), f"{pid} 缺图标"
+
+
+def test_open_creator_errors(cfg, monkeypatch):
+    """无 meta/无 cookie 的平台要干净报错, 不拉起子进程。"""
+    ok, msg = multipub.open_creator(cfg, "no-such-platform", "home")
+    assert not ok and "链接" in msg
+    monkeypatch.setattr(multipub, "_cookie_file", lambda *a: None)
+    ok, msg = multipub.open_creator(cfg, "kuaishou", "home")
+    assert not ok and "登录态" in msg
+
+
+def test_open_creator_target_fallback(cfg, monkeypatch):
+    """未知 target 兜底回 home; 拉起命令含 home 链接与 cookie。"""
+    monkeypatch.setattr(multipub, "_cookie_file", lambda *a: Path("/tmp/ck.json"))
+    spawned = {}
+    def fake_popen(cmd, **kw):
+        spawned["cmd"], spawned["kw"] = cmd, kw
+    monkeypatch.setattr(multipub.subprocess, "Popen", fake_popen)
+    ok, url = multipub.open_creator(cfg, "kuaishou", "bogus")
+    assert ok and url == multipub.PLATFORM_META["kuaishou"]["home"]
+    assert multipub.PLATFORM_META["kuaishou"]["home"] in spawned["cmd"]
+    assert "/tmp/ck.json" in spawned["cmd"] and spawned["kw"]["start_new_session"]
+
+
 def test_tencent_label_env_override():
     env = _env_for("tencent", {"settings": {"tencent_content_label": "含AI生成内容"}})
     assert env["SAU_TENCENT_CONTENT_LABEL"] == "含AI生成内容"

@@ -38,6 +38,21 @@ def test_status_flow_and_counts(db):
     assert db.counts()["published"] == 1
 
 
+def test_platform_pub_counts(db):
+    import json
+    i = _add(db)
+    db.mark_published(i, "BV1xx", "ok")
+    db.update(i, extra_pub=json.dumps(
+        {"kuaishou": {"ok": True}, "douyin": {"ok": False},
+         "bilibili": {"ok": True, "bvid": "BV1xx"}}))
+    i2 = _add(db, sid="s2")
+    db.update(i2, extra_pub=json.dumps({"kuaishou": {"ok": True}}))
+    c = db.platform_pub_counts()
+    assert c["bilibili"] == [1, 0]            # bvid 计成功, extra_pub 去重不重复计
+    assert c["kuaishou"] == [2, 0]
+    assert c["douyin"] == [0, 1]
+
+
 def test_downloaded_today(db):
     i = _add(db)
     db.update(i, downloaded_at=int(time.time()))

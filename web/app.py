@@ -235,6 +235,8 @@ def get_platforms():
 @app.post("/api/platforms/{pid}/open")
 def platform_open(pid: str, body: dict = Body(default={})):
     """带 sau 登录态拉起真实浏览器直达创作平台页(target=home/manage/publish)。"""
+    if pid not in get_platforms():          # 未知 pid 拒在 glob 之前
+        raise HTTPException(404, f"未知平台 {pid}")
     ok, msg = multipub.open_creator(cfg, pid, (body or {}).get("target", "home"))
     if not ok:
         raise HTTPException(400, msg)

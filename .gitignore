@@ -15,6 +15,7 @@ data/
 cookies.json
 **/cookies/*.json
 vendor/sau/cookies/
+vendor/sau/logs/
 
 # ── 第三方二进制 ──
 bin/biliup
