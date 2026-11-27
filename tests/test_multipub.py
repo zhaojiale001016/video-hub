@@ -108,3 +108,31 @@ def test_generic_platform_thumb_and_tags(cfg):
 def test_title_limit_applied(cfg):
     cmd = _cmd_for("kuaishou", item=_item(title="x" * 100), cfg=cfg)
     assert len(cmd[cmd.index("--title") + 1]) == 30   # kuaishou 上限 30
+
+
+def _env_for(platform, cfg=None):
+    captured = {}
+    def fake_run(cmd, **kw):
+        captured["env"] = kw.get("env")
+        class R:
+            returncode = 0
+            stdout = "ok"
+            stderr = ""
+        return R()
+    with patch.object(multipub.subprocess, "run", fake_run):
+        multipub.publish_to(platform, _item(), cfg or {"settings": {}})
+    return captured["env"]
+
+
+def test_tencent_label_env_default_skip():
+    env = _env_for("tencent")
+    assert env and env["SAU_TENCENT_CONTENT_LABEL"] == "none"
+
+
+def test_tencent_label_env_override():
+    env = _env_for("tencent", {"settings": {"tencent_content_label": "含AI生成内容"}})
+    assert env["SAU_TENCENT_CONTENT_LABEL"] == "含AI生成内容"
+
+
+def test_non_tencent_no_label_env():
+    assert _env_for("kuaishou") is None

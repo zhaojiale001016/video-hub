@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.2 (2025-06)
+### Fixed
+- **视频号不再自动勾「含AI生成内容」标注**：vendored sau 上游硬编码该标注（其内容是AI生成）；`apply_original_statement` 补丁支持 `SAU_TENCENT_CONTENT_LABEL` 环境变量，`none/off/skip` 整段跳过；multipub 由新设置项 `tencent_content_label`（默认 `none`）注入——已发出去的两条在视频号助手后台可手动改标
+- 已标记标注的稿件不受影响（标注是发布时动作，不可追溯改）
+
 ## v1.7.1 (2025-06)
 ### Changed
 - **B站投稿默认走 `app` 接口**：B站已废弃客户端(web)提交接口，biliup 每次都先吃 WARN 再降级；新增 `submit_api` 设置项（默认 `app`，可改回 `web`）——实测 `app` 接口直接成功

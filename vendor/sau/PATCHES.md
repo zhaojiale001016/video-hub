@@ -8,6 +8,7 @@
 | 文件 | 改动 | 原因 |
 |---|---|---|
 | `uploader/ks_uploader/main.py` | `KUAISHOU_UPLOAD_TIMEOUT_SECONDS` 480 → **1500** | 原值对 >400MB 大文件上传不够用，提到 25 分钟 |
+| `uploader/tencent_uploader/main.py` | `apply_original_statement` 支持 `SAU_TENCENT_CONTENT_LABEL` 环境变量覆盖标注文案；`none/off/skip` 时整段跳过 | 上游硬编码「含AI生成内容」，搬运内容不该勾；multipub 由设置项 `tencent_content_label` 注入 |
 
 ## 本地集成约定（非补丁，是依赖关系）
 
