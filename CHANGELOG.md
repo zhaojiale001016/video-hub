@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.1.1 → v2.1.2 (2025-11) — 前端拆分回归修复
+
+- **fix**: index.html 拆分残留 `<style>`/`<script>` 孤儿开标签吞掉后续 HTML → 页面空白/JS 不执行，已删
+- **tests**: 页面外壳完整性 + 静态资源可达性回归断言(110例)
+- **docs**: SKILL.md 工具表补平台登录/直达/验证码行
+
 ## v2.1.1 (2025-11) — Agent 工具补齐 + 前端拆分
 
 - **hub_* 工具 20→23**：新增 `hub_platform_login`(拉起 sau 扫码登录) / `hub_platform_open`(登录态直达创作中心) / `hub_verify_code`(投喂验证码)——三个端点此前只通裸 API/前端，mcp+dsh 双端同步，dsh 插件发 0.3.0
