@@ -18,6 +18,7 @@ settings:
   daily_upload_limit: 5          # 每日投稿上限（养号期建议 1-3）
   default_copyright: 1           # 1=自制(可参加活动) 2=转载(需source,禁活动)
   daily_download_limit: 5        # 每日自动下载+生成上限；手动单条下载不受限
+  download_mix_lines: true       # 按内容线轮转下载: 每日额度跨线均摊, 不被单一线吃满
   download_dir: "data/downloads"
   db_file: "data/pipeline.db"
   archive_file: "data/downloaded.archive"

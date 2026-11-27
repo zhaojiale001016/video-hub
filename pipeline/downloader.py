@@ -359,6 +359,9 @@ def process_new_items(cfg: dict, db: DB, metagen=None, limit: int | None = None,
             (it for s in ("new", "downloaded")
              for it in db.list_items(status=s, limit=limit or 10 ** 6)),
             key=lambda x: -x["id"])
+        # 按内容线轮转混排: 每日额度跨线均摊, 不被刚轮询完的单一线吃满
+        if C.get_setting(cfg, "download_mix_lines", True) is not False:
+            items = _interleave_by_line(items)
     cap = int(C.get_setting(cfg, "daily_download_limit", 0) or 0)
     results = []
     for idx, item in enumerate(items, 1):
@@ -414,6 +417,28 @@ def process_new_items(cfg: dict, db: DB, metagen=None, limit: int | None = None,
         if progress:
             progress(msg)
     return results
+
+def _interleave_by_line(items: list[dict]) -> list[dict]:
+    """内容线轮转混排: 每线轮流取一条(a,b,c,a,b,c…), 任一线耗尽自然让位。
+    线内保持传入顺序(id倒序, 新先下)。日额度因此跨线均摊。"""
+    lanes: dict[str, list[dict]] = {}
+    order: list[str] = []
+    for it in items:
+        ln = it.get("line") or "default"
+        if ln not in lanes:
+            lanes[ln] = []
+            order.append(ln)
+        lanes[ln].append(it)
+    out: list[dict] = []
+    while True:
+        progressed = False
+        for ln in order:
+            if lanes[ln]:
+                out.append(lanes[ln].pop(0))
+                progressed = True
+        if not progressed:
+            return out
+
 
 LOCAL_EXTS = {".mp4", ".mkv", ".webm", ".mov", ".flv", ".avi", ".ts", ".m4v"}
 

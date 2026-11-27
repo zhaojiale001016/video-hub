@@ -73,3 +73,40 @@ def test_trim_skips_tiny_black(tmp_path):
     v = tmp_path / "video.mp4"
     _make_video(v, black_secs=0.2, body_secs=1.5)   # <0.4s 不值得重编码
     assert downloader.trim_leading_black(str(v)) == 0.0
+
+
+def _mk_items(spec: dict[str, int]) -> list[dict]:
+    """{line: 条数} → id 递减的假条目列表。"""
+    i, out = 100, []
+    for ln, n in spec.items():
+        for _ in range(n):
+            out.append({"id": i, "line": ln})
+            i -= 1
+    return out
+
+
+def test_interleave_round_robin():
+    items = _mk_items({"a": 3, "b": 3, "c": 3})
+    got = [it["line"] for it in downloader._interleave_by_line(items)]
+    assert got == ["a", "b", "c"] * 3
+
+
+def test_interleave_uneven_lines():
+    items = _mk_items({"a": 4, "b": 1, "c": 2})
+    got = [it["line"] for it in downloader._interleave_by_line(items)]
+    assert got[:3] == ["a", "b", "c"]          # 首轮每线各一
+    assert got.count("b") == 1 and got.count("c") == 2
+    assert len(got) == 7                        # 耗尽线自然让位
+
+
+def test_interleave_preserves_intra_order():
+    items = [{"id": 5, "line": "a"}, {"id": 3, "line": "a"},
+             {"id": 4, "line": "b"}]
+    got = [(it["line"], it["id"]) for it in downloader._interleave_by_line(items)]
+    assert got == [("a", 5), ("b", 4), ("a", 3)]   # 线内保持原序
+
+
+def test_interleave_missing_line_key():
+    items = [{"id": 1}, {"id": 2, "line": "x"}]
+    got = downloader._interleave_by_line(items)
+    assert len(got) == 2                          # 无线名归 default, 不丢
