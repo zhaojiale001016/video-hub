@@ -338,7 +338,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
         <p>下载前先拿标题搜 B站：相似度 <b>≥0.72</b> 拦截，<b>≥0.85</b> 直接跳过并清文件，自动排除自己已发的稿。两道阈值都可在设置里调。</p></div>
       <div class="step rv"><div class="no">03</div>
         <h3>下载入库<code>yt-dlp + archive</code></h3>
-        <p>清晰度上限、代理、每日额度 <code>daily_download_limit</code>、磁盘水位 <code>min_free_gb</code> 都是守卫。下载记录进 archive，重下永不重复拉流。</p></div>
+        <p>清晰度上限、代理、每日额度 <code>daily_download_limit</code>、磁盘水位 <code>min_free_gb</code> 都是守卫。顺手做片头纯黑段修剪、按亮度+信息量择优出封面、自动裁 <b>3:4 竖封</b>。archive 记录保证重下永不重复拉流。</p></div>
       <div class="step rv"><div class="no">04</div>
         <h3>字幕：生肉 → 熟肉<code>whisper</code></h3>
         <p>按内容线配策略：<code>always / auto / subs_only / never</code>。auto 模式先试转前 3 分钟、VAD 过滤幻觉、≥60字/分钟才判定有解说。字号随分辨率自适应，烧录或外挂可选。</p></div>
@@ -385,14 +385,15 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
       </div>
       <div class="panel rv" style="--d:.08s">
         <h3>social-auto-upload<span class="tag">13 平台 · 浏览器自动化</span></h3>
-        <p>vendored 副本独立 venv 隔离。各平台能力有差异——封面/标签/定时参数按能力矩阵自动适配，不支持的平台自动跳过对应参数。</p>
+        <p>vendored 副本独立 venv 隔离。各平台能力有差异——封面/标签/定时参数按能力矩阵自动适配，不支持的平台自动跳过对应参数。分平台错峰 <code>offset_min</code>、有头模式 <code>headed</code> 人工过风控、自主声明 <code>declaration</code> 都可按平台配。</p>
         <div class="matrix">
           <table>
             <tr><th>PLATFORM</th><th>封面</th><th>定时</th><th>说明</th></tr>
-            <tr><td>kuaishou · 快手</td><td class="y">✓</td><td class="y">✓</td><td>上传超时调至 1500s</td></tr>
-            <tr><td>tencent · 视频号</td><td class="y">✓ 横竖版</td><td class="y">✓</td><td>可填内容标注</td></tr>
-            <tr><td>douyin · 抖音</td><td class="y">✓ 横竖版</td><td class="y">✓</td><td>—</td></tr>
-            <tr><td>weibo / xiaohongshu 等</td><td class="y">✓</td><td class="n">✗</td><td>定时参数自动略过</td></tr>
+            <tr><td>kuaishou · 快手</td><td class="y">✓ 竖封优先</td><td class="y">✓</td><td>上传超时调至 1500s</td></tr>
+            <tr><td>tencent · 视频号</td><td class="y">✓ 横竖双槽</td><td class="y">✓</td><td>可填内容标注</td></tr>
+            <tr><td>douyin · 抖音</td><td class="y">✓ 横竖双槽</td><td class="y">✓</td><td>验证码 Web 通道</td></tr>
+            <tr><td>xiaohongshu · 小红书</td><td class="y">✓ 竖封优先</td><td class="y">✓</td><td>—</td></tr>
+            <tr><td>weibo / instagram 等</td><td class="y">✓</td><td class="n">✗</td><td>定时参数自动略过</td></tr>
             <tr><td>zhihu / facebook-page</td><td class="n">✗</td><td class="n">✗</td><td>纯视频正文投递</td></tr>
           </table>
         </div>
@@ -422,12 +423,12 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
     </div>
     <div class="bento">
       <div class="bc wide rv"><div class="k">Scheduler</div><h3>自动轮询 + 连带下载</h3>
-        <p><code>auto_poll_interval_min</code> 分钟一轮；<code>auto_download_after_poll</code> 开了就连带下载处理。<code>auto_workdays_only</code> 让周末整 tick 休息（手动按钮不受影响）。</p>
+        <p><code>auto_poll_interval_min</code> 分钟一轮，墙钟到点制——分小段睡眠、唤醒补轮，笔记本合盖不误点。<code>auto_download_after_poll</code> 开了就连带下载处理；<code>auto_workdays_only</code> 让周末整 tick 休息（手动按钮不受影响）。</p>
         <div class="demo">tick → <b>poll</b> → backup_db → <b>prune_stale</b> → verify → (optional) <b>download</b></div></div>
       <div class="bc rv"><div class="k">Quota</div><h3>每日额度</h3>
         <p><code>daily_download_limit</code> / <code>daily_upload_limit</code> 用完自动停，明天继续。卡片手动下载不占额度。</p></div>
       <div class="bc rv"><div class="k">Schedule</div><h3>错峰定时</h3>
-        <p><code>publish_slots</code> 档位自动分配，间隔下限 <code>publish_slot_gap_h</code>；支持定时的平台同步对齐。</p></div>
+        <p><code>publish_slots</code> 档位自动分配，间隔下限 <code>publish_slot_gap_h</code>；<code>offset_min</code> 让其他平台相对 B站再后移，防同刻发布被风控画像。</p></div>
       <div class="bc rv"><div class="k">Hygiene</div><h3>积压老化</h3>
         <p><code>stale_days</code> 天没动过的待下载条目自动跳过（可恢复），队列保持新鲜。</p></div>
       <div class="bc rv"><div class="k">Reconcile</div><h3>启动调和</h3>
@@ -436,6 +437,10 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
         <p><code>cli.py verify</code> 复核已发稿件，下架/退回标出并桌面通知。</p></div>
       <div class="bc rv"><div class="k">Backup</div><h3>每日快照</h3>
         <p>sqlite 队列每天一份进 <code>data/backups/</code>，保留最近 7 份；任务历史落盘 <code>jobs.log</code>。</p></div>
+      <div class="bc rv"><div class="k">ErrFmt</div><h3>错误归类</h3>
+        <p>子进程/第三方报错按模式归类——登录失效/风控/超时/磁盘/限流/审核，UI 不吃原始 stderr。</p></div>
+      <div class="bc rv"><div class="k">Mix</div><h3>内容线混排</h3>
+        <p><code>download_mix_lines</code> 批量下载按线轮转取稿，每日额度跨线均摊，不被单一线吃满。</p></div>
       <div class="bc wide rv"><div class="k">Doctor</div><h3>一体检三命令</h3>
         <p><code>cli.py doctor</code> 查登录态/活动/队列/额度；<code>cli.py reconcile</code> 手动调和；<code>cli.py jobs</code> 看跨重启的任务历史。</p>
         <div class="demo">$ cli.py doctor &nbsp;→&nbsp; <b>cookie ✓ · 登录态 ✓ · 今日已投 2/5 · 磁盘 41G</b></div></div>
@@ -450,7 +455,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
       <span class="sec-num rv">04</span>
       <div>
         <h2 class="rv">不想点鼠标，就把流水线交给 agent</h2>
-        <p class="sec-sub rv">四种接入方式，同一组 <code>hub_*</code> 工具：查队列 / 改元数据 / 发布 / 补投 / 加源 / 追任务。纯附属能力——不装，Web 管理台照常工作。</p>
+        <p class="sec-sub rv">四种接入方式，同一组 <code>hub_*</code> 工具：查队列 / 改元数据 / 发布 / 补投 / 加源 / 平台登录 / 喂验证码 / 追任务。纯附属能力——不装，Web 管理台照常工作。</p>
       </div>
     </div>
     <div class="agent">
