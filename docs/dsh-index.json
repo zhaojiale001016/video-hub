@@ -8,7 +8,7 @@
     {
       "name": "dsh-video-hub",
       "title": "video-hub",
-      "description": "本地视频搬运中台的 20 个 hub_* 工具：查队列/改元数据/发布/补投/加源/追任务进度",
+      "description": "本地视频搬运中台的 23 个 hub_* 工具：查队列/改元数据/发布/补投/加源/追任务进度",
       "icon": "icons/dsh-video-hub.svg",
       "author": "zhaojiale001016",
       "homepage": "https://github.com/zhaojiale001016/video-hub",
