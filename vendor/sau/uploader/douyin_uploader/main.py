@@ -877,32 +877,28 @@ class DouYinVideo(DouYinBaseUploader):
         #   ② 帧选择区「上传封面」——drag 区含 .semi-upload-drag-area-main-text「点击上传文件或拖拽…」。
         # 旧代码用 .first 取到了①，封面被塞进 AI 参考图槽→真封面没设上、检测/AI生成一直转，
         # 「完成」永远关不掉弹窗→挡住发布→超时（用户 F12 实测的真根因）。
-        # 改为按 main-text 拖拽区精确定位②的上传 input，取不到再 .last 兜底。
-        cover_upload = cover_locator.locator(
-            '.semi-upload:has(.semi-upload-drag-area-main-text) input.semi-upload-hidden-input'
-        ).first
-        if await cover_upload.count() == 0:
-            cover_upload = cover_locator.locator("input.semi-upload-hidden-input").last
+        # _upload_slot 内按 main-text 拖拽区精确定位②，取不到再 .last 兜底。
+        async def _upload_slot(tab_text: str, path: str, tag: str) -> None:
+            """切到指定封面槽 tab → 定位该槽上传 input → 塞文件等预览。"""
+            try:
+                await cover_locator.get_by_text(tab_text, exact=True).first.click(timeout=3000)
+                await page.wait_for_timeout(800)
+            except Exception:
+                pass
+            inp = cover_locator.locator(
+                '.semi-upload:has(.semi-upload-drag-area-main-text) input.semi-upload-hidden-input'
+            ).first
+            if await inp.count() == 0:
+                inp = cover_locator.locator("input.semi-upload-hidden-input").last
+            await inp.set_input_files(path)
+            await page.wait_for_timeout(3000)
+            douyin_logger.info(_msg("🖼️", f"{tag}封面已上传到预览"))
 
+        # 横竖双槽独立设置(原 elif: 给了竖版就跳过横版 → 横封面回落黑首帧)
         if self.thumbnail_portrait_path:
-            # 弹窗默认就在“设置竖封面”页；防御性点一下 tab（已激活则忽略）
-            try:
-                await cover_locator.get_by_text("设置竖封面", exact=True).first.click(timeout=3000)
-                await page.wait_for_timeout(800)
-            except Exception:
-                pass
-            await cover_upload.set_input_files(self.thumbnail_portrait_path)
-            await page.wait_for_timeout(3000)
-            douyin_logger.info(_msg("🖼️", "竖版封面已上传到预览"))
-        elif self.thumbnail_landscape_path:
-            try:
-                await cover_locator.get_by_text("设置横封面", exact=True).first.click(timeout=3000)
-                await page.wait_for_timeout(800)
-            except Exception:
-                pass
-            await cover_upload.set_input_files(self.thumbnail_landscape_path)
-            await page.wait_for_timeout(3000)
-            douyin_logger.info(_msg("🖼️", "横版封面已上传到预览"))
+            await _upload_slot("设置竖封面", self.thumbnail_portrait_path, "竖版")
+        if self.thumbnail_landscape_path:
+            await _upload_slot("设置横封面", self.thumbnail_landscape_path, "横版")
 
         # ── 等"完成"按钮解禁：封面图处理完成前，"完成"是 semi-button-disabled，点了无效 ──
         def _finish_btn():
