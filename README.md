@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/zhaojiale001016/video-hub)](https://github.com/zhaojiale001016/video-hub/releases)
 [![CI](https://github.com/zhaojiale001016/video-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/zhaojiale001016/video-hub/actions)
 
-外网优质视频 → 自动下载 → 字幕翻译烧录 → LLM 生成中文标题/简介 → Web 管理台审核 → 一键发布 **B站 / 快手 / 视频号**（三平台独立勾选）。
+外网优质视频 → 自动下载 → 字幕翻译烧录 → LLM 生成中文标题/简介 → Web 管理台审核 → 一键发布 **B站**（内置）→ 可选同步 **sau 全平台**（快手/视频号/抖音/小红书/微博/TikTok 等 13 个，逐平台独立投递互不影响）。
 
 ## 流程
 
