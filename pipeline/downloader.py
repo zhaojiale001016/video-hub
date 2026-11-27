@@ -195,6 +195,16 @@ def download_item(item: dict, cfg: dict) -> dict:
                     cover = jpg
             files["cover_path"] = cover
             break
+    if files["file_path"]:
+        # 源缩略图过暗(首帧黑屏类)或缺失 → 用智能抽帧(跳黑帧)生成/替换
+        if files["cover_path"] and _frame_luminance(
+                Path(files["cover_path"])) < 20:
+            log.info("源缩略图过暗(%s), 改用视频智能抽帧", files["cover_path"])
+            files["cover_path"] = ""
+        if not files["cover_path"]:
+            alt = _smart_cover(files["file_path"], item_dir / "video.jpg")
+            if alt:
+                files["cover_path"] = alt
     if files["cover_path"]:
         pc = _make_portrait_cover(files["cover_path"], item_dir)
         if pc:
@@ -208,6 +218,47 @@ def download_item(item: dict, cfg: dict) -> dict:
     if not files["file_path"]:
         raise RuntimeError("download produced no video file")
     return files
+
+
+def _frame_luminance(img_path: Path) -> float:
+    """灰度均值 0~255; <25 基本可视为黑屏/暗场帧。"""
+    try:
+        from PIL import Image, ImageStat
+        with Image.open(img_path) as im:
+            return ImageStat.Stat(im.convert("L").resize((32, 18))).mean[0]
+    except Exception:
+        return 0.0
+
+
+def _smart_cover(video_path: str, dst: Path) -> str:
+    """跳过黑屏帧抽封面: 多个候选时间点抽小样, 亮度评分取第一张非黑帧;
+    全黑则兜底最亮帧 → dst 全分辨率输出。失败返回""。"""
+    dur = _probe_duration(video_path) or 0
+    cands = [t for t in (0.5, 1, 2, 3, 5, 8, dur * .1, dur * .25, dur * .5)
+             if 0 <= t <= max(dur - .2, 0)] or [0]
+    tmp = dst.parent / "_cv_probe.jpg"
+    best_ts, best_score = cands[0], -1.0
+    for ts in cands:
+        r = subprocess.run(
+            ["ffmpeg", "-y", "-ss", f"{ts:.2f}", "-i", video_path,
+             "-frames:v", "1", "-vf", "scale=160:-2", "-q:v", "6", str(tmp)],
+            capture_output=True)
+        if r.returncode != 0 or not tmp.exists():
+            continue
+        score = _frame_luminance(tmp)
+        if score >= 28:                    # 非黑屏帧 → 直接用
+            best_ts = ts
+            break
+        if score > best_score:
+            best_ts, best_score = ts, score
+    tmp.unlink(missing_ok=True)
+    r = subprocess.run(
+        ["ffmpeg", "-y", "-ss", f"{best_ts:.2f}", "-i", video_path,
+         "-frames:v", "1", "-q:v", "3", str(dst)], capture_output=True)
+    ok = r.returncode == 0 and dst.exists() and dst.stat().st_size > 0
+    log.info("smart cover: ts=%.2fs score=%.0f -> %s", best_ts,
+             max(best_score, 0), dst if ok else "FAILED")
+    return str(dst) if ok else ""
 
 
 def _make_portrait_cover(cover_path: str, item_dir: Path) -> str:
@@ -367,9 +418,7 @@ def import_local_file(path: str, cfg: dict, db: DB, line: str = "local",
     shutil.copy2(str(p), str(dst))
     files = {"file_path": str(dst), "copyright": 1}   # 本地文件无出处→默认自制, 可抽屉改
     cover = item_dir / "video.jpg"
-    r = subprocess.run(["ffmpeg", "-y", "-i", str(dst), "-frames:v", "1",
-                        "-q:v", "3", str(cover)], capture_output=True)
-    if r.returncode == 0 and cover.exists():
+    if _smart_cover(str(dst), cover):
         files["cover_path"] = str(cover)
         pc = _make_portrait_cover(str(cover), item_dir)
         if pc:

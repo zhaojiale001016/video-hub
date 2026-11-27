@@ -154,6 +154,20 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
         raise PublishError(f"status={item.get('status')} 不可投稿(需 ready)")
     if not item.get("file_path"):
         raise PublishError("缺少视频文件")
+    # 存量黑封面补救: 封面缺失/过暗(视频首帧黑屏类) → 发布前智能抽帧重生成(横+竖)
+    from . import downloader as _dl
+    cp = item.get("cover_path") or ""
+    if not cp or not Path(cp).exists() \
+            or _dl._frame_luminance(Path(cp)) < 20:
+        item_dir = Path(item["file_path"]).parent
+        alt = _dl._smart_cover(item["file_path"], item_dir / "video.jpg")
+        if alt:
+            upd = {"cover_path": alt}
+            if pc := _dl._make_portrait_cover(alt, item_dir):
+                upd["cover_portrait_path"] = pc
+            db.update(item_id, **upd)
+            item.update(upd)
+            log.info("#%s 封面过暗/缺失, 发布前已智能抽帧重生成", item_id)
     sel = selected_platforms(item)
     if sel is not None and not sel:
         raise PublishError("未勾选任何发布平台")
