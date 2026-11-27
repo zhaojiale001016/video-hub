@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.2.1 (2025-11) — 控制台对账修复 + 默认调参
+
+- **fix**: doVerifyCode api() 参数序写反致验证码按钮失效；publish() 对 published 条目读表单崩溃(补投按钮失效)；PUT settings 白名单吞掉 extra_platforms 的 cover/offset_min/headed/declaration → 平台页封面下拉假生效，白名单扩全+非法值 400
+- **平台卡**：⚙ 参数区(cover/offset_min/headed 可视化) + 🖥 带登录态拉起创作中心
+- **调参**：daily_upload_limit 默认 5→3(条目级=每平台限额, 养号安全带)；本地四平台 offset_min 错峰
+- **UI**：管理台主色 B站粉→中性黑(对齐工程风)；官网补封面策略
+- **tests**：extra_platforms 持久化回归+3 → 118/118
+
 ## v2.2.0 (2025-11) — 全平台化加固
 
 - **撞稿预检多平台化**：precheck 后端注册表（B站搜索 + YouTube ytsearch 免登录），按条目目标平台逐平台搜、hit 带 platform 标记；抖音/快手/小红书/视频号无公开搜索→本地防线兜底（source_id 唯一键+内容指纹+标题撞库）
