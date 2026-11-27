@@ -848,9 +848,13 @@ def _scheduler():
             time.sleep(60)
             continue
         wait = 120 if first else interval * 60
-        _sched["next_poll"] = time.time() + wait
+        deadline = time.time() + wait
+        _sched["next_poll"] = deadline
         first = False
-        time.sleep(wait)
+        # 墙钟到点制: 分小段睡并比对时间。系统睡眠会冻结 monotonic sleep,
+        # 唤醒后 deadline 已过 → 立即补 tick, 不再把当轮推迟整个间隔
+        while time.time() < deadline:
+            time.sleep(min(60, max(1, deadline - time.time())))
         try:
             # 工作日限制: 周六日(5,6)整 tick 跳过,手动操作不受影响
             if (C.get_setting(cfg, "auto_workdays_only", True)
