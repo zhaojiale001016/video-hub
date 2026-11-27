@@ -30,6 +30,7 @@ settings:
   auto_workdays_only: true       # 周六日不自动执行, 手动不受影响
   auto_download_after_poll: true # 轮询完自动下载+生成标题
   delete_after_publish: true     # 投稿成功后删除本地文件
+  trim_black_intro: true         # 剪掉片头纯黑段(0.4s~8s): 防平台回落到黑首帧当封面
   publish_slots: ["12:00", "18:00", "19:30", "21:00", "22:30"]  # 错峰定时档
   per_source_poll_cap: 15        # 每源每轮发现上限(防单一搜索源刷爆队列)
   min_free_gb: 10                # 磁盘剩余低于此值暂停下载

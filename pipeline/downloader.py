@@ -196,6 +196,9 @@ def download_item(item: dict, cfg: dict) -> dict:
             files["cover_path"] = cover
             break
     if files["file_path"]:
+        # 片头纯黑段: 不止封面黑, 快手等平台播放器直接显首帧。默认剪掉
+        if C.get_setting(cfg, "trim_black_intro", True) is not False:
+            trim_leading_black(files["file_path"])
         # 源缩略图过暗(首帧黑屏类)或缺失 → 用智能抽帧(跳黑帧)生成/替换
         if files["cover_path"] and _frame_luminance(
                 Path(files["cover_path"])) < 20:
@@ -218,6 +221,45 @@ def download_item(item: dict, cfg: dict) -> dict:
     if not files["file_path"]:
         raise RuntimeError("download produced no video file")
     return files
+
+
+def _leading_black_end(video_path: str) -> float:
+    """探测开头纯黑段的结束时刻(s); 开头不黑返回0。只扫前12s。"""
+    import re
+    r = subprocess.run(
+        ["ffmpeg", "-t", "12", "-i", video_path, "-an",
+         "-vf", "blackdetect=d=0.08:pix_th=0.10", "-f", "null", "-"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    m = re.search(r"black_start:0(?:\.0+)?\s+black_end:([\d.]+)", r.stderr or "")
+    return float(m.group(1)) if m else 0.0
+
+
+def trim_leading_black(video_path: str) -> float:
+    """剪掉开头纯黑段并返回剪掉的秒数(0=没动)。
+    只对 0.4s~8s 的黑段动手: <0.4s 不值得重编码, >8s 更像有内容的开场;
+    仅处理 mp4/mov(yt-dlp merge 恒出 mp4)。重编码保证剪点精确——
+    -c copy 只能贴关键帧, 会把残余黑帧留在开头。"""
+    end = _leading_black_end(video_path)
+    if not (0.4 <= end <= 8):
+        return 0.0
+    src = Path(video_path)
+    if src.suffix.lower() not in (".mp4", ".mov"):
+        log.info("trim black intro: 跳过非mp4容器 %s", src.name)
+        return 0.0
+    tmp = src.with_name(src.stem + "_trimmed.mp4")
+    r = subprocess.run(
+        ["ffmpeg", "-y", "-ss", f"{end:.2f}", "-i", video_path,
+         "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+         "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart",
+         str(tmp)], capture_output=True)
+    ok = r.returncode == 0 and tmp.exists() and tmp.stat().st_size > 0
+    if ok:
+        tmp.replace(src)
+    else:
+        tmp.unlink(missing_ok=True)
+    log.info("trim black intro: cut=%.2fs %s", end,
+             "OK" if ok else f"FAILED(rc={r.returncode})")
+    return end if ok else 0.0
 
 
 def _frame_luminance(img_path: Path) -> float:
@@ -417,6 +459,8 @@ def import_local_file(path: str, cfg: dict, db: DB, line: str = "local",
     dst = item_dir / ("video" + p.suffix.lower())
     shutil.copy2(str(p), str(dst))
     files = {"file_path": str(dst), "copyright": 1}   # 本地文件无出处→默认自制, 可抽屉改
+    if C.get_setting(cfg, "trim_black_intro", True) is not False:
+        trim_leading_black(str(dst))            # 片头纯黑→平台首帧兜底全黑, 先剪掉
     cover = item_dir / "video.jpg"
     if _smart_cover(str(dst), cover):
         files["cover_path"] = str(cover)

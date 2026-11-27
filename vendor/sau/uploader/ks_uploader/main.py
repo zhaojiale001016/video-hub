@@ -606,7 +606,25 @@ class KSVideo(KSBaseUploader):
         file_input = modal.locator('input[type="file"]')
         await file_input.wait_for(state="attached", timeout=30000)
         await file_input.set_input_files(self.thumbnail_path)
-        await asyncio.sleep(1)
+
+        # 等封面上传真正完成再确认: 预览图出现 + 上传中指示消失。
+        # 原先固定 sleep(1) 有竞态——大图还在传就点确认, 封面被静默丢弃,
+        # 发布后平台回落到视频首帧(黑屏开场→黑封面)
+        preview = modal.locator('.ant-upload-list-item img, .ant-upload-list img, [class*="upload-list"] img')
+        uploading = modal.locator('.ant-upload-list-item-uploading, [class*="loading"], [class*="spinning"], [class*="progress"]')
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + 25
+        ready = False
+        while loop.time() < deadline:
+            if await preview.count() > 0 and await uploading.count() == 0:
+                ready = True
+                break
+            await asyncio.sleep(0.5)
+        if ready:
+            kuaishou_logger.info(_msg("🖼️", "封面预览出来了, 小人确认"))
+        else:
+            kuaishou_logger.warning(_msg("😐", "封面预览没等到, 可能还在传, 小人再等一会"))
+            await asyncio.sleep(4)
 
         confirm_button = modal.get_by_role("button", name="确认", exact=True)
         await confirm_button.wait_for(state="visible", timeout=10000)
@@ -614,6 +632,15 @@ class KSVideo(KSBaseUploader):
 
         await modal.wait_for(state="hidden", timeout=30000)
         kuaishou_logger.success(_msg("🥳", "封面已经设置完成"))
+
+        # 留证据: 封面区截图, 便于事后核对封面是否真正生效
+        try:
+            from pathlib import Path as _P
+            dbg = _P(self.thumbnail_path).parent / "ks_cover_debug.png"
+            await cover_label.locator("xpath=..").screenshot(path=str(dbg))
+            kuaishou_logger.info(_msg("📸", f"封面区截图: {dbg}"))
+        except Exception as exc:
+            kuaishou_logger.warning(_msg("😐", f"封面截图没截上(不影响发布): {exc}"))
 
     async def upload(self, playwright: Playwright) -> None:
         kuaishou_logger.info(_msg("🧍", "小人先检查 cookie、视频文件、封面和发布时间"))
