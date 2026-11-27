@@ -135,7 +135,10 @@ def test_tencent_label_env_override():
 
 
 def test_non_tencent_no_label_env():
-    assert _env_for("kuaishou") is None
+    env = _env_for("kuaishou")
+    assert env is not None                        # 现在有 SAU_DEBUG_DIR
+    assert "SAU_TENCENT_CONTENT_LABEL" not in env  # 标注 env 仅腾讯专属
+    assert env["SAU_DEBUG_DIR"].endswith("data/debug")
 
 
 def test_tencent_dual_covers(tmp_path, monkeypatch):
