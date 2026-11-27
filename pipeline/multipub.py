@@ -109,6 +109,11 @@ def publish_to(platform: str, item: dict, cfg: dict, timeout: int = 1800) -> dic
         cmd += ["--headed"]
     if platform not in _NO_TAGS:
         cmd += ["--tags", ",".join(tags[:lim["tags"]])]
+    # 自主声明(抖音等): extra_platforms.<p>.declaration="内容由AI生成" 显式才标,
+    # 默认不标——误标会误导平台且损害真实视频分发
+    decl = ((cfg.get("extra_platforms") or {}).get(platform) or {}).get("declaration")
+    if decl:
+        cmd += ["--declaration", str(decl)]
     if platform not in _NO_THUMB:
         cover = item.get("cover_path") or ""
         portrait = item.get("cover_portrait_path") or ""

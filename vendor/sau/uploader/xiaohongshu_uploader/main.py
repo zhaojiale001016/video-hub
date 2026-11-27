@@ -595,23 +595,35 @@ class XiaoHongShuVideo(XiaoHongShuBaseUploader):
             if not await file_input.count():
                 file_input = page.locator('input[type="file"][accept*="image"]').last
             await file_input.set_input_files(thumbnail_path)
-            await page.wait_for_timeout(4000)  # 等图片加载+裁剪渲染
 
-            # 4. 点「确定」按钮
+            # 等封面上传+裁剪预览渲染完(原固定4s: 大图没渲完就点确定会静默丢封面)
+            preview_img = page.locator('div.d-modal img').first
+            try:
+                await preview_img.wait_for(state="visible", timeout=20000)
+            except Exception:
+                xiaohongshu_logger.warning(_msg("🖼️", "封面预览20s没出来, 按继续处理"))
+            await page.wait_for_timeout(1000)
+
+            # 4. 点「确定」按钮(等可用态: 裁剪渲染期间按钮常置灰)
             modal_footer = page.locator("div.d-modal-footer")
             confirm = modal_footer.get_by_text("确定", exact=True).first
             if not await confirm.count():
                 confirm = page.get_by_role("button", name="确定").first
             await confirm.wait_for(state="visible", timeout=10000)
+            for _ in range(20):   # 最多10s等解除置灰
+                cls = await confirm.get_attribute("class") or ""
+                if await confirm.get_attribute("disabled") is None and "disabled" not in cls:
+                    break
+                await page.wait_for_timeout(500)
             await confirm.click()
 
-            # 5. 等弹窗关闭
+            # 5. 等弹窗真正关闭才算成功(原吞异常→没设上也报成功)
             modal = page.locator("div.d-modal")
             try:
                 await modal.first.wait_for(state="hidden", timeout=15000)
+                xiaohongshu_logger.success(_msg("🥳", "封面已经设置完成"))
             except Exception:
-                pass
-            xiaohongshu_logger.success(_msg("🥳", "封面已经设置完成"))
+                xiaohongshu_logger.warning(_msg("🖼️", "封面弹窗未关闭, 可能没设上, 用首帧兜底"))
         except Exception as exc:
             xiaohongshu_logger.warning(_msg("🖼️", f"封面设置失败，跳过该步骤继续发布（用视频首帧）：{exc}"))
             try:
