@@ -118,10 +118,12 @@ cd vendor/sau && python3 -m venv .venv && .venv/bin/pip install -e . \
 | `config/overrides.json` | **本地私有**（gitignore）：UI 写入的覆盖层，与 yaml 深合并 |
 | `config/tids.json` | B站分区号映射 |
 | `bin/biliup` | biliup-rs 投稿工具(B站) |
-| `pipeline/` | 轮询/下载/字幕/元数据/投稿/多平台投递模块 |
-| `pipeline/multipub.py` | 快手/视频号投递(经 vendor/sau 子进程) |
-| `vendor/sau/` | social-auto-upload(快手/视频号引擎,独立venv) |
+| `pipeline/` | 轮询/下载/字幕/元数据/投稿/多平台投递/错误归类模块 |
+| `pipeline/errfmt.py` | 子进程/第三方报错归类器(登录失效/风控/超时等→UI单行原因) |
+| `vendor/sau/` | social-auto-upload(sau 13平台投递引擎,独立venv) |
 | `web/` | FastAPI 管理台 |
+| `Dockerfile` / `docker-compose.yml` | 全栈容器化部署(可选) |
+| `tests/` | 单测+FastAPI 集成测试(108例) |
 | `data/` | sqlite 队列 + 下载文件 + cookies + server.log |
 
 ## 多平台发布（平台平等 + 可扩展）

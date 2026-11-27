@@ -8,7 +8,7 @@
 | 路径 | 作用 |
 |---|---|
 | `cli.py` | 全部手动入口(poll/download/publish/login/serve/doctor) |
-| `pipeline/` | 12 个模块: config(覆盖层) db(sqlite) downloader(下载+黑段修剪+本地导入+智能封面) precheck(撞稿) subtitle(whisper+烧录) metagen(LLM) llm(后端适配) missions(B站活动) uploader(B站投递) multipub(sau多平台+平台中枢) progress |
+| `pipeline/` | 12 个模块: config(覆盖层) db(sqlite) downloader(下载+黑段修剪+本地导入+智能封面) precheck(撞稿) subtitle(whisper+烧录) metagen(LLM) llm(后端适配) missions(B站活动) uploader(B站投递) multipub(sau多平台+平台中枢) progress errfmt(子进程错误归类) |
 | `web/app.py` | FastAPI 管理台, 全部 API + 后台任务 + 启动调和 |
 | `web/static/index.html` | 单文件前端(vanilla JS) |
 | `mcp_server.py` | MCP stdio server(零协议依赖, 薄封装 HTTP API) |
@@ -28,7 +28,7 @@
 ## 环境命令
 
 ```bash
-.venv/bin/python -m pytest tests/ -q          # 单测(59例, 含 dsh 插件包)
+.venv/bin/python -m pytest tests/ -q          # 单测+集成测试(108例, 含 dsh 插件包/TestClient)
 .venv/bin/python -m compileall pipeline web cli.py mcp_server.py
 .venv/bin/python3 cli.py doctor                # 体检(登录态/队列/额度)
 .venv/bin/python3 cli.py mcp                   # MCP stdio server(给 AI 工具接)
