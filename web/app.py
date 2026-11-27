@@ -649,7 +649,8 @@ SETTINGS_SCHEMA = {
         "precheck_before_download": bool, "biliup_bin": str,
         "biliup_cookie": str, "download_dir": str, "archive_file": str,
         "stale_days": int, "publish_slot_gap_h": int,
-        "precheck_threshold": float, "precheck_autoskip": float},
+        "precheck_threshold": float, "precheck_autoskip": float,
+        "submit_api": str, "tencent_content_label": str},
     "extra_platforms": {"*": dict},   # 任意 sau 平台: {平台id: {enabled,account}}
     "missions": {"enabled": bool, "match": dict},
     "subtitles": {

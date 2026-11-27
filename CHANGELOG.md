@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.4 (2025-06)
+### Fixed
+- `submit_api`/`tencent_content_label` 补进 SETTINGS_SCHEMA——之前设置面板 PUT 会静默丢弃这两个键
+- 设置面板新增「📤 投稿」分组展示两键（B站接口 app|web 下拉 + 视频号标注文案）
+
 ## v1.7.3 (2025-06)
 ### Added
 - **双封面体系**：每条稿件生成 16:9 横版（`video.jpg`，B站用）+ 中心裁剪 3:4 竖版（`cover_portrait.jpg`，ffmpeg 双向 min() 恒出 3:4）；新列 `cover_portrait_path` 自动迁移

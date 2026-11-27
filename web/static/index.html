@@ -621,6 +621,10 @@ const SGROUPS = [
   ["missions.enabled","自动参加B站活动","bool"],
   ["missions.match","活动匹配关键词","dict","JSON: 线名 → 关键词数组"],
  ]],
+ ["📤 投稿", [
+  ["settings.submit_api","B站投稿接口","sel:app|web","默认 app; web接口已被B站废弃(会WARN降级)"],
+  ["settings.tencent_content_label","视频号标注","","none=不勾任何标注; 可填如 含AI生成内容"],
+ ]],
  ["💬 字幕", [
   ["subtitles.enabled","启用中文字幕","bool"],
   ["subtitles.whisper_model","whisper 模型","sel:tiny|base|small|medium","small 平衡速度/质量"],
