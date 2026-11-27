@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.1.0 (2025-11) — 工程化补强
+
+- **Docker 化**：Dockerfile(ffmpeg+CJK字体+双venv+sau chromium) / docker-compose.yml / .dockerignore；数据全卷挂载、端口绑回环、`cli.py serve --host`
+- **集成测试层**：`test_integration.py` FastAPI TestClient 端点冒烟 + 状态机流转/保护分支 + extra_pub 逐腿记账（此前零 API 级测试）；`test_errfmt.py` 6 例 → 108/108
+- **错误归类**：新增 `pipeline/errfmt.py`，子进程/第三方报错按模式归类（登录失效/风控/超时/磁盘/限流/审核），UI 不再吃原始 stderr；接入 multipub/uploader/downloader 三处
+- **文档**：AGENTS.md 技术债清单、README Docker 部署小节
+
 ## v2.0.0 (2025-06) — 终版
 
 完整功能集封板：订阅源→下载→字幕翻译烧录→LLM 中文元数据→审核→14 平台逐路投递，本地私有、五层防重、逐平台记账、agent 四通道接管。
