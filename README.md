@@ -14,11 +14,11 @@ config/sources.yaml 订阅源(YouTube频道/搜索)
    │
 cli.py poll          轮询发现新视频 → 撞稿预检(相似≥85%直接跳过) → status=new
    │
-cli.py download      yt-dlp 下载 → 语音探测/转写/翻译/烧字幕 → LLM元数据 → status=ready
+cli.py download      yt-dlp 下载 → 片头黑段修剪 → 语音探测/转写/翻译/烧字幕 → LLM元数据 → status=ready
    │
 cli.py serve         Web管理台: 预览、编辑标题标签、选发布平台、一键发布
    │
-cli.py publish <id>  biliup投B站 → 成功后 sau 投递快手/视频号(可选、尽力而为)
+cli.py publish <id>  勾选平台逐路投递(B站走 biliup, 其余走 sau)——每路独立成败记 extra_pub
 ```
 
 ## 常用命令
@@ -49,8 +49,9 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.videohub.pipeline.pl
 .venv/bin/python3 cli.py import ~/V/x.mp4 --line music --no-process   # 指定内容线/只入库
 
 # ── 登录态 ──
-# B站首选: Web 管理台顶栏「🔐 B站登录」弹二维码, B站APP扫(无需终端/二进制,
-# Windows/服务器也能登; 写 cookies.json 与 biliup 格式完全兼容)
+# B站首选: 管理台「🌐 平台」页 → B站卡片「扫码登录」弹二维码, B站APP扫(无需终端/
+# 二进制, Windows/服务器也能登; 写 cookies.json 与 biliup 格式完全兼容)。
+# 其他平台同页「扫码登录」直接拉起扫码浏览器, 与下方 CLI 等价
 .venv/bin/python3 cli.py login         # B站扫码(终端版, 需已装 biliup)
 .venv/bin/python3 cli.py renew         # B站 cookie 刷新
 .venv/bin/python3 cli.py login-ks      # 快手扫码(浏览器弹窗)
@@ -126,11 +127,18 @@ cd vendor/sau && python3 -m venv .venv && .venv/bin/pip install -e . \
 ## 多平台发布（平台平等 + 可扩展）
 
 - **B站 + extra_platforms 里启用的所有平台是平等的可选目标**；抽屉勾选框按 `/api/platforms` 动态生成，无写死平台
-- `extra_platforms` 支持 **sau 全部视频平台**（13 个）：`kuaishou` 快手 / `tencent` 视频号 / `douyin` 抖音 / `xiaohongshu` 小红书 / `baijiahao` 百家号 / `weibo` 微博 / `youtube` / `facebook-page` Facebook主页 / `instagram` / `alipay` 支付宝 / `hupu` 虎扑 / `dayu` 大鱼号 / `zhihu` 知乎。新增平台：设置面板勾选 → `cli.py login-extra <平台id>` 扫码登录。各平台能力有差异（封面/定时参数按 sau 支持自动适配，知乎/FB主页不支持封面，微博/小红书…不支持定时）
+- **🌐 平台中枢页**：管理台顶栏入口——全部 14 平台一屏收齐：登录态/启用开关/发稿成败数/创作中心·作品管理·发布页直达(浏览器新tab) + 扫码登录(B站QR / sau平台拉扫码浏览器)，开新平台不用碰配置文件
+- `extra_platforms` 支持 **sau 全部视频平台**（13 个）：`kuaishou` 快手 / `tencent` 视频号 / `douyin` 抖音 / `xiaohongshu` 小红书 / `baijiahao` 百家号 / `weibo` 微博 / `youtube` / `facebook-page` Facebook主页 / `instagram` / `alipay` 支付宝 / `hupu` 虎扑 / `dayu` 大鱼号 / `zhihu` 知乎。新增平台：设置面板或平台页勾选 → `cli.py login-extra <平台id>` 扫码登录。各平台能力有差异（封面/定时参数按 sau 支持自动适配，知乎/FB主页不支持封面，微博/小红书…不支持定时）
 - `pub_platforms` 语义：空/`""`=启用平台全发；`["kuaishou"]`=只发快手(B站完全不碰)；`[]`=拒绝发布
 - 不勾 B站的稿件跳过全部 B站域流程（撞稿预检/活动匹配/biliup/bvid），只走 sau 多平台投递；≥1 成功即 `published`
 - 每条 `extra_pub` JSON 记录**逐平台结果**（含B站），抽屉里以徽标展示成功/失败/未勾选；重试/补投自动跳过已成功平台，文件在全平台成功前保留
 - `sources.yaml` 的 `extra_platforms` 里 `enabled` 为总开关；条目勾选是在启用平台上的过滤
+- **分平台进阶配置**（`extra_platforms.<平台id>.<key>`，设置面板暂无 UI 走 yaml/设置接口）：
+  - `account` 账号槽（cookie 文件名后缀，多账号隔离）
+  - `offset_min` 该平台预约时间相对 B站后移 N 分钟——同稿五平台同刻发布易被风控画像
+  - `headed: true` 该平台投递走有头浏览器——抖音类严风控弹验证码时可人工过码
+  - `declaration` 抖音等平台"自主声明"文本（不显式配置则不设声明）
+- **验证码 Web 通道**：抖音等投递触发短信验证时，顶栏「📱验证码」输入收到的码即可喂给等待中的投递进程（`POST /api/verify-code`）；快手/视频号/小红书无验证码检测，被挑战时先给该平台配 `headed: true` 人工过
 - sau 引擎独立 venv 隔离，快手上传超时已调 1500s（vendored 改动，`git pull` 会被覆盖需重补）
 
 ## 版权类型（重要）
@@ -185,6 +193,12 @@ subtitles:
 - 烧录样式：底部居中白字黑边，字幕组惯例字号≈画面高1/18、距底≈7.5%高度，`margin_v`/`font_size` 可覆盖
 - 注意：硬字幕不可逆；whisper 对唱歌/纯音乐不可靠（音乐线默认只翻官方字幕）
 
+## 封面与片头处理
+
+- **智能封面**：源封面过暗/缺失时从视频多点抽帧按亮度+信息量择优生成 `video.jpg`（永不黑屏），并自动裁 3:4 竖封 `cover_portrait.jpg` 供快手/小红书信息流位
+- **片头黑段修剪**：`trim_black_intro`（默认开）——blackdetect 探测片头纯黑段（0.4s~8s 才动，防误伤）并重编码剪掉；下载/本地导入双入口生效，封面也从修剪后视频出帧。否则平台"无封面取首帧"兜底会黑
+- 抖音/视频号横竖双封面槽各自上传；快手/小红书喂竖封；封面处理调试截图落 `vendor/sau/logs/`
+
 ## 发布前自动校验
 
 - **撞稿预检**：用标题搜B站，相似度≥72% 判撞稿拦截；自动排除自己已发的稿；`--force`/卡片「强制发」可绕过
@@ -196,6 +210,7 @@ subtitles:
 - 服务由 **launchd 常驻托管**（`~/Library/LaunchAgents/com.videohub.pipeline.plist`）：登录自启 + 崩溃自愈；重启前先确认页面无在跑任务
 - `publish_slots: ["12:00","18:00","19:30","21:00","22:30"]` — 「错峰定时发布」自动分稿到 ≥4h 的档位（快手/视频号同步对齐该时刻）
 - `auto_poll_interval_min: 360` + `auto_download_after_poll: true` — 每 6h 自动拉新+下载+处理
+- **墙钟到点调度**：启动 ~2 分钟先补一轮；按 wall-clock deadline 走表——系统睡眠唤醒后错过的轮次立即补跑，不推迟整个间隔
 - `auto_workdays_only: true` — **仅工作日自动执行**，周末整 tick 跳过（手动按钮不受影响）
 - `whisper_device: mps` — Apple Silicon GPU 转写（约2x速，初始化失败自动回退 cpu）
 - `delete_after_publish` — **全部勾选平台投递成功**才删本地视频；部分成功保留文件供补投，也可在抽屉里手动「🗑 清理文件」（跳过条目总是删文件、留去重记录）
@@ -204,7 +219,7 @@ subtitles:
 ## 防重复 & 每日额度
 
 **五层防重**（已发视频绝不可能再下载/重投）：
-1. DB 唯一键 `UNIQUE(platform, source_id)` —— 同一视频(按视频ID)只入队一次，频道源和搜索源命中同一视频也会去重
+1. DB 唯一键 `UNIQUE(platform, source_id)` —— 同一视频(按视频ID)只入队一次，频道源和搜索源命中同一视频也会去重；**本地导入按内容指纹**（大小+头中尾采样哈希）判重，同视频换路径/改名/多副本都挡
 2. yt-dlp `download_archive` —— 下载过的视频即使重置状态也跳过下载
 3. 已 `published` 的条目永远不再进入下载/发布流程
 4. 发布前撞稿预检：搜B站比对相似度≥72% 拦截（防别人已搬过的）
@@ -213,6 +228,7 @@ subtitles:
 **额度**：
 - `daily_download_limit: 5` —— 批量下载/自动调度每天最多处理 5 条，额度用完自动停，明天继续
 - `daily_upload_limit: 5` —— 每日投稿上限
+- `download_mix_lines: true` —— 每日下载额度按内容线轮转均摊（每线轮流一条，耗尽让位），避免单条内容线吃满全天配额
 - 手动触发不受影响：**卡片上的「下载」按钮** / `cli.py download --id <id>` 想下哪条下哪条，不占额度
 
 **手动 vs 自动的区别**（仅此两点）：

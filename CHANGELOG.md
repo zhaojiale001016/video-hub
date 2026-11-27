@@ -1,5 +1,47 @@
 # Changelog
 
+## v1.8.9 (2025-06)
+### Fixed
+- **本地导入重复导入→重复发布**：`source_id` 从 路径|大小|mtime 改为内容指纹（大小+头中尾各2MB采样哈希）——同视频换路径/改名/mtime变动/多副本原全部穿透去重，现按内容判重（已入库旧条目同文件最后一次穿透，之后永久判重）
+- **创作中心地址全量勘误**：B站 home `york/home`(404)→`platform/home`、manage→`platform/upload-manager/video`；快手 manage→sau 常量 `article/manage/video?status=2&from=publish`；小红书 manage→`new/note-manager`、publish 补全真实投稿参数
+- 创作中心直达不再拉起独立 Chromium（割裂感），全部改为 `target=_blank` 当前浏览器新标签
+
+### Added
+- **平台中枢升级独立管理页**（v1.8.8 面板演进）：弹窗废除改整页视图——全平台登录态/投递启用开关(直写 extra_platforms)/发稿成败数/创作中心·作品管理·发布页直达 + 扫码登录(B站QR / sau 平台 `login_cmd` 拉起) 一页收齐
+- `POST /api/platforms/{pid}/login`（pid 校验防 glob 注入）与 `POST /api/platforms/{pid}/open`（sau storage_state 拉起带登录态浏览器；B站 biliup→playwright 转换；关窗回写 cookie 续命）
+- 导航栏删除单独「🔐 B站登录」按钮，全平台登录收口平台页
+
+## v1.8.8 (2025-06)
+### Added
+- **平台中枢面板**：全部 14 个可投平台的启用态/登录态/发稿成败数/创作中心·作品管理·发布页直达一屏收齐（`PLATFORM_META` + `db.platform_pub_counts` + `/api/platforms` 富字段）
+
+### Fixed
+- **`/api/platforms` 端点撞名**：新中枢端点与老端点同路径返回数组形状，抽屉投递勾选框/设置面板/顶栏角标全部渲染失败——合并为字典形状+富字段，全消费方复活（补 dict 形状回归测试）
+- `platform_pub_counts` 双计：同时持 bvid+extra_pub.bilibili 的条目 B站重复计数
+- 抽屉 B站未勾选时 B站选项框自动灰掉禁点；平台勾选带图标+未登录警示；设置面板平台开关加登录态圆点
+- `vendor/sau/logs/` 证据截图纳入 gitignore
+
+## v1.8.7 (2025-06)
+### Fixed
+- **抖音 4:3 横封面漏传**：竖版存在时横版槽被 `elif` 跳过→4:3 回落黑首帧，改横竖双槽各自上传
+- **抖音误标"内容由AI生成"**：上游补丁硬编码默认声明，所有稿件被强制标 AI——改为仅显式 `--declaration` 传入才设置；`extra_platforms.<p>.declaration` 配置透传
+- **小红书封面假成功**：固定 sleep 后点确定+吞弹窗异常——改等预览渲染+确定键解禁+弹窗真关闭才算成
+- **快手封面受理检测修正**：受理信号改真实 DOM 特征（裁剪面板出现），消假阴性；确认键解禁检查；弹窗内+封面预览双证据截图落 `data/debug` 不再随清理删除
+
+### Added
+- `extra_platforms.<p>.headed=true` sau 平台有头模式——风控验证码可人工过
+- **验证码 Web 通道**：`POST /api/verify-code` + 顶栏📱按钮——抖音短信验证码喂给等待中的投递进程
+- `extra_platforms.<p>.offset_min` 分平台错峰——预约发布时间相对 B站后移 N 分钟，防同稿多平台同刻发布被风控画像
+
+## v1.8.5 ~ v1.8.6 (2025-06)
+### Added
+- `trim_black_intro` 片头纯黑段自动修剪（blackdetect 0.4s~8s 才动防误伤，重编码精确剪除；下载/本地导入双入口，封面也从修剪后视频出帧）
+- `download_mix_lines` 每日下载跨内容线轮转均摊（每线轮流一条，耗尽让位），防单线吃满配额
+
+### Fixed
+- **调度器墙钟到点制**：`time.sleep` 间隔制被 macOS 睡眠冻结、唤醒后推迟整间隔——改分小段比对 wall-clock deadline，错过的轮次立即补跑（配合 v1.8.4 启动补轮，重启/睡眠两类丢轮全覆盖）
+- 快手封面上传竞态：`set_input_files` 后固定 sleep(1) 即确认，大图还在传→封面静默丢弃回落黑首帧——改等上传预览出现+上传中指示消失才点确认，封面区截图存证
+
 ## v1.8.4 (2025-06)
 ### Fixed
 - **调度器重启丢当轮**：启动后等满一个间隔才首轮轮询——现在启动 2 分钟先补一轮，之后正常间隔（修复反复重启导致当日自动下载不执行的问题）
