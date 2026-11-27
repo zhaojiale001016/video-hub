@@ -202,28 +202,34 @@ def stats():
 
 
 @app.get("/api/platforms")
-def platforms():
-    """平台中枢: 全部可投平台的启用态/登录态/发稿量/创作中心直达链接。"""
-    enabled = set(multipub.enabled_platforms(cfg)) | {"bilibili"}
+def get_platforms():
+    """全部可投递平台(字典): B站 + sau 全平台 + extra_platforms 自定义 id。
+    enabled 按配置; 附登录态/发稿量/创作中心链接供抽屉勾选与平台中枢共用。"""
+    ep = cfg.get("extra_platforms") or {}
     counts = db.platform_pub_counts()
-    out = []
-    for pid in ["bilibili"] + multipub.SAU_PLATFORMS:
-        ok, fail = counts.get(pid, [0, 0])
+
+    def _row(pid, name, enabled, logged_in, extra=None):
         meta = multipub.PLATFORM_META.get(pid) or {}
-        logged_in = (_login_ok() if pid == "bilibili"
-                     else multipub.logged_in(cfg, pid))
-        out.append({
-            "id": pid,
-            "name": "B站" if pid == "bilibili"
-                    else multipub.PLATFORMS.get(pid, pid),
-            "icon": meta.get("icon", "🌐"),
-            "enabled": pid in enabled,
-            "logged_in": logged_in,
-            "ok_count": ok, "fail_count": fail,
-            "links": {k: meta[k] for k in ("home", "manage", "publish")
-                      if meta.get(k)},
-        })
-    return {"platforms": out}
+        ok, fail = counts.get(pid, [0, 0])
+        row = {"name": name, "icon": meta.get("icon", "🌐"),
+               "enabled": enabled, "logged_in": logged_in,
+               "ok_count": ok, "fail_count": fail,
+               "links": {k: meta[k] for k in ("home", "manage", "publish")
+                         if meta.get(k)}}
+        row.update(extra or {})
+        return row
+
+    out = {"bilibili": _row("bilibili", "B站", True, _login_ok(),
+                            {"builtin": True})}
+    for p in multipub.SAU_PLATFORMS:
+        out[p] = _row(p, multipub.PLATFORMS.get(p, p),
+                      bool((ep.get(p) or {}).get("enabled")),
+                      multipub.logged_in(cfg, p))
+    for p, c in ep.items():                      # 自定义 id 也回显
+        if p not in out and p not in multipub._RESERVED:
+            out[p] = _row(p, p, bool((c or {}).get("enabled")),
+                          multipub.logged_in(cfg, p), {"custom": True})
+    return out
 
 
 @app.get("/api/bili/qrcode")
@@ -759,23 +765,6 @@ def get_settings():
         else:
             out[sec] = {k: _mask_secret(sec, k, (cfg.get(sec) or {}).get(k))
                         for k in keys}
-    return out
-
-
-@app.get("/api/platforms")
-def get_platforms():
-    """全部可投递平台: B站 + sau 全平台 + extra_platforms 里的自定义 id。
-    enabled 按 extra_platforms 配置; 抽屉勾选只看 enabled=true 的。"""
-    from pipeline import multipub
-    ep = cfg.get("extra_platforms") or {}
-    out = {"bilibili": {"name": "B站", "enabled": True, "builtin": True}}
-    for p in multipub.SAU_PLATFORMS:
-        out[p] = {"name": multipub.PLATFORMS.get(p, p),
-                  "enabled": bool((ep.get(p) or {}).get("enabled"))}
-    for p, c in ep.items():                      # 自定义 id 也回显
-        if p not in out and p not in multipub._RESERVED:
-            out[p] = {"name": p, "enabled": bool((c or {}).get("enabled")),
-                      "custom": True}
     return out
 
 

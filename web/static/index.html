@@ -455,11 +455,12 @@ async function openDrawer(id) {
           <div>
             <div class="text-[11px] text-base-content/40 mb-1.5">发布平台（至少勾一个）</div>
             <div class="flex gap-4 flex-wrap">${Object.entries(platsInfo).filter(([,c])=>c.enabled).map(([p,c])=>
-              `<label class="flex items-center gap-1.5 text-[12.5px] cursor-pointer">
-                <input type="checkbox" class="checkbox checkbox-primary checkbox-sm dwpl" data-pl="${p}" ${(!sel||sel.has(p))?"checked":""}>${esc(c.name)}</label>`).join("")}
+              `<label class="flex items-center gap-1.5 text-[12.5px] cursor-pointer" title="${c.logged_in===false?"该平台未登录, 投递会失败":""}">
+                <input type="checkbox" class="checkbox checkbox-primary checkbox-sm dwpl" data-pl="${p}" ${(!sel||sel.has(p))?"checked":""}
+                  ${p==="bilibili"?'onchange="toggleBiliOpts(this.checked)"':""}>${esc(c.icon||"")}${esc(c.name)}${c.logged_in===false?'<span class="text-warning text-[10px]">未登录</span>':""}</label>`).join("")}
             </div>
           </div>
-          <div class="rounded-lg border border-base-300/60 bg-base-200/40 p-2.5">
+          <div id="dwbiliBox" class="rounded-lg border border-base-300/60 bg-base-200/40 p-2.5 transition-opacity" style="opacity:${(!sel||sel.has("bilibili"))?1:.4};pointer-events:${(!sel||sel.has("bilibili"))?"auto":"none"}">
             <div class="text-[10px] font-bold text-base-content/45 mb-2">ⓑ B站选项 <span class="font-normal">（分区/版权/活动仅投B站生效）</span></div>
             <div class="grid grid-cols-2 gap-2">
               <div>
@@ -526,6 +527,10 @@ async function openDrawer(id) {
   dw.oninput = dw.onchange = () => { dwDirty = true; };
 }
 function closeDrawer() { document.getElementById("drawer").classList.remove("open"); dwItem = null; dwDirty = false; dwSel = null; }
+function toggleBiliOpts(on) {
+  const box = document.getElementById("dwbiliBox");
+  if (box) { box.style.opacity = on ? 1 : .4; box.style.pointerEvents = on ? "auto" : "none"; }
+}
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") { closeDrawer(); document.getElementById("lb").close(); }
 });
@@ -715,9 +720,9 @@ function renderSettings(cfg) {
     }
     if (type === "platforms") {
       const rows = Object.entries(platsInfo).filter(([p])=>p!=="bilibili").map(([p,c]) =>
-        `<label class="flex items-center gap-1.5 text-[12px] cursor-pointer py-0.5" data-pl="${esc(p)}"><input type="checkbox"
+        `<label class="flex items-center gap-1.5 text-[12px] cursor-pointer py-0.5" data-pl="${esc(p)}" title="${c.logged_in===true?"已登录":c.logged_in===false?"未登录":""}"><input type="checkbox"
           class="checkbox checkbox-primary checkbox-xs plat-sel"
-          ${c.enabled?"checked":""}><span class="whitespace-nowrap">${esc(c.name)}</span><code class="text-[9.5px] opacity-40">${esc(p)}</code></label>`).join("");
+          ${c.enabled?"checked":""}><i class="inline-block w-[6px] h-[6px] rounded-full" style="background:${c.logged_in===true?"#22c55e":c.logged_in===false?"#f43f5e":"#94a3b8"}"></i><span class="whitespace-nowrap">${esc(c.name)}</span><code class="text-[9.5px] opacity-40">${esc(p)}</code></label>`).join("");
       return `<div class="col-span-2" id="${id}">${lab(label,hint)}
         <div class="grid grid-cols-3 gap-x-4 rounded-lg bg-base-100/60 border border-base-300/40 p-2.5">${rows}</div></div>`;
     }
@@ -864,9 +869,9 @@ async function showSources() {
 
 async function openPlatforms() {
   try {
-    const {platforms} = await api("/api/platforms");
+    const data = await api("/api/platforms");
     const LINK_LABELS = [["home","创作中心"],["manage","作品管理"],["publish","发布页"]];
-    const sorted = [...platforms].sort((a,b) =>
+    const sorted = Object.entries(data).map(([id,p])=>({id,...p})).sort((a,b) =>
       (b.enabled-a.enabled) || (b.logged_in-a.logged_in) || (b.ok_count-a.ok_count));
     document.getElementById("platGrid").innerHTML = sorted.map(p => {
       const st = p.enabled
