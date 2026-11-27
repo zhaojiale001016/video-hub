@@ -63,6 +63,19 @@ def _hub_platforms():
     return _req("GET", "/api/platforms")
 
 
+def _hub_platform_login(pid):
+    return _req("POST", f"/api/platforms/{pid}/login")
+
+
+def _hub_platform_open(pid, target="home"):
+    return _req("POST", f"/api/platforms/{pid}/open",
+                json={"target": target})
+
+
+def _hub_verify_code(code):
+    return _req("POST", "/api/verify-code", json={"code": str(code)})
+
+
 def _hub_progress():
     return _req("GET", "/api/progress")
 
@@ -185,6 +198,18 @@ TOOLS = [
     {"name": "hub_platforms", "fn": _hub_platforms,
      "description": "全部可投递平台: 名称/启用态/builtin(B站)/custom",
      "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "hub_platform_login", "fn": _hub_platform_login,
+     "description": "拉起指定 sau 平台的扫码登录浏览器(有头, 需本机有屏幕; B站走 QR API 不用此)",
+     "inputSchema": {"type": "object", "properties": {
+         "pid": _S}, "required": ["pid"]}},
+    {"name": "hub_platform_open", "fn": _hub_platform_open,
+     "description": "带 sau 登录态拉起真实浏览器直达创作平台页(target: home/manage/publish); 有头, 需本机屏幕",
+     "inputSchema": {"type": "object", "properties": {
+         "pid": _S, "target": _S}, "required": ["pid"]}},
+    {"name": "hub_verify_code", "fn": _hub_verify_code,
+     "description": "抖音等平台投递触发短信/滑块验证时提交 4-8 位数字验证码(写入 sau 拾取文件, 等待中的进程自动续跑)",
+     "inputSchema": {"type": "object", "properties": {
+         "code": _S}, "required": ["code"]}},
     {"name": "hub_progress", "fn": _hub_progress,
      "description": "正在处理的条目实时进度(下载MB/上传%/烧录阶段)",
      "inputSchema": {"type": "object", "properties": {}}},

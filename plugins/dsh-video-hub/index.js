@@ -2,7 +2,7 @@
  * dsh-video-hub — video-hub 视频搬运中台的 DeepSeek Harness 插件
  *
  * 把本机 video-hub 管理台(默认 http://127.0.0.1:8600)的能力注册为
- * dsh LLM 工具: 队列/发布/补投/编辑/加源/任务进度, 共 20 个 hub_*。
+ * dsh LLM 工具: 队列/发布/补投/编辑/加源/平台登录/验证码/任务进度, 共 23 个 hub_*。
  * 前置: video-hub 服务在跑 (cli.py serve / launchd / systemd 常驻)。
  * 配置: 本包 cordis.patch.yml 里 config.api, 或环境变量 VIDEOHUB_API。
  */
@@ -53,9 +53,30 @@ const TOOLS = [
   },
   {
     name: 'hub_platforms',
-    description: '全部可投递平台: id/名称/启用态/builtin(B站)/custom(sau)',
+    description: '全部可投递平台: id/名称/启用态/登录态/发稿数/创作中心链接',
     parameters: params({}),
     execute: () => call('GET', '/api/platforms'),
+  },
+  {
+    name: 'hub_platform_login',
+    description: '拉起指定 sau 平台的扫码登录浏览器(有头, 需本机有屏幕; B站走 QR API 不用此)',
+    parameters: params({ pid: S('平台id, 如 douyin/kuaishou/tencent/xiaohongshu') }, ['pid']),
+    execute: (a) => call('POST', `/api/platforms/${a.pid}/login`, { timeout: 15000 }),
+  },
+  {
+    name: 'hub_platform_open',
+    description: '带 sau 登录态拉起真实浏览器直达创作平台页(target: home/manage/publish); 有头, 需本机屏幕',
+    parameters: params({
+      pid: S('平台id'), target: S('home/manage/publish, 默认 home'),
+    }, ['pid']),
+    execute: (a) => call('POST', `/api/platforms/${a.pid}/open`,
+      { body: { target: a.target || 'home' }, timeout: 20000 }),
+  },
+  {
+    name: 'hub_verify_code',
+    description: '抖音等平台投递触发短信/滑块验证时提交 4-8 位数字验证码(写入 sau 拾取文件, 等待中的进程自动续跑)',
+    parameters: params({ code: S('验证码 4-8 位数字') }, ['code']),
+    execute: (a) => call('POST', '/api/verify-code', { body: { code: String(a.code) } }),
   },
   {
     name: 'hub_progress',

@@ -260,7 +260,7 @@ video-hub 不止有 Web 管理台——四种方式让 AI 工具直接驱动整�
 
 **1. DeepSeek Harness 原生插件（dsh 用户首选）**
 
-`plugins/dsh-video-hub/` 是标准 dsh bundle 包，装到你的 DSH 后 20 个 `hub_*` 工具进原生工具系统（非外挂 MCP），会话里直接说"把 ready 队列发掉""1372 改个标题"：
+`plugins/dsh-video-hub/` 是标准 dsh bundle 包，装到你的 DSH 后 23 个 `hub_*` 工具进原生工具系统（非外挂 MCP），会话里直接说"把 ready 队列发掉""1372 改个标题"：
 
 - **插件市场**：DSH Plugins → 开「Custom plugin indexes」→ Discover 添加源 `https://zhaojiale001016.github.io/video-hub/dsh-index.json` → 搜 video-hub 一键安装
 - **命令行**：`dsh plugin --profile <p> add 'zhaojiale001016/video-hub#path:/plugins/dsh-video-hub'`
@@ -272,7 +272,7 @@ video-hub 不止有 Web 管理台——四种方式让 AI 工具直接驱动整�
 
 **2. MCP Server（一次接入全 MCP 生态）**
 
-`mcp_server.py` 是零依赖 stdio MCP server（只需 httpx），暴露 20 个 `hub_*` 工具。
+`mcp_server.py` 是零依赖 stdio MCP server（只需 httpx），暴露 23 个 `hub_*` 工具。
 要求管理服务在跑（`cli.py serve`/常驻）。客户端配置：
 
 ```json

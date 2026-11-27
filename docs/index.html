@@ -307,7 +307,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
       <div><b>14</b><span>可投递平台</span></div>
       <div><b>7</b><span>流水线环节</span></div>
       <div><b>5</b><span>层防重复</span></div>
-      <div><b>20</b><span>agent 工具</span></div>
+      <div><b>23</b><span>agent 工具</span></div>
       <div><b>0</b><span>云端依赖</span></div>
     </div>
   </div>
@@ -464,7 +464,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
         </div>
       </div>
       <div class="paths">
-        <div class="path top rv"><h4>DSH 原生插件<span class="tag">推荐</span></h4><p>20 个 <code>hub_*</code> 工具进 DeepSeek Harness 原生工具系统；插件市场一键安装，发新版提示升级。</p></div>
+        <div class="path top rv"><h4>DSH 原生插件<span class="tag">推荐</span></h4><p>23 个 <code>hub_*</code> 工具进 DeepSeek Harness 原生工具系统；插件市场一键安装，发新版提示升级。</p></div>
         <div class="path rv" style="--d:.06s"><h4>MCP Server</h4><p>零协议依赖 stdio server（只需 httpx）。Claude Code / Cursor / Devin / Windsurf，配一段 JSON 即用。</p></div>
         <div class="path rv" style="--d:.12s"><h4>Agent Skill</h4><p>不想配 MCP：软链 <code>SKILL.md</code> 进 skills 目录，教 agent 用 REST/CLI 驱动，含语义红线。</p></div>
         <div class="path rv" style="--d:.18s"><h4>裸 API / CLI</h4><p>任何能发 HTTP 的 agent：<code>/openapi.json</code> 自举；或直接调 CLI。最底层兜底。</p></div>
@@ -506,10 +506,10 @@ curl -s 'http://127.0.0.1:8600/api/items?status=ready'</pre></div>
     </div>
     <div class="toolset rv">
       <table>
-        <tr><th style="width:170px">CATEGORY</th><th>TOOLS · 20</th></tr>
+        <tr><th style="width:170px">CATEGORY</th><th>TOOLS · 23</th></tr>
         <tr><td class="cat">QUEUE</td><td><div class="tchips"><s>hub_stats</s><s>hub_list</s><s>hub_get</s><s>hub_progress</s></div></td></tr>
         <tr><td class="cat">ACTIONS</td><td><div class="tchips"><s>hub_publish</s><s>hub_publish_all</s><s>hub_poll</s><s>hub_download</s><s>hub_edit</s><s>hub_import</s><s>hub_skip</s><s>hub_retry</s><s>hub_regen</s><s>hub_delete_files</s></div></td></tr>
-        <tr><td class="cat">PLATFORM / SOURCE</td><td><div class="tchips"><s>hub_platforms</s><s>hub_sources</s><s>hub_add_source</s></div></td></tr>
+        <tr><td class="cat">PLATFORM / SOURCE</td><td><div class="tchips"><s>hub_platforms</s><s>hub_platform_login</s><s>hub_platform_open</s><s>hub_verify_code</s><s>hub_sources</s><s>hub_add_source</s></div></td></tr>
         <tr><td class="cat">JOBS</td><td><div class="tchips"><s>hub_jobs</s><s>hub_job</s><s>hub_wait_job</s></div></td></tr>
       </table>
       <div class="toolset-note">语义红线内置：已发布稿件不可改 · 已成功平台绝不重投 · 部分失败文件保留=补投材料 · 长任务返回 job_id 用 hub_wait_job 收尾</div>
