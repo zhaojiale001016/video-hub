@@ -35,7 +35,7 @@ settings:
   publish_slots: ["12:00", "18:00", "19:30", "21:00", "22:30"]  # 错峰定时档
   per_source_poll_cap: 15        # 每源每轮发现上限(防单一搜索源刷爆队列)
   min_free_gb: 10                # 磁盘剩余低于此值暂停下载
-  precheck_before_download: true # 下载前先搜B站撞稿, ≥85%相似直接跳过
+  precheck_before_download: true # 下载前先按目标平台搜撞稿(B站/YouTube可搜), ≥85%相似直接跳过
 
 # 中文字幕(生肉→熟肉; 开启后每条多耗时1-5分钟)
 subtitles:

@@ -216,39 +216,36 @@ def publish(item_id: int, cfg: dict, db: DB, dry_run: bool = False,
         raise PublishError("多平台投递全部失败")
     cr = effective_copyright(item, cfg)
     results = dict(prev)
-    # B站域前置校验: 任何阻断只记B站失败, 不拦截其他勾选平台
-    bili_block = None
-    if cr == 2 and not item.get("source_url"):
-        bili_block = "转载投稿必须有 source_url"
-    elif item.get("title"):
+    # —— 条目级拦截(全平台腿生效, 不只B站; 已有成功腿=内容已审过, 补投不重检) ——
+    if item.get("title") and not done:
         from . import precheck as _pc
         for dup in db.list_items(status="published", limit=1000):
             t = dup.get("title") or ""
             if t and (t == item["title"]
                       or _pc._sim(t, item["title"]) >= 0.9):
-                bili_block = (f"标题与已发布 #{dup['id']}({dup.get('bvid','')}) "
-                              "高度相似，请改标题")
-                break
-    if not bili_block:
-        try:
-            check_daily_limit(db, cfg)
-        except PublishError as e:
-            bili_block = str(e)
-    if not bili_block and not force:  # 站内撞稿预检
+                raise PublishError(
+                    f"标题与已发布 #{dup['id']} 高度相似(全平台拦截), 请改标题或跳过")
+    check_daily_limit(db, cfg)      # 全局限额: sau-only 稿件同样受控
+    if not force and not done:      # 撞稿预检: 各目标平台逐平台搜
         from . import precheck
         hit = precheck.check_collision(
-            cfg, item, db=db,
+            cfg, item, db=db, targets=required_platforms(item, cfg),
             threshold=C.get_setting(cfg, "precheck_threshold", 0.72))
         if hit:
-            msg = (f"撞稿(相似度{hit['sim']:.0%}): {hit['bvid']} "
+            msg = (f"撞稿[{hit.get('platform','')}]"
+                   f"(相似度{hit['sim']:.0%}): {hit['bvid']} "
                    f"《{hit['title']}》@{hit['author']}")
             if hit["sim"] >= C.get_setting(cfg, "precheck_autoskip", 0.85):
-                # 高度相似=确认重复: 该内容已在B站存在, 全平台停发+清理
+                # 高度相似=确认重复: 该内容已存在, 全平台停发+清理
                 db.set_status(item_id, "skipped",
                               fail_reason=f"{msg} —— 已自动清理")
                 _delete_files(item)
                 raise PublishError(f"{msg} —— 已自动跳过+删除文件")
-            bili_block = msg + " —— 确认后点「强制发」"
+            raise PublishError(f"{msg} —— 全平台拦截, 确认非重复后「强制发」")
+    # B站域前置校验: 阻断只记B站失败, 不拦截其他勾选平台
+    bili_block = None
+    if cr == 2 and not item.get("source_url"):
+        bili_block = "转载投稿必须有 source_url"
 
     from . import progress
     bvid, out = "", ""

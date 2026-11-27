@@ -375,15 +375,18 @@ def process_new_items(cfg: dict, db: DB, metagen=None, limit: int | None = None,
         try:
             if progress:
                 progress(f"[{idx}/{len(items)}] 下载 #{item['id']} {item['orig_title'][:40]}")
-            # 撞稿预检前移: 下载前先搜B站，高相似直接跳过，省下载+转写+烧录
+            # 撞稿预检前移: 下载前先按目标平台搜相似稿, 高相似直接跳过省下载+转写+烧录
             if (C.get_setting(cfg, "precheck_before_download", True)
                     and not (item.get("file_path") and Path(item["file_path"]).exists())):
-                from . import precheck, progress as prog
+                from . import precheck, progress as prog, uploader as _up
                 prog.set_stage(item["id"], "撞稿预检中")
-                hit = precheck.check_collision(cfg, item, db=db, threshold=0.85)
+                hit = precheck.check_collision(
+                    cfg, item, db=db, threshold=0.85,
+                    targets=_up.required_platforms(item, cfg))
                 if hit:
                     db.set_status(item["id"], "skipped",
-                                  fail_reason=(f"撞稿(相似度{hit['sim']:.0%}): {hit['bvid']} "
+                                  fail_reason=(f"撞稿[{hit.get('platform','')}]"
+                                               f"(相似度{hit['sim']:.0%}): {hit['bvid']} "
                                                f"《{hit['title']}》@{hit['author']} —— 下载前自动跳过"))
                     msg = f"#{item['id']} 撞稿跳过({hit['sim']:.0%}): {hit['bvid']}"
                     results.append({"id": item["id"], "ok": False, "error": msg})
